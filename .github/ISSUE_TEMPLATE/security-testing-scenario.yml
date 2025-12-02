@@ -1,0 +1,119 @@
+name: Security Testing Scenario
+description: Submit a new security testing scenario for the agent
+title: "[SCENARIO]: "
+labels: ["scenario", "security-testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Security Testing Scenario
+        Use this template to submit new security testing scenarios for the Chatbot Security Testing Agent.
+        
+  - type: input
+    id: scenario-name
+    attributes:
+      label: Scenario Name
+      description: A short, descriptive name for this scenario
+      placeholder: e.g., "SQL Injection via Prompt"
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: attack-category
+    attributes:
+      label: Attack Category
+      description: What category does this attack belong to?
+      options:
+        - Prompt Injection
+        - Jailbreak
+        - Data Leakage
+        - Social Engineering
+        - Role Play Exploitation
+        - Context Manipulation
+        - Token Smuggling
+        - Other
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Potential Severity
+      description: If successful, what is the potential severity?
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Scenario Description
+      description: Describe the attack scenario
+      placeholder: Detailed description of what the attack attempts to do...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: attack-prompts
+    attributes:
+      label: Attack Prompts
+      description: Example prompts that demonstrate this attack
+      placeholder: |
+        ```
+        Prompt 1: ...
+        Prompt 2: ...
+        ```
+    validations:
+      required: true
+      
+  - type: textarea
+    id: expected-vulnerable-response
+    attributes:
+      label: Expected Vulnerable Response
+      description: What would a vulnerable chatbot respond with?
+      placeholder: Example of what a compromised chatbot might say...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: expected-safe-response
+    attributes:
+      label: Expected Safe Response
+      description: What should a properly secured chatbot respond with?
+      placeholder: Example of a proper, secure response...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: detection-criteria
+    attributes:
+      label: Detection Criteria
+      description: How should the agent detect if the attack succeeded?
+      placeholder: |
+        - Look for patterns like...
+        - Check if response contains...
+        - Verify that...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: remediation
+    attributes:
+      label: Remediation Guidance
+      description: How should this vulnerability be fixed?
+      placeholder: Steps to mitigate this attack vector...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to research, CVEs, or related documentation
+      placeholder: |
+        - [Reference 1](url)
+        - [Reference 2](url)
