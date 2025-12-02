@@ -1,0 +1,100 @@
+name: PRD Change Request
+description: Propose changes to the Product Requirement Document
+title: "[PRD]: "
+labels: ["prd", "documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## PRD Change Request
+        Use this template to propose changes to the Chatbot Security Testing Agent PRD.
+        
+  - type: dropdown
+    id: prd-section
+    attributes:
+      label: PRD Section
+      description: Which section of the PRD does this change affect?
+      options:
+        - Problem Statement
+        - Proposed Solution
+        - Functional Requirements
+        - Non-Functional Requirements
+        - User Journeys
+        - System Architecture
+        - API Specification
+        - Data Models
+        - Technology Stack
+        - Security Considerations
+        - Rollout Plan
+        - Success Criteria
+        - Other
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: change-type
+    attributes:
+      label: Change Type
+      description: What type of change is this?
+      options:
+        - Addition - New requirement/section
+        - Modification - Update existing content
+        - Removal - Remove content
+        - Clarification - Better explain existing content
+    validations:
+      required: true
+      
+  - type: textarea
+    id: current-state
+    attributes:
+      label: Current State
+      description: Describe the current content (if modifying/removing)
+      placeholder: Current PRD content that needs to change...
+      
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed Change
+      description: Describe the proposed change in detail
+      placeholder: Detailed description of the change...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why is this change needed?
+      placeholder: Business or technical justification for the change...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Assessment
+      description: What other parts of the system might be affected?
+      placeholder: |
+        - Dependencies affected
+        - Timeline impact
+        - Resource impact
+        
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgent is this change?
+      options:
+        - Critical - Blocks development
+        - High - Needed before next milestone
+        - Medium - Should be addressed soon
+        - Low - Nice to have
+    validations:
+      required: true
+      
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context or references
+      placeholder: Links to discussions, research, or related issues...
