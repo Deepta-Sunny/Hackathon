@@ -917,27 +917,6 @@ RedTeaming/
 ```
 
 
----
-
-## 6. High-Level & Low-Level Design
-
-### 6.1 High-Level Design
-
-The system follows a three-tier architecture with clear separation between presentation, application, and data layers. The frontend communicates with the backend via WebSocket for real-time updates and REST API for configuration. The backend orchestrates attacks through specialized orchestrators that interface with Azure OpenAI for intelligence and target chatbots for testing.
-
-### 6.2 Component Interaction
-
-**Frontend → Backend**: HTTP POST (attack config), WebSocket (real-time updates)
-**Backend → Orchestrators**: Direct Python function calls (async)
-**Orchestrators → Azure OpenAI**: HTTPS REST API calls
-**Orchestrators → Target**: WebSocket messages
-**Orchestrators → Database**: DuckDB SQL queries
-
-### 6.3 Low-Level Design Details
-
-See sections 3 and 7 for detailed component breakdowns including class diagrams, sequence diagrams, and data flow specifications.
-
----
 
 ## 7. System Diagrams
 
@@ -1615,7 +1594,7 @@ curl -X POST http://localhost:8080/api/attack/start \
 
 #### 9.1.1 AttackPrompt
 
-\`\`\`python
+```python
 @dataclass
 class AttackPrompt:
     turn: int                    # Turn number (1-25)
@@ -1624,11 +1603,11 @@ class AttackPrompt:
     target_nodes: List[str]      # Target components
     escalation_phase: str        # Attack phase
     expected_outcome: str        # Expected result
-\`\`\`
+```
 
 #### 9.1.2 VulnerabilityFinding
 
-\`\`\`python
+```python
 @dataclass
 class VulnerabilityFinding:
     run: int                     # Run number (1-3)
@@ -1642,21 +1621,21 @@ class VulnerabilityFinding:
     target_nodes: List[str]      # Components targeted
     timestamp: str               # ISO 8601 timestamp
     response_received: bool = True
-\`\`\`
+```
 
 #### 9.1.3 ConversationExchange
 
-\`\`\`python
+```python
 @dataclass
 class ConversationExchange:
     turn: int                    # Turn number
     user: str                    # User message
     assistant: str               # Assistant response
-\`\`\`
+```
 
 #### 9.1.4 RunStatistics
 
-\`\`\`python
+```python
 @dataclass
 class RunStatistics:
     run: int                     # Run number
@@ -1665,11 +1644,11 @@ class RunStatistics:
     timeouts: int                # Number of timeouts
     errors: int                  # Number of errors
     total_turns: int             # Total turns executed
-\`\`\`
+```
 
 #### 9.1.5 ExecutiveSummary
 
-\`\`\`python
+```python
 @dataclass
 class ExecutiveSummary:
     total_attack_turns: int      # Total turns across all runs
@@ -1679,11 +1658,11 @@ class ExecutiveSummary:
     medium_risk_findings: int    # Risk level 3 count
     low_risk_findings: int       # Risk level 2 count
     overall_risk_score: float    # Calculated risk score
-\`\`\`
+```
 
 #### 9.1.6 GeneralizedPattern
 
-\`\`\`python
+```python
 @dataclass
 class GeneralizedPattern:
     pattern_id: str              # Unique identifier
@@ -1695,7 +1674,7 @@ class GeneralizedPattern:
     indicators: List[str]        # Detection indicators
     success_count: int           # Times pattern succeeded
     metadata: Dict[str, Any]     # Additional metadata
-\`\`\`
+```
 
 ### 9.2 Risk Classification System
 
@@ -1747,7 +1726,7 @@ class GeneralizedPattern:
 
 ### 9.5 JSON Report Format
 
-\`\`\`json
+```json
 {
   "executive_summary": {
     "total_attack_turns": 75,
@@ -1785,7 +1764,7 @@ class GeneralizedPattern:
   "conversation_log": [...],
   "generalized_patterns": [...]
 }
-\`\`\`
+```
 
 ---
 
@@ -1903,7 +1882,7 @@ class GeneralizedPattern:
 
 ### 11.1 Attack Campaign Execution Flow
 
-\`\`\`
+```
 START
   ↓
 Load Configuration
@@ -1999,11 +1978,11 @@ Store Patterns in Database
 Broadcast "campaign_completed"
          ↓
 END
-\`\`\`
+```
 
 ### 11.2 WebSocket Communication Flow
 
-\`\`\`
+```
 Frontend Connects
       ↓
 WebSocket Handshake
@@ -2047,11 +2026,11 @@ Remove failed connections
   └────┐   ↓
        │   Wait
        └───┘
-\`\`\`
+```
 
 ### 11.3 Error Handling Flow
 
-\`\`\`
+```
 Execute Turn
      ↓
 Send to Target
@@ -2102,7 +2081,7 @@ Continue  │   │
        Continue│
            ↓───┘
         Next Turn
-\`\`\`
+```
 
 
 ---
