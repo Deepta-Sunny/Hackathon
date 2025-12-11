@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Team Attack Orchestrator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 1em;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #ffffff;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: #ffffff;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(235, 51, 73, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-card h3 {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #38ef7d;
+        }
+
+        .status-indicator.inactive {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .attack-monitor {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .attack-monitor h2 {
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .category-tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .category-tab.active {
+            background: rgba(56, 239, 125, 0.3);
+            border-color: #38ef7d;
+        }
+
+        .category-tab.completed {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+        }
+
+        .run-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .run-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .run-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+
+        .run-card.selected {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.15);
+            box-shadow: 0 0 20px rgba(56, 239, 125, 0.4);
+        }
+
+        .run-card.active {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.1);
+        }
+
+        .run-card.completed {
+            border-color: #3498db;
+        }
+
+        .run-card.completed::after {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #3498db;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .run-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .run-card .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .turn-log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .turn-entry {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .turn-entry.info {
+            border-left-color: #3498db;
+        }
+
+        .turn-entry.turn {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.05);
+        }
+
+        .turn-entry.success {
+            border-left-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.05);
+        }
+
+        .turn-entry.vuln {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            animation: pulseVuln 0.5s ease;
+        }
+
+        @keyframes pulseVuln {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .turn-entry.vulnerability {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .turn-entry .turn-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .turn-entry .turn-time {
+            font-size: 0.85em;
+            opacity: 0.6;
+            font-weight: normal;
+        }
+
+        .turn-entry .turn-details {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .turn-entry .turn-content {
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .risk-safe { background: #27ae60; }
+        .risk-low { background: #f39c12; }
+        .risk-medium { background: #e67e22; }
+        .risk-high { background: #e74c3c; }
+        .risk-critical { background: #c0392b; }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        <span class="status-indicator inactive" id="wsIndicator"></span>
+        <span id="wsStatus">Disconnected</span>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Red Team Attack Orchestrator</h1>
+            <p>AI-Powered Security Testing Platform with Real-Time Monitoring</p>
+        </div>
+
+        <div class="control-panel">
+            <h2 style="margin-bottom: 20px;">Attack Configuration</h2>
+            <form id="attackForm">
+                <div class="form-group">
+                    <label for="websocketUrl">Target WebSocket URL</label>
+                    <input type="text" id="websocketUrl" name="websocketUrl" 
+                           placeholder="ws://localhost:8001" required>
+                </div>
+                <div class="form-group">
+                    <label for="architectureFile">Architecture File (.md)</label>
+                    <input type="file" id="architectureFile" name="architectureFile" 
+                           accept=".md,.txt" required>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-start" id="startBtn">
+                        🚀 Start Attack Campaign
+                    </button>
+                    <button type="button" class="btn btn-stop" id="stopBtn" disabled>
+                        ⛔ Stop Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-card">
+                <h3>Attack Status</h3>
+                <div class="value" id="attackStatus">
+                    <span class="status-indicator inactive" id="statusIndicator"></span>
+                    <span id="statusText">Idle</span>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Current Category</h3>
+                <div class="value" id="currentCategory">-</div>
+            </div>
+            <div class="status-card">
+                <h3>Current Run</h3>
+                <div class="value" id="currentRun">-</div>
+            </div>
+            <div class="status-card">
+                <h3>Total Vulnerabilities</h3>
+                <div class="value" id="totalVulns">0</div>
+            </div>
+        </div>
+
+        <div class="attack-monitor">
+            <h2>📊 Attack Monitor</h2>
+            
+            <div class="category-tabs" id="categoryTabs">
+                <div class="category-tab" data-category="standard">Standard Attack</div>
+                <div class="category-tab" data-category="crescendo">Crescendo Attack</div>
+                <div class="category-tab" data-category="skeleton_key">Skeleton Key Attack</div>
+                <div class="category-tab" data-category="obfuscation">Obfuscation Attack</div>
+            </div>
+
+            <div class="run-display" id="runDisplay">
+                <div class="run-card" data-run="1" onclick="loadRunDetails(1)">
+                    <h4>Run 1</h4>
+                    <div class="stats">
+                        <span>Turns: <span id="run1Turns">0</span></span>
+                        <span>Vulns: <span id="run1Vulns">0</span></span>
+                    </div>
+                </div>
+                <div class="run-card" data-run="2" onclick="loadRunDetails(2)">
+                    <h4>Run 2</h4>
+                    <div class="stats">
+                        <span>Turns: <span id="run2Turns">0</span></span>
+                        <span>Vulns: <span id="run2Vulns">0</span></span>
+                    </div>
+                </div>
+                <div class="run-card" data-run="3" onclick="loadRunDetails(3)">
+                    <h4>Run 3</h4>
+                    <div class="stats">
+                        <span>Turns: <span id="run3Turns">0</span></span>
+                        <span>Vulns: <span id="run3Vulns">0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="turn-log" id="turnLog">
+                <div style="text-align: center; opacity: 0.5; padding: 40px 0;">
+                    Waiting for attack data...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let selectedCategory = 'standard';
+        let attackData = {};
+        let attack_state = {
+            running: false,
+            current_category: null,
+            current_run: null,
+            current_turn: null
+        };
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8080/ws/attack-monitor');
+            
+            ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                document.getElementById('wsStatus').textContent = 'Connected';
+                document.getElementById('wsIndicator').classList.remove('inactive');
+                document.getElementById('wsIndicator').classList.add('active');
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('❌ WebSocket disconnected');
+                document.getElementById('wsStatus').textContent = 'Disconnected';
+                document.getElementById('wsIndicator').classList.remove('active');
+                document.getElementById('wsIndicator').classList.add('inactive');
+                
+                // Attempt reconnection after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(message) {
+            console.log('Received:', message);
+            
+            switch(message.type) {
+                case 'connection_established':
+                    console.log('Connection established');
+                    break;
+                
+                case 'attack_started':
+                    attack_state.running = true;
+                    document.getElementById('statusText').textContent = 'Running';
+                    document.getElementById('statusIndicator').classList.remove('inactive');
+                    document.getElementById('statusIndicator').classList.add('active');
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    break;
+                
+                case 'category_started':
+                    const category = message.data.category;
+                    attack_state.current_category = category;
+                    document.getElementById('currentCategory').textContent = message.data.category_name;
+                    
+                    // Add log entry
+                    addTurnLog(`📂 Started ${message.data.category_name}`, 'info');
+                    
+                    // Update tabs
+                    document.querySelectorAll('.category-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                        if (tab.dataset.category === category) {
+                            tab.classList.add('active');
+                        }
+                    });
+                    break;
+                
+                case 'turn_started':
+                    const turnData = message.data;
+                    attack_state.current_run = turnData.run;
+                    attack_state.current_turn = turnData.turn;
+                    document.getElementById('currentRun').textContent = `Run ${turnData.run} - Turn ${turnData.turn}/${turnData.total_turns}`;
+                    
+                    // Add turn start log
+                    addTurnLog(
+                        `🎯 Turn ${turnData.turn}/${turnData.total_turns} - ${turnData.technique}`,
+                        'turn',
+                        `<strong>Prompt:</strong> ${escapeHtml(turnData.prompt)}`
+                    );
+                    break;
+                
+                case 'turn_completed':
+                    const result = message.data;
+                    
+                    // Add turn completion log with response
+                    const riskClass = result.vulnerability_found ? 'vuln' : 'success';
+                    const riskEmoji = result.vulnerability_found ? '🔴' : '✅';
+                    
+                    addTurnLog(
+                        `${riskEmoji} Turn ${result.turn} Complete - ${result.risk_display}`,
+                        riskClass,
+                        `<strong>Response:</strong> ${escapeHtml(result.response)}<br>` +
+                        `<strong>Risk:</strong> ${result.risk_display}` +
+                        (result.vulnerability_found ? `<br><strong>Vulnerability:</strong> ${result.vulnerability_type}` : '')
+                    );
+                    
+                    // Update vulnerability counter if found
+                    if (result.vulnerability_found) {
+                        const vulnEl = document.getElementById('totalVulns');
+                        vulnEl.textContent = parseInt(vulnEl.textContent) + 1;
+                    }
+                    break;
+                
+                case 'run_completed':
+                    const runComplete = message.data;
+                    
+                    // Update run card stats
+                    document.getElementById(`run${runComplete.run}Turns`).textContent = runComplete.total_turns;
+                    document.getElementById(`run${runComplete.run}Vulns`).textContent = runComplete.vulnerabilities;
+                    
+                    // Mark run as completed
+                    const runCard = document.querySelector(`.run-card[data-run="${runComplete.run}"]`);
+                    if (runCard && attack_state.current_category === runComplete.category) {
+                        runCard.classList.add('completed');
+                    }
+                    
+                    addTurnLog(
+                        `✅ ${runComplete.category.toUpperCase()} Run ${runComplete.run} Completed`,
+                        'success',
+                        `Vulnerabilities: ${runComplete.vulnerabilities} | Total Turns: ${runComplete.total_turns}<br>` +
+                        `Data saved: ${runComplete.filename}<br>` +
+                        `<em>Click on Run ${runComplete.run} card to view complete details</em>`
+                    );
+                    break;
+                
+                case 'category_completed':
+                    const completedCategory = message.data.category;
+                    document.querySelectorAll('.category-tab').forEach(tab => {
+                        if (tab.dataset.category === completedCategory) {
+                            tab.classList.remove('active');
+                            tab.classList.add('completed');
+                        }
+                    });
+                    break;
+                
+                case 'campaign_completed':
+                    attack_state.running = false;
+                    attack_state.current_category = null;
+                    attack_state.current_run = null;
+                    attack_state.current_turn = null;
+                    document.getElementById('statusText').textContent = 'Completed';
+                    document.getElementById('statusIndicator').classList.remove('active');
+                    document.getElementById('statusIndicator').classList.add('inactive');
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    alert('🎉 Attack campaign completed!');
+                    break;
+                
+                case 'attack_stopped':
+                    attack_state.running = false;
+                    attack_state.current_category = null;
+                    attack_state.current_run = null;
+                    attack_state.current_turn = null;
+                    document.getElementById('statusText').textContent = 'Stopped';
+                    document.getElementById('statusIndicator').classList.remove('active');
+                    document.getElementById('statusIndicator').classList.add('inactive');
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    break;
+                
+                case 'error':
+                    alert('Error: ' + message.data.error);
+                    break;
+            }
+        }
+
+        // Start attack campaign
+        document.getElementById('attackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('websocket_url', document.getElementById('websocketUrl').value);
+            formData.append('architecture_file', document.getElementById('architectureFile').files[0]);
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/attack/start', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    console.log('Attack started:', result);
+                } else {
+                    alert('Error: ' + result.detail);
+                }
+            } catch (error) {
+                console.error('Error starting attack:', error);
+                alert('Failed to start attack: ' + error.message);
+            }
+        });
+
+        // Stop attack campaign
+        document.getElementById('stopBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:8080/api/attack/stop', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                console.log('Attack stopped:', result);
+            } catch (error) {
+                console.error('Error stopping attack:', error);
+            }
+        });
+
+        // Category tab selection
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                selectedCategory = tab.dataset.category;
+                
+                // Update UI to show selected tab
+                document.querySelectorAll('.category-tab').forEach(t => {
+                    t.classList.remove('selected');
+                });
+                tab.classList.add('selected');
+                
+                // Clear run card selection
+                document.querySelectorAll('.run-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Only clear turn log if NO attack is running
+                if (!attack_state.running) {
+                    const turnLog = document.getElementById('turnLog');
+                    turnLog.innerHTML = '';
+                    addTurnLog(
+                        `📂 Selected ${tab.textContent}`,
+                        'info',
+                        'Click on a run card (Run 1, Run 2, or Run 3) to view detailed turn-by-turn data.'
+                    );
+                } else {
+                    // Just add a category switch message
+                    addTurnLog(
+                        `📂 Switched to ${tab.textContent}`,
+                        'info',
+                        'Real-time updates continue below. Click run cards to view historical data.'
+                    );
+                }
+                
+                loadCategoryData(selectedCategory);
+            });
+        });
+
+        // Helper function to add turn log entries
+        function addTurnLog(title, type = 'info', details = '') {
+            const turnLog = document.getElementById('turnLog');
+            const entry = document.createElement('div');
+            entry.className = `turn-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            
+            entry.innerHTML = `
+                <div class="turn-header">
+                    <strong>${escapeHtml(title)}</strong>
+                    <span class="turn-time">${timestamp}</span>
+                </div>
+                ${details ? `<div class="turn-details">${details}</div>` : ''}
+            `;
+            
+            turnLog.appendChild(entry);
+            
+            // Auto-scroll to bottom
+            turnLog.scrollTop = turnLog.scrollHeight;
+            
+            // Limit to last 100 entries to prevent memory issues
+            while (turnLog.children.length > 100) {
+                turnLog.removeChild(turnLog.firstChild);
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load run details from backend JSON file
+        async function loadRunDetails(runNumber) {
+            const category = selectedCategory;
+            
+            // Check if run is currently active
+            const isCurrentRun = attack_state.running && 
+                                 attack_state.current_category === category && 
+                                 attack_state.current_run === runNumber;
+            
+            if (isCurrentRun) {
+                // Don't interrupt real-time updates - just add a message
+                addTurnLog(
+                    `⏳ Run ${runNumber} is currently executing`,
+                    'info',
+                    'Watching real-time updates. Complete data will be available after all turns finish.'
+                );
+                return;
+            }
+            
+            // Check if any attack is running - don't clear log if so
+            const attackInProgress = attack_state.running;
+            
+            // Highlight selected run card
+            document.querySelectorAll('.run-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`.run-card[data-run="${runNumber}"]`).classList.add('selected');
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/results/${category}/${runNumber}`);
+                
+                if (!response.ok) {
+                    addTurnLog(
+                        `⚠️ No data available for ${category} Run ${runNumber}`,
+                        'info',
+                        'This run has not been executed yet or the data file is not available. ' +
+                        'Data is saved only after a run completes all turns.'
+                    );
+                    return;
+                }
+                
+                const runData = await response.json();
+                
+                // Only clear turn log if NO attack is running
+                const turnLog = document.getElementById('turnLog');
+                if (!attackInProgress) {
+                    turnLog.innerHTML = '';
+                }
+                
+                // Add separator if attack is running
+                if (attackInProgress) {
+                    addTurnLog(
+                        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                        'info',
+                        'Loading historical data for comparison'
+                    );
+                }
+                
+                addTurnLog(
+                    `📂 Loaded ${category.toUpperCase()} - Run ${runNumber}`,
+                    'info',
+                    `<strong>Start:</strong> ${new Date(runData.start_time).toLocaleString()}<br>` +
+                    `<strong>End:</strong> ${new Date(runData.end_time).toLocaleString()}<br>` +
+                    `<strong>Total Turns:</strong> ${runData.total_turns}<br>` +
+                    `<strong>Vulnerabilities Found:</strong> ${runData.vulnerabilities_found}`
+                );
+                
+                // Display each turn
+                if (runData.turns && runData.turns.length > 0) {
+                    runData.turns.forEach(turn => {
+                        // Turn started
+                        addTurnLog(
+                            `🎯 Turn ${turn.turn_number}/${runData.total_turns} - ${turn.attack_technique}`,
+                            'turn',
+                            `<strong>Prompt:</strong> ${escapeHtml(turn.attack_prompt)}<br>` +
+                            `<strong>Target:</strong> ${turn.target_nodes ? turn.target_nodes.join(', ') : 'N/A'}<br>` +
+                            `<strong>Phase:</strong> ${turn.escalation_phase || 'N/A'}`
+                        );
+                        
+                        // Turn completed
+                        const riskClass = turn.vulnerability_found ? 'vuln' : 'success';
+                        const riskEmoji = turn.vulnerability_found ? '🔴' : '✅';
+                        
+                        addTurnLog(
+                            `${riskEmoji} Turn ${turn.turn_number} Complete - ${turn.risk_display}`,
+                            riskClass,
+                            `<strong>Response:</strong> ${escapeHtml(turn.chatbot_response.substring(0, 300))}${turn.chatbot_response.length > 300 ? '...' : ''}<br>` +
+                            `<strong>Risk:</strong> ${turn.risk_display}` +
+                            (turn.vulnerability_found ? `<br><strong>Vulnerability:</strong> ${turn.vulnerability_type}` : '') +
+                            `<br><strong>Timestamp:</strong> ${new Date(turn.timestamp).toLocaleTimeString()}`
+                        );
+                    });
+                    
+                    addTurnLog(
+                        `✅ Run ${runNumber} Complete`,
+                        'success',
+                        `<strong>Total Vulnerabilities:</strong> ${runData.vulnerabilities_found}<br>` +
+                        `<strong>Duration:</strong> ${calculateDuration(runData.start_time, runData.end_time)}`
+                    );
+                } else {
+                    addTurnLog('⚠️ No turn data available for this run', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Error loading run details:', error);
+                addTurnLog(`❌ Failed to load run details: ${error.message}`, 'info');
+            }
+        }
+
+        // Calculate duration between two timestamps
+        function calculateDuration(startTime, endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diffMs = end - start;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffSecs = Math.floor((diffMs % 60000) / 1000);
+            return `${diffMins}m ${diffSecs}s`;
+        }
+
+        // Load category data
+        async function loadCategoryData(category) {
+            try {
+                const response = await fetch('http://localhost:8080/api/results');
+                const data = await response.json();
+                
+                const categoryResults = data.results.filter(r => r.attack_category === category);
+                console.log('Category results:', categoryResults);
+                
+                // Update UI with results
+                // TODO: Implement detailed display
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        // Initialize
+        connectWebSocket();
+        
+        // Send heartbeat every 30 seconds
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
