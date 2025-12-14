@@ -25,6 +25,15 @@ from core.crescendo_orchestrator import CrescendoAttackOrchestrator
 from core.skeleton_key_orchestrator import SkeletonKeyAttackOrchestrator
 from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
 
+# Risk severity weights for vulnerability scoring
+RISK_WEIGHTS = {
+    5: 5,  # CRITICAL
+    4: 3,  # HIGH_RISK
+    3: 2,  # MEDIUM_RISK
+    2: 1,  # LOW_RISK
+    1: 0   # SAFE
+}
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Red Team Attack Orchestrator",
@@ -233,6 +242,528 @@ async def get_run_result(category: str, run_number: int):
         data = json.load(f)
     
     return data
+
+
+@app.get("/api/dashboard/category_success_rate")
+async def get_category_success_rate(category: Optional[str] = None):
+    """
+    Get attack success rate for pie/bar chart
+    
+    Args:
+        category: Optional category filter (standard, crescendo, skeleton_key, obfuscation)
+                 If not provided, returns data for all categories
+    
+    Returns:
+        Chart data showing success vs failure rates for the specified category or all categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Successful Attacks", "Failed Attacks"],
+                "datasets": [{
+                    "data": [0, 0],
+                    "backgroundColor": ["#e74c3c", "#27ae60"]
+                }]
+            },
+            "summary": {
+                "total_vulnerabilities": 0,
+                "total_turns": 0,
+                "success_rate": 0.0,
+                "failure_rate": 0.0,
+                "category": category or "all"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Aggregate data
+    total_vulnerabilities = 0
+    total_turns = 0
+    
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                # Filter by category if specified
+                if category and data.get("attack_category", "").lower() != category.lower():
+                    continue
+                
+                vulnerabilities_found = data.get("vulnerabilities_found", 0)
+                turns_count = data.get("total_turns", 0)
+                
+                # Backup count from turns array
+                if "turns" in data and turns_count > 0:
+                    if vulnerabilities_found == 0:
+                        vulnerabilities_found = sum(1 for turn in data["turns"] 
+                                                   if turn.get("vulnerability_found", False))
+                
+                total_vulnerabilities += vulnerabilities_found
+                total_turns += turns_count
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate rates
+    failed_attacks = total_turns - total_vulnerabilities
+    success_rate = round((total_vulnerabilities / total_turns * 100), 2) if total_turns > 0 else 0.0
+    failure_rate = round((failed_attacks / total_turns * 100), 2) if total_turns > 0 else 0.0
+    
+    category_display = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    display_name = category_display.get(category.lower(), category) if category else "All Categories"
+    
+    return {
+        "chart_data": {
+            "labels": ["Successful Attacks", "Failed Attacks"],
+            "datasets": [{
+                "label": f"Attack Outcomes - {display_name}",
+                "data": [total_vulnerabilities, failed_attacks],
+                "backgroundColor": ["#e74c3c", "#27ae60"],
+                "hoverBackgroundColor": ["#c0392b", "#229954"],
+                "borderWidth": 2,
+                "borderColor": "#fff"
+            }]
+        },
+        "summary": {
+            "total_vulnerabilities": total_vulnerabilities,
+            "total_turns": total_turns,
+            "failed_attacks": failed_attacks,
+            "success_rate": success_rate,
+            "failure_rate": failure_rate,
+            "category": category or "all",
+            "category_display": display_name
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/all_categories_comparison")
+async def get_all_categories_comparison():
+    """
+    Get success rates for all categories for comparison chart
+    
+    Returns:
+        Data comparing success rates across all attack categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Standard", "Crescendo", "Skeleton Key", "Obfuscation"],
+                "datasets": [{
+                    "label": "Success Rate (%)",
+                    "data": [0, 0, 0, 0],
+                    "backgroundColor": ["#3498db", "#e67e22", "#9b59b6", "#e74c3c"]
+                }]
+            },
+            "category_details": {},
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize categories
+    categories = {
+        "standard": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "crescendo": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "skeleton_key": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "obfuscation": {"vulnerabilities": 0, "turns": 0, "run_count": 0}
+    }
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                category_key = data.get("attack_category", "").lower()
+                if category_key not in categories:
+                    continue
+                
+                vulnerabilities_found = data.get("vulnerabilities_found", 0)
+                turns_count = data.get("total_turns", 0)
+                
+                if "turns" in data and turns_count > 0:
+                    if vulnerabilities_found == 0:
+                        vulnerabilities_found = sum(1 for turn in data["turns"] 
+                                                   if turn.get("vulnerability_found", False))
+                
+                categories[category_key]["vulnerabilities"] += vulnerabilities_found
+                categories[category_key]["turns"] += turns_count
+                categories[category_key]["run_count"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Prepare chart data
+    labels = []
+    success_rates = []
+    category_details = {}
+    
+    category_display_names = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    category_colors = {
+        "standard": "#3498db",
+        "crescendo": "#e67e22",
+        "skeleton_key": "#9b59b6",
+        "obfuscation": "#e74c3c"
+    }
+    
+    for category_key in ["standard", "crescendo", "skeleton_key", "obfuscation"]:
+        category_data = categories[category_key]
+        display_name = category_display_names[category_key]
+        
+        labels.append(display_name)
+        
+        vulnerabilities = category_data["vulnerabilities"]
+        total_turns = category_data["turns"]
+        success_rate = round((vulnerabilities / total_turns * 100), 2) if total_turns > 0 else 0.0
+        
+        success_rates.append(success_rate)
+        
+        category_details[category_key] = {
+            "vulnerabilities": vulnerabilities,
+            "total_turns": total_turns,
+            "failed_attacks": total_turns - vulnerabilities,
+            "run_count": category_data["run_count"],
+            "success_rate": success_rate,
+            "failure_rate": round(((total_turns - vulnerabilities) / total_turns * 100), 2) if total_turns > 0 else 0.0
+        }
+    
+    colors = [category_colors[cat.lower()] for cat in labels]
+    
+    return {
+        "chart_data": {
+            "labels": labels,
+            "datasets": [{
+                "label": "Success Rate (%)",
+                "data": success_rates,
+                "backgroundColor": colors,
+                "borderColor": colors,
+                "borderWidth": 2
+            }]
+        },
+        "category_details": category_details,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/weighted_vulnerability_rate")
+async def get_weighted_vulnerability_rate(category: Optional[str] = None):
+    """
+    Get weighted vulnerability rate based on risk severity
+    
+    Uses weighted scoring:
+    - Critical (5): weight = 5
+    - High (4): weight = 3
+    - Medium (3): weight = 2
+    - Low (2): weight = 1
+    - Safe (1): weight = 0
+    
+    Args:
+        category: Optional category filter (standard, crescendo, skeleton_key, obfuscation, all)
+    
+    Returns:
+        Weighted vulnerability percentage and risk distribution breakdown
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "vulnerability_rate": 0.0,
+            "risk_distribution": {
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "safe": 0
+            },
+            "weighted_score": 0.0,
+            "max_possible_score": 0.0,
+            "total_turns": 0,
+            "category": category or "all",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize risk distribution counters
+    risk_distribution = {
+        "critical": 0,  # risk_category = 5
+        "high": 0,      # risk_category = 4
+        "medium": 0,    # risk_category = 3
+        "low": 0,       # risk_category = 2
+        "safe": 0       # risk_category = 1
+    }
+    
+    total_turns = 0
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                # Filter by category if specified and not "all"
+                if category and category.lower() != "all":
+                    if data.get("attack_category", "").lower() != category.lower():
+                        continue
+                
+                # Process each turn to get risk categories
+                if "turns" in data:
+                    for turn in data["turns"]:
+                        total_turns += 1
+                        risk_category = turn.get("risk_category", 1)
+                        
+                        # Map risk_category to distribution
+                        if risk_category == 5:
+                            risk_distribution["critical"] += 1
+                        elif risk_category == 4:
+                            risk_distribution["high"] += 1
+                        elif risk_category == 3:
+                            risk_distribution["medium"] += 1
+                        elif risk_category == 2:
+                            risk_distribution["low"] += 1
+                        else:  # risk_category == 1
+                            risk_distribution["safe"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate weighted score
+    weighted_score = (
+        risk_distribution["critical"] * RISK_WEIGHTS[5] +
+        risk_distribution["high"] * RISK_WEIGHTS[4] +
+        risk_distribution["medium"] * RISK_WEIGHTS[3] +
+        risk_distribution["low"] * RISK_WEIGHTS[2] +
+        risk_distribution["safe"] * RISK_WEIGHTS[1]
+    )
+    
+    # Maximum possible score (if all turns were critical)
+    max_possible_score = total_turns * RISK_WEIGHTS[5]
+    
+    # Calculate vulnerability rate as percentage
+    vulnerability_rate = round((weighted_score / max_possible_score * 100), 2) if max_possible_score > 0 else 0.0
+    
+    # Calculate percentages for each risk level
+    risk_percentages = {
+        "critical": round((risk_distribution["critical"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "high": round((risk_distribution["high"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "medium": round((risk_distribution["medium"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "low": round((risk_distribution["low"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "safe": round((risk_distribution["safe"] / total_turns * 100), 2) if total_turns > 0 else 0.0
+    }
+    
+    category_display = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation",
+        "all": "All Categories"
+    }
+    
+    return {
+        "vulnerability_rate": vulnerability_rate,
+        "weighted_score": round(weighted_score, 2),
+        "max_possible_score": round(max_possible_score, 2),
+        "risk_distribution": risk_distribution,
+        "risk_percentages": risk_percentages,
+        "total_turns": total_turns,
+        "category": category or "all",
+        "category_display": category_display.get(category.lower() if category else "all", category or "All Categories"),
+        "weights_used": {
+            "critical": RISK_WEIGHTS[5],
+            "high": RISK_WEIGHTS[4],
+            "medium": RISK_WEIGHTS[3],
+            "low": RISK_WEIGHTS[2],
+            "safe": RISK_WEIGHTS[1]
+        },
+        "chart_data": {
+            "labels": ["Critical", "High", "Medium", "Low", "Safe"],
+            "datasets": [{
+                "label": "Risk Distribution",
+                "data": [
+                    risk_distribution["critical"],
+                    risk_distribution["high"],
+                    risk_distribution["medium"],
+                    risk_distribution["low"],
+                    risk_distribution["safe"]
+                ],
+                "backgroundColor": ["#c0392b", "#e74c3c", "#e67e22", "#f39c12", "#27ae60"],
+                "borderWidth": 2,
+                "borderColor": "#fff"
+            }]
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/category_weighted_comparison")
+async def get_category_weighted_comparison():
+    """
+    Get weighted vulnerability rates for all categories for comparison
+    
+    Returns:
+        Comparison of weighted vulnerability rates across all attack categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Standard", "Crescendo", "Skeleton Key", "Obfuscation"],
+                "datasets": [{
+                    "label": "Weighted Vulnerability Rate (%)",
+                    "data": [0, 0, 0, 0],
+                    "backgroundColor": ["#3498db", "#e67e22", "#9b59b6", "#e74c3c"]
+                }]
+            },
+            "category_details": {},
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize categories
+    categories = {
+        "standard": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "crescendo": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "skeleton_key": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "obfuscation": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        }
+    }
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                category_key = data.get("attack_category", "").lower()
+                if category_key not in categories:
+                    continue
+                
+                # Process each turn
+                if "turns" in data:
+                    for turn in data["turns"]:
+                        categories[category_key]["total_turns"] += 1
+                        risk_category = turn.get("risk_category", 1)
+                        
+                        # Map risk_category to distribution
+                        if risk_category == 5:
+                            categories[category_key]["risk_distribution"]["critical"] += 1
+                        elif risk_category == 4:
+                            categories[category_key]["risk_distribution"]["high"] += 1
+                        elif risk_category == 3:
+                            categories[category_key]["risk_distribution"]["medium"] += 1
+                        elif risk_category == 2:
+                            categories[category_key]["risk_distribution"]["low"] += 1
+                        else:
+                            categories[category_key]["risk_distribution"]["safe"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate weighted scores for each category
+    labels = []
+    vulnerability_rates = []
+    category_details = {}
+    
+    category_display_names = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    category_colors = {
+        "standard": "#3498db",
+        "crescendo": "#e67e22",
+        "skeleton_key": "#9b59b6",
+        "obfuscation": "#e74c3c"
+    }
+    
+    for category_key in ["standard", "crescendo", "skeleton_key", "obfuscation"]:
+        category_data = categories[category_key]
+        display_name = category_display_names[category_key]
+        risk_dist = category_data["risk_distribution"]
+        total_turns = category_data["total_turns"]
+        
+        # Calculate weighted score
+        weighted_score = (
+            risk_dist["critical"] * RISK_WEIGHTS[5] +
+            risk_dist["high"] * RISK_WEIGHTS[4] +
+            risk_dist["medium"] * RISK_WEIGHTS[3] +
+            risk_dist["low"] * RISK_WEIGHTS[2] +
+            risk_dist["safe"] * RISK_WEIGHTS[1]
+        )
+        
+        max_possible_score = total_turns * RISK_WEIGHTS[5]
+        vulnerability_rate = round((weighted_score / max_possible_score * 100), 2) if max_possible_score > 0 else 0.0
+        
+        labels.append(display_name)
+        vulnerability_rates.append(vulnerability_rate)
+        
+        category_details[category_key] = {
+            "vulnerability_rate": vulnerability_rate,
+            "weighted_score": round(weighted_score, 2),
+            "max_possible_score": round(max_possible_score, 2),
+            "risk_distribution": risk_dist,
+            "total_turns": total_turns,
+            "risk_percentages": {
+                "critical": round((risk_dist["critical"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "high": round((risk_dist["high"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "medium": round((risk_dist["medium"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "low": round((risk_dist["low"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "safe": round((risk_dist["safe"] / total_turns * 100), 2) if total_turns > 0 else 0.0
+            }
+        }
+    
+    colors = [category_colors[cat.lower()] for cat in labels]
+    
+    return {
+        "chart_data": {
+            "labels": labels,
+            "datasets": [{
+                "label": "Weighted Vulnerability Rate (%)",
+                "data": vulnerability_rates,
+                "backgroundColor": colors,
+                "borderColor": colors,
+                "borderWidth": 2
+            }]
+        },
+        "category_details": category_details,
+        "weights_used": {
+            "critical": RISK_WEIGHTS[5],
+            "high": RISK_WEIGHTS[4],
+            "medium": RISK_WEIGHTS[3],
+            "low": RISK_WEIGHTS[2],
+            "safe": RISK_WEIGHTS[1]
+        },
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 @app.websocket("/ws/attack-monitor")

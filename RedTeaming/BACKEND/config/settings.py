@@ -34,7 +34,7 @@ WEBSOCKET_MAX_RETRIES = int(os.getenv("WEBSOCKET_MAX_RETRIES", "2"))
 # ATTACK CAMPAIGN CONFIGURATION
 # =========================================================================
 TOTAL_RUNS = int(os.getenv("TOTAL_RUNS", "3"))
-TURNS_PER_RUN = int(os.getenv("TURNS_PER_RUN", "25"))
+TURNS_PER_RUN = int(os.getenv("TURNS_PER_RUN", "35"))
 CONTEXT_WINDOW_SIZE = int(os.getenv("CONTEXT_WINDOW_SIZE", "6"))
 
 # Crescendo Attack Configuration
