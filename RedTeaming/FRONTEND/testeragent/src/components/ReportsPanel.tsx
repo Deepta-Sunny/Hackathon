@@ -1,4 +1,5 @@
 import {
+  Box,
     Paper,
     Typography
 } from "@mui/material";
@@ -36,11 +37,11 @@ const ReportsPanel: React.FC = () => {
 
   return (
     <Paper className={classes.container} elevation={2}>
-      <div className={classes.header}>
+      <Box className={classes.header}>
         <Typography fontFamily="inherit" className={classes.headerTitle}>
           Reports
         </Typography>
-      </div>
+      </Box>
     </Paper>
   );
 };

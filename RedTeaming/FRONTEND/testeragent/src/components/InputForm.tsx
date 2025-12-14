@@ -1,9 +1,13 @@
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import StopIcon from "@mui/icons-material/Stop";
 import Button from "@mui/joy/Button";
 import { Box, TextField, Typography } from "@mui/material";
 import React, { useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { createUseStyles } from "react-jss";
+import type { AppDispatch, RootState } from "../store/Store";
+import { haltAttack, openAttackMonitor } from "../thunk/ApiThunk";
 
 const useStyles = createUseStyles({
   container: {
@@ -81,6 +85,14 @@ interface InputFormProps {
 
 const InputForm: React.FC<InputFormProps> = ({ onSubmit }) => {
   const classes = useStyles();
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    monitorSocket,
+    monitorOpen,
+    monitorConnecting,
+    startAttack: startAttackState,
+    stopAttack: stopAttackState,
+  } = useSelector((state: RootState) => state.api);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [query, setQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,10 +108,25 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!selectedFile || !query) {
+      return;
+    }
     if (onSubmit) {
+      if (!monitorOpen && !monitorConnecting) {
+        void dispatch(openAttackMonitor());
+      }
       onSubmit({ file: selectedFile, query });
     }
   };
+
+  const handleStop = () => {
+    dispatch(haltAttack());
+    monitorSocket?.close(1000, "User requested stop");
+  };
+
+  const buttonDisabled = monitorOpen
+    ? stopAttackState.loading
+    : startAttackState.loading || monitorConnecting || !selectedFile || !query;
 
   return (
     <Box className={classes.container}>
@@ -148,14 +175,16 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit }) => {
           </div>
 
           <Button
-            type="submit"
+            type={monitorOpen ? "button" : "submit"}
             variant="solid"
             color="primary"
             sx={{ fontFamily: "inherit" }}
-            startDecorator={<PlayArrowIcon />}
+            startDecorator={monitorOpen ? <StopIcon /> : <PlayArrowIcon />}
             className={classes.startButton}
+            disabled={buttonDisabled}
+            onClick={monitorOpen ? handleStop : undefined}
           >
-            Start
+            {monitorOpen ? "Stop" : "Start"}
           </Button>
         </div>
       </form>
