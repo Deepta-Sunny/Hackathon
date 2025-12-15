@@ -124,45 +124,44 @@ const ReportsPanel: React.FC = () => {
   // Track vulnerabilities by category, run, and risk level
   const [vulnerabilityStats, setVulnerabilityStats] = useState<{
     crescendo: { 
-      run1: { critical: number; high: number; medium: number; low: number; safe: number };
-      run2: { critical: number; high: number; medium: number; low: number; safe: number };
-      run3: { critical: number; high: number; medium: number; low: number; safe: number };
+      run1: { critical: number; high: number; medium: number; safe: number };
+      run2: { critical: number; high: number; medium: number; safe: number };
+      run3: { critical: number; high: number; medium: number; safe: number };
     };
     skeleton_key: { 
-      run1: { critical: number; high: number; medium: number; low: number; safe: number };
-      run2: { critical: number; high: number; medium: number; low: number; safe: number };
-      run3: { critical: number; high: number; medium: number; low: number; safe: number };
+      run1: { critical: number; high: number; medium: number; safe: number };
+      run2: { critical: number; high: number; medium: number; safe: number };
+      run3: { critical: number; high: number; medium: number; safe: number };
     };
     obfuscation: { 
-      run1: { critical: number; high: number; medium: number; low: number; safe: number };
-      run2: { critical: number; high: number; medium: number; low: number; safe: number };
-      run3: { critical: number; high: number; medium: number; low: number; safe: number };
+      run1: { critical: number; high: number; medium: number; safe: number };
+      run2: { critical: number; high: number; medium: number; safe: number };
+      run3: { critical: number; high: number; medium: number; safe: number };
     };
     standard: { 
-      run1: { critical: number; high: number; medium: number; low: number; safe: number };
-      run2: { critical: number; high: number; medium: number; low: number; safe: number };
-      run3: { critical: number; high: number; medium: number; low: number; safe: number };
+      run1: { critical: number; high: number; medium: number; safe: number };
+      run2: { critical: number; high: number; medium: number; safe: number };
+      run3: { critical: number; high: number; medium: number; safe: number };
     };
-  }>({
-    crescendo: { 
-      run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+  }>({crescendo: { 
+      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
     },
     skeleton_key: { 
-      run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
     },
     obfuscation: { 
-      run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
     },
     standard: { 
-      run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
     }
   });
   
@@ -171,7 +170,6 @@ const ReportsPanel: React.FC = () => {
     critical: 0,
     high: 0,
     medium: 0,
-    low: 0,
     safe: 0
   });
 
@@ -194,35 +192,28 @@ const ReportsPanel: React.FC = () => {
         if (payload.type === "attack_started") {
           setVulnerabilityStats({
             crescendo: { 
-              run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
             },
             skeleton_key: { 
-              run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
             },
             obfuscation: { 
-              run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
             },
             standard: { 
-              run1: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, low: 0, safe: 0 }
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
             }
           });
-          setTotalRiskDistribution({ critical: 0, high: 0, medium: 0, low: 0, safe: 0 });
+          setTotalRiskDistribution({ critical: 0, high: 0, medium: 0, safe: 0 });
           setTotalTurns(0);
-          setTotalRiskDistribution({
-            critical: 0,
-            high: 0,
-            medium: 0,
-            low: 0,
-            safe: 0
-          });
           return;
         }
 
@@ -246,14 +237,12 @@ const ReportsPanel: React.FC = () => {
               const runStats = { ...updated[categoryKey][runKey] };
               
               // Increment the appropriate risk level
-              if (riskCategory === 5) {
+              if (riskCategory === 4) {
                 runStats.critical += 1;
-              } else if (riskCategory === 4) {
-                runStats.high += 1;
               } else if (riskCategory === 3) {
-                runStats.medium += 1;
+                runStats.high += 1;
               } else if (riskCategory === 2) {
-                runStats.low += 1;
+                runStats.medium += 1;
               } else {
                 runStats.safe += 1;
               }
@@ -269,14 +258,12 @@ const ReportsPanel: React.FC = () => {
             // Update total risk distribution
             setTotalRiskDistribution((prev) => {
               const updated = { ...prev };
-              if (riskCategory === 5) {
+              if (riskCategory === 4) {
                 updated.critical += 1;
-              } else if (riskCategory === 4) {
-                updated.high += 1;
               } else if (riskCategory === 3) {
-                updated.medium += 1;
+                updated.high += 1;
               } else if (riskCategory === 2) {
-                updated.low += 1;
+                updated.medium += 1;
               } else {
                 updated.safe += 1;
               }
@@ -318,7 +305,6 @@ const ReportsPanel: React.FC = () => {
       critical: runs.run1.critical,
       high: runs.run1.high,
       medium: runs.run1.medium,
-      low: runs.run1.low,
       safe: runs.run1.safe
     });
     
@@ -328,7 +314,6 @@ const ReportsPanel: React.FC = () => {
       critical: runs.run2.critical,
       high: runs.run2.high,
       medium: runs.run2.medium,
-      low: runs.run2.low,
       safe: runs.run2.safe
     });
     
@@ -338,7 +323,6 @@ const ReportsPanel: React.FC = () => {
       critical: runs.run3.critical,
       high: runs.run3.high,
       medium: runs.run3.medium,
-      low: runs.run3.low,
       safe: runs.run3.safe
     });
   });
@@ -476,7 +460,6 @@ const ReportsPanel: React.FC = () => {
               <Bar dataKey="critical" stackId="a" fill="#d32f2f" name="Critical" />
               <Bar dataKey="high" stackId="a" fill="#f57c00" name="High" />
               <Bar dataKey="medium" stackId="a" fill="#fbc02d" name="Medium" />
-              <Bar dataKey="low" stackId="a" fill="#90caf9" name="Low" />
               <Bar dataKey="safe" stackId="a" fill="#66bb6a" name="Safe" />
             </BarChart>
           </ResponsiveContainer>
