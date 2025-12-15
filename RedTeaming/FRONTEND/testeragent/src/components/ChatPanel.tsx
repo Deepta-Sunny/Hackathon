@@ -68,11 +68,13 @@ const useStyles = createUseStyles({
   messageTitle: {
     fontWeight: 600,
     fontSize: "14px",
+    textAlign: "left",
   },
   messageText: {
     fontSize: "14px",
     lineHeight: 1.5,
     whiteSpace: "pre-wrap",
+    textAlign: "left",
   },
   messageMeta: {
     fontSize: "12px",
