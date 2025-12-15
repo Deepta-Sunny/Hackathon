@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography, Tabs, Tab } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
 import { useDispatch, useSelector } from "react-redux";
@@ -84,6 +84,16 @@ const useStyles = createUseStyles({
     textAlign: "center",
     opacity: 0.6,
   },
+  tabsContainer: {
+    borderBottom: "1px solid #00000010",
+    backgroundColor: "#ffffff",
+  },
+  tab: {
+    textTransform: "none",
+    fontFamily: "inherit",
+    fontWeight: 500,
+    minHeight: "48px",
+  },
 });
 
 type ChatMessage = {
@@ -91,6 +101,7 @@ type ChatMessage = {
   sender: "agent" | "ai";
   content: string;
   category?: string;
+  run?: number;
   turn?: number;
   riskDisplay?: string;
   timestamp?: string;
@@ -103,7 +114,14 @@ const ChatPanel: React.FC = () => {
     (state: RootState) => state.api
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [categoryTab, setCategoryTab] = useState("all");
+  const [runFilter, setRunFilter] = useState<number | "all">("all");
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Get unique categories and runs from messages
+  const categories = ["all", ...Array.from(new Set(messages.map(m => m.category).filter(Boolean)))];
+  const runs = Array.from(new Set(messages.filter(m => categoryTab === "all" || m.category === categoryTab).map(m => m.run).filter((r): r is number => typeof r === "number")));
+  runs.sort((a, b) => a - b);
 
   useEffect(() => {
     if (!monitorSocket) {
@@ -136,6 +154,7 @@ const ChatPanel: React.FC = () => {
               sender: "agent",
               content: String(data.prompt ?? ""),
               category: String(data.category ?? ""),
+              run: Number(data.run ?? 0),
               turn: Number(data.turn ?? 0),
               timestamp:
                 typeof data.timestamp === "string" ? data.timestamp : undefined,
@@ -143,6 +162,46 @@ const ChatPanel: React.FC = () => {
           ]);
         } else if (payload.type === "turn_completed" && payload.data) {
           const data = payload.data as Record<string, unknown>;
+          
+          // Extract text from response - handle both plain text and JSON/dict format
+          let responseText = String(data.response ?? "");
+          
+          // Check if it starts with a dict/JSON format
+          if (responseText.trim().startsWith('{') && responseText.includes('response')) {
+            // Try to parse as JSON first
+            try {
+              const parsed = JSON.parse(responseText);
+              if (parsed && typeof parsed === 'object' && 'response' in parsed) {
+                responseText = String(parsed.response);
+              }
+            } catch {
+              // If JSON parse fails, handle Python dict-like format {'response': '...'}
+              // This regex handles both single and double quotes, and extracts everything after 'response':
+              const match = responseText.match(/['"]response['"]\s*:\s*["'](.+?)["'](?:\s*[,}]|$)/s);
+              if (match) {
+                responseText = match[1];
+              } else {
+                // Try without quotes around the value (edge case)
+                const noQuoteMatch = responseText.match(/['"]response['"]\s*:\s*(.+?)(?:\s*[,}]|$)/s);
+                if (noQuoteMatch) {
+                  responseText = noQuoteMatch[1].trim();
+                } else {
+                  // Last resort: remove the leading dict syntax
+                  responseText = responseText.replace(/^\s*\{\s*['"]response['"]\s*:\s*['"]/, '').replace(/['"]\s*\}\s*$/, '');
+                }
+              }
+              
+              // Unescape common escape sequences
+              responseText = responseText
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t')
+                .replace(/\\r/g, '\r')
+                .replace(/\\'/g, "'")
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
+            }
+          }
+          
           setMessages((prev) => [
             ...prev,
             {
@@ -150,8 +209,9 @@ const ChatPanel: React.FC = () => {
                 data.timestamp ?? Date.now()
               }`,
               sender: "ai",
-              content: String(data.response ?? ""),
+              content: responseText,
               category: String(data.category ?? ""),
+              run: Number(data.run ?? 0),
               turn: Number(data.turn ?? 0),
               riskDisplay:
                 typeof data.risk_display === "string"
@@ -230,13 +290,81 @@ const ChatPanel: React.FC = () => {
 
   const showIdle = !monitorConnecting && !monitorError && messages.length === 0;
 
+  // Filter messages by selected category and run
+  const filteredMessages = messages.filter(msg => {
+    const categoryMatch = categoryTab === "all" || msg.category === categoryTab;
+    const runMatch = runFilter === "all" || msg.run === runFilter;
+    return categoryMatch && runMatch;
+  });
+
   return (
     <Paper className={classes.container} elevation={2}>
       <Box className={classes.header}>
         <Typography fontFamily="inherit" className={classes.headerTitle}>
-          Chat
+          Chat Monitor
         </Typography>
       </Box>
+      
+      {/* Category Tabs */}
+      <Box className={classes.tabsContainer}>
+        <Tabs
+          value={categoryTab}
+          onChange={(_, newValue) => {
+            setCategoryTab(newValue);
+            setRunFilter("all");
+          }}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            '& .MuiTab-root': {
+              fontFamily: 'inherit',
+              textTransform: 'none',
+            },
+            '& .Mui-selected': {
+              color: '#20a100ff',
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#20a100ff',
+            },
+          }}
+        >
+          <Tab className={classes.tab} label="All" value="all" />
+          <Tab className={classes.tab} label="Crescendo" value="crescendo" />
+          <Tab className={classes.tab} label="Skeleton Key" value="skeleton_key" />
+          <Tab className={classes.tab} label="Obfuscation" value="obfuscation" />
+          <Tab className={classes.tab} label="Standard" value="standard" />
+        </Tabs>
+      </Box>
+      
+      {/* Run Filter Tabs (Each attack has 3 runs) */}
+      {runs.length > 0 && (
+        <Box className={classes.tabsContainer}>
+          <Tabs
+            value={runFilter}
+            onChange={(_, newValue) => setRunFilter(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': {
+                fontFamily: 'inherit',
+                textTransform: 'none',
+                minWidth: 80,
+              },
+              '& .Mui-selected': {
+                color: '#20a100ff',
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#20a100ff',
+              },
+            }}
+          >
+            <Tab className={classes.tab} label="All Runs" value="all" />
+            {runs.map(run => (
+              <Tab key={run} className={classes.tab} label={`Run ${run}`} value={run} />
+            ))}
+          </Tabs>
+        </Box>
+      )}
       <Box className={classes.status}>
         {monitorConnecting && (
           <Typography fontSize={14} color="#555555">
@@ -255,7 +383,7 @@ const ChatPanel: React.FC = () => {
         )}
       </Box>
       <Box ref={listRef} className={classes.messages}>
-        {messages.map((message) => (
+        {filteredMessages.map((message) => (
           <Box
             key={message.id}
             className={`${classes.message} ${
@@ -275,7 +403,7 @@ const ChatPanel: React.FC = () => {
             </Typography>
           </Box>
         ))}
-        {messages.length === 0 && !monitorConnecting && !monitorError && (
+        {filteredMessages.length === 0 && !monitorConnecting && !monitorError && (
           <Typography className={classes.emptyState}>
             No messages yet.
           </Typography>

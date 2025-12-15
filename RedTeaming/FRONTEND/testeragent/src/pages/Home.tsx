@@ -32,6 +32,8 @@ function Home() {
       <Header />
       <Box display={"flex"} flexDirection={"column"} gap={2} marginTop={4}>
         <InputForm onSubmit={handleSubmit} />
+        
+        {/* Two main panels: Chat with tabs and Reports */}
         <Box display={"flex"} gap={2} height={"75vh"}>
           <Box flex={1} display={"flex"}>
             <ChatPanel />

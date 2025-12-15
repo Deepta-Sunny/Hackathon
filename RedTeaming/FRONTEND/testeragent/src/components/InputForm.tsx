@@ -94,7 +94,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit }) => {
     stopAttack: stopAttackState,
   } = useSelector((state: RootState) => state.api);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(import.meta.env.VITE_DEFAULT_TARGET_WS || "ws://localhost:8001/ws");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +138,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit }) => {
               ref={fileInputRef}
               onChange={handleFileSelect}
               className={classes.hiddenInput}
-              accept=".pdf,.doc,.docx,.txt,.csv"
+              accept=".pdf,.doc,.docx,.txt,.csv,.md"
             />
             <Button
               variant="solid"
