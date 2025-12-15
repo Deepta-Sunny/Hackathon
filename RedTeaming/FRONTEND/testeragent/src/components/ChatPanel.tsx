@@ -140,6 +140,8 @@ const ChatPanel: React.FC = () => {
           data?: Record<string, unknown>;
         };
 
+        console.log('[ChatPanel] WebSocket message received:', payload.type, payload.data?.category);
+        
         if (payload.type === "attack_started") {
           setMessages([]);
           return;
@@ -227,14 +229,16 @@ const ChatPanel: React.FC = () => {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  useEffect(() => {
-    return () => {
-      if (monitorSocket) {
-        monitorSocket.close(1000, "component-disconnect");
-        dispatch(clearMonitor());
-      }
-    };
-  }, [dispatch, monitorSocket]);
+  // REMOVED: Don't close socket on component unmount (tab switch)
+  // The socket should remain open for other tabs/components to use
+  // useEffect(() => {
+  //   return () => {
+  //     if (monitorSocket) {
+  //       monitorSocket.close(1000, "component-disconnect");
+  //       dispatch(clearMonitor());
+  //     }
+  //   };
+  // }, [dispatch, monitorSocket]);
 
   const formatMeta = (message: ChatMessage) => {
     const metaParts: string[] = [];

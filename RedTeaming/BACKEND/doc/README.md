@@ -16,12 +16,23 @@ Welcome to the comprehensive documentation for the AI Red Teaming Platform. This
 | [04 - C4 Diagrams](./04_C4_DIAGRAMS.md) | Visual architecture at multiple levels | All technical staff |
 | [05 - Sequence Diagrams](./05_SEQUENCE_DIAGRAMS.md) | Process flows and interactions | Developers |
 | [06 - Functional Documentation](./06_FUNCTIONAL_DOCUMENTATION.md) | Business functionality guide | Non-technical stakeholders |
+| [07 - Attack Modes Guide](./07_ATTACK_MODES_GUIDE.md) | Standard, Crescendo, Skeleton Key, Obfuscation | Security Engineers |
+| [08 - Frontend Architecture](./08_FRONTEND_ARCHITECTURE.md) | React/Redux/TypeScript frontend details | Frontend Developers |
+
+**Attack-Specific Documentation:**
+- [Crescendo Attack Guide](./attack_modes/CRESCENDO.md) - Personality-based social engineering
+- [Skeleton Key Attack Guide](./attack_modes/SKELETON_KEY.md) - Jailbreak and system probes
+- [Obfuscation Attack Guide](./attack_modes/OBFUSCATION.md) - Filter bypass techniques
+- [Standard Attack Guide](./attack_modes/STANDARD.md) - Multi-phase reconnaissance to exploitation
 
 **Latest Updates (Dec 15, 2025):**
 - Frontend migrated to React 19 + TypeScript with Redux Toolkit
 - WebSocket lifecycle improvements (memory leak fixes)
 - Material-UI and Recharts for rich visualization
 - Real-time reporting with vulnerability scoring
+- **Fixed: Skeleton Key & Obfuscation WebSocket broadcasts** (turn_started/turn_completed)
+- **Consolidated documentation** from /doc and /docs folders
+- Attack mode documentation organized under /doc/attack_modes/
 
 ---
 
@@ -76,6 +87,8 @@ Welcome to the comprehensive documentation for the AI Red Teaming Platform. This
 - ADR-006: DuckDB for Local Persistence
 - ADR-007: Three-Tier Memory Architecture
 - ADR-008: Strategy Library Pattern
+- ADR-009: React + Redux Toolkit Frontend (Dec 10, 2025)
+- ADR-010: WebSocket Lifecycle Management Fixes (Dec 15, 2025)
 
 **Best for:** Understanding why specific technologies and patterns were chosen.
 

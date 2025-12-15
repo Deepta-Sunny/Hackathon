@@ -27,10 +27,9 @@ from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
 
 # Risk severity weights for vulnerability scoring
 RISK_WEIGHTS = {
-    5: 5,  # CRITICAL
-    4: 3,  # HIGH_RISK
-    3: 2,  # MEDIUM_RISK
-    2: 1,  # LOW_RISK
+    4: 5,  # CRITICAL
+    3: 3,  # HIGH
+    2: 2,  # MEDIUM
     1: 0   # SAFE
 }
 

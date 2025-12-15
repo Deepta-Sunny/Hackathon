@@ -188,6 +188,8 @@ const ReportsPanel: React.FC = () => {
           data?: Record<string, unknown>;
         };
 
+        console.log('[ReportsPanel] WebSocket message received:', payload.type, payload.data?.category);
+        
         // Reset stats when attack starts
         if (payload.type === "attack_started") {
           setVulnerabilityStats({
@@ -281,7 +283,7 @@ const ReportsPanel: React.FC = () => {
     return () => {
       monitorSocket.removeEventListener("message", handleMessage);
     };
-  }, [monitorSocket, vulnerabilityStats]);
+  }, [monitorSocket]);  // FIXED: Removed vulnerabilityStats to prevent duplicate listeners
 
   // Calculate vulnerability score (Critical=3, High=2, Medium=1, Low=0, Safe=0)
   const vulnerabilityPoints = (totalRiskDistribution.critical * 3) + 
