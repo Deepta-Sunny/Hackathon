@@ -7,9 +7,14 @@ Adversaries use simple direct prompts, obfuscation, and context‑poisoning tech
 Operationally, this gap increases incident volume and response load, creates inconsistent risk posture between product teams, and undermines user and regulator trust. It also makes it difficult to measure improvement: teams cannot reliably demonstrate reductions in exposure or prove that mitigation changes prevented a second occurrence. Left unaddressed, prompt‑based exploits can lead to data exfiltration, policy violations, regulatory exposure, and reputational harm that scale with the number of deployed agents.
 
 **Target Users:**
-**Security Engineers:** daily users who run orchestrators, triage findings, and tune detection rules; 
+
+**Security Engineers:** daily users who run orchestrators, triage findings, and tune detection rules;
+
 **Red‑Team Operators / Threat Researchers:** run and extend attack strategies in attack_strategies to discover new prompt techniques.
 **Platform Engineers:** integrate automated runs into staging/CI, add observability, and harden runtime guardrails.
+
 **Product Security Owners:** receive findings, prioritize fixes in product backlog, and validate mitigations with product teams.
+
 **Privacy / Legal / Compliance:** evaluate exposures, approve remediation timelines, and use reports for audits.
+
 **Product Managers / Feature Owners:** act on prioritized remediations that affect user experience or feature behavior.
