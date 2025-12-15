@@ -6,6 +6,13 @@ Production AI agents and chat endpoints can be manipulated by crafted or obfusca
 **One‑Line Value Proposition:**  
 Automated adversarial testing that finds, reproduces, and drives remediation of prompt‑based vulnerabilities before they become incidents.
 
+**Clarity, measurable value & stakeholder alignment:**
+- **Clear problem statement:** Prompt‑based attacks can coax agents into unauthorized claims, secret disclosure, and harmful outputs due to gaps in model robustness and inconsistent guardrails.
+- **Measurable value:** Reduce prompt‑based incidents (target ≥ 30% for pilot scope), improve detection precision (≥ 80%) and recall (≥ 70%), and shorten triage turnaround (median ≤ 48 hrs).
+- **Pilot owner & operators:** Pilot owned by Platform Security (operational owner) with a named Security Engineer as lead and Product Security Owner as product sponsor.
+- **GTM & adoption story:** Start with an internal pilot (1–2 teams), scale to platform services and customer‑facing bots, and standardize with CI/staging hooks and automated ticketing; reuse labeled prompts and run artifacts to continuously improve attack generation and detection.
+
+
 **Solution (what we’re launching):**  
 - Product: RedTeaming Safety Automation platform — orchestrators, strategy plugins, datasets, triage UI/API, run/result storage, and alerting integrations.  
 - Key capabilities: scheduled/On‑demand attack campaigns, reproducible run artifacts, prioritized triage workflows, and integration points for alerts and CI.
@@ -13,14 +20,10 @@ Automated adversarial testing that finds, reproduces, and drives remediation of 
 **Target users & business owners:**  
 - **Primary users:** Security Engineers (operators), Red‑Team Operators / Threat Researchers (extenders), Platform Engineers (integrators).  
 - **Secondary consumers:** Product Security Owners, SREs, Privacy/Legal/Compliance, Product Managers.  
-- **Business owners / sponsors:** Head of Security / CISO (sponsor), Platform Security Lead (operational owner), Product Safety PM (product owner).
 
 **Which orgs/teams get it first:**  
 - Pilot: 1–2 product teams with active chat/agent features in staging and committed product/security owners.  
 - Next: platform services, customer support bots, and high‑risk product teams.
-
-**Who it is NOT for (scope clarity):**  
-- Not intended for ad‑hoc research projects without operational ownership, teams unwilling to triage and fix findings, or unrelated tooling that doesn’t surface agent responses. It augments but does not replace manual security assessments.
 
 ---
 
@@ -35,12 +38,19 @@ Automated adversarial testing that finds, reproduces, and drives remediation of 
 6. **Remediate & validate (Week 5):** implement 1–2 mitigations; validate with repeat runs.  
 7. **Wrap & decision (Week 6):** produce exec report, compare metrics to success criteria, decide to scale or iterate.
 
-**Pilot success metrics (examples):**  
-- **Detection quality:** precision ≥ 80%, recall ≥ 70% (measured against seeded and triaged ground truth).  
-- **Operational:** median triage time ≤ 48 hours; at least 10 active testers and 3 engaged business stakeholders during pilot.  
-- **Business impact:** ≥ 30% reduction in prompt‑based incidents in pilot scope within 3 months after validated remediations.  
-- **Delivery:** all confirmed findings saved to `attack_results/` with triage metadata and an actionable remediation recommendation.
+**Pilot success metrics (project‑specific):**  
+- **Detection quality (signal):** precision ≥ 75% and recall ≥ 65% on seeded cases drawn from `RedTeaming/BACKEND/vulnerable_prompts/vulnerable_prompts.json`. Use triage labels stored with each artifact in `attack_results/` to compute true/false positives.  
+- **Operational SLAs:** median time from `vulnerable_prompt_detected` → `triage_outcome` ≤ 48 hours; at least 5 active testers and 2 engaged business stakeholders during pilot (start smaller for narrower pilot).  
+- **Reproducibility & delivery:** 100% of confirmed findings include a saved run artifact in `attack_results/` plus triage metadata (owner, label, notes) and a short remediation recommendation.  
+- **Business impact (validated):** validate at least one mitigation that reduces a replicated exposure in repeat runs; target a demonstrable reduction in recurrence for the validated flow (e.g., validated repeat‑run success rate drops ≥ 50% for the fixed vector).  
+- **Dataset growth & learning:** add ≥ 50 newly labeled prompts to `vulnerable_prompts.json` from triage outcomes during pilot to seed the learning loop.
 
+**How these are measured (sources & method):**  
+- **Seeded recall:** compare detected seeded prompts vs. known seeded items from `vulnerable_prompts.json` included in the pilot runs.  
+- **Precision:** compute from triage labels stored in `attack_results/*.json` (true positives / flagged).  
+- **Triage SLA:** compute timestamps from telemetry events emitted by `api_server.py` and orchestrators.  
+- **Reproducibility:** verify existence of run artifact and triage metadata files in `attack_results/`.  
+- **Mitigation validation:** re‑run the same orchestrator+prompt after remediation and compare response behavior; record in `attack_results/` and mark `remediation_applied` event.
 ---
 
 ## GTM / Rollout strategy & adoption loop
@@ -86,6 +96,12 @@ Automated adversarial testing that finds, reproduces, and drives remediation of 
 - Parameterize orchestrators with `target_node`, `risk_profile`, and rate limits to safely test different services.  
 - Add connectors in `api_server.py` to push findings into team ticketing systems or expose a REST endpoint for CI pre‑deploy checks.  
 - Use triage outcomes to continuously expand `vulnerable_prompts.json` and improve detection rules.
+
+**Prompt tracking & learning (how findings improve attack generation):**  
+- The system records every prompt that successfully breaks or jailbreaks a target agent and saves the run artifact to `attack_results/` with metadata (timestamp, run_id, strategy, target_node, risk_label, response_preview).  
+- Each confirmed finding is summarized into a concise abstract describing the technique used (e.g., direct role claim, obfuscation, multi‑turn escalation) and stored in the canonical dataset alongside labels and triage notes.  
+- Stored prompts and summaries are used as seed references when generating new attack prompts: orchestrators sample from the canonical set, apply parameterized mutations (obfuscation, paraphrase, chaining), and prioritize strategies that historically increase success rate.  
+- Over time this closed loop improves campaign effectiveness (higher signal for real vulnerabilities) and helps prioritize mitigations by surfacing recurring exploit patterns across targets.
 
 ---
 
