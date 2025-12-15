@@ -61,8 +61,14 @@ graph TB
 ```mermaid
 flowchart TB
     subgraph Presentation_Layer[Presentation Layer]
-        FE[Web Frontend HTML and JS]
+        REACT[React 19 + TypeScript]
+        REDUX[Redux Toolkit Store]
+        COMPS[UI Components ChatPanel ReportsPanel InputForm]
         WS_CLIENT[WebSocket Client]
+        
+        REACT --> REDUX
+        REACT --> COMPS
+        COMPS --> REDUX
     end
     
     subgraph API_Layer[API Layer]
@@ -205,11 +211,17 @@ sequenceDiagram
 
 ### 6.2 Frontend Technologies
 
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Interface** | HTML5 and JavaScript | Web-based dashboard |
-| **Real-time** | WebSocket API | Live attack monitoring |
-| **Styling** | CSS3 | Visual presentation |
+| Category | Technology | Version | Purpose |
+|----------|------------|---------|--------|
+| **Framework** | React | 19.2.0 | Component-based UI |
+| **Language** | TypeScript | 5.9.3 | Type-safe development |
+| **State Management** | Redux Toolkit | 2.11.1 | Centralized state with async thunks |
+| **UI Components** | Material-UI (MUI) | 7.3.6 | Professional component library |
+| **Charts** | Recharts | 3.5.1 | Real-time vulnerability visualization |
+| **Styling** | React-JSS + Emotion | Latest | CSS-in-JS styling |
+| **Build Tool** | Vite | 7.2.4 | Fast build and HMR |
+| **HTTP Client** | Axios | 1.13.2 | API communication |
+| **Real-time** | WebSocket API | Native | Live attack monitoring |
 
 ---
 
@@ -231,6 +243,13 @@ sequenceDiagram
 - Content filter violation detection and graceful handling
 - Local-only database storage for sensitive findings
 - No external data transmission beyond Azure OpenAI
+
+### 7.3 Frontend Security & Performance (Dec 2025 Updates)
+
+- **WebSocket Lifecycle Management**: Centralized socket lifecycle prevents disconnection on tab switches
+- **Memory Leak Prevention**: Event listeners properly cleaned up (no duplicate registrations)
+- **Redux State Management**: Non-serializable values (WebSocket instances) flagged for refactoring
+- **CORS Configuration**: Backend configured for localhost development origins
 
 ---
 
@@ -305,7 +324,8 @@ graph TB
         
         subgraph Frontend
             BROWSER[Web Browser]
-            HTML[index.html]
+            VITE[Vite Dev Server Port 5173]
+            REACT_APP[React TypeScript App]
         end
     end
     
@@ -317,8 +337,9 @@ graph TB
         CHATBOT[Target Chatbot ws localhost 8001]
     end
     
-    BROWSER --> HTML
-    HTML -->|HTTP and WS| UVICORN
+    BROWSER --> VITE
+    VITE --> REACT_APP
+    REACT_APP -->|HTTP and WS| UVICORN
     UVICORN --> FASTAPI
     FASTAPI --> DUCKDB
     FASTAPI --> UPLOADS
@@ -346,7 +367,9 @@ graph TB
 
 | Attribute | Value |
 |-----------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | December 2025 |
+| **Last Updated** | December 15, 2025 |
 | **Author** | Red Team Development |
 | **Status** | Active |
+| **Changes** | Added React/TypeScript frontend, WebSocket lifecycle fixes |

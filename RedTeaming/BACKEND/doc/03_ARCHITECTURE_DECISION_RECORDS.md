@@ -12,6 +12,8 @@
 | ADR-006 | DuckDB for Local Persistence | Accepted | Dec 2025 |
 | ADR-007 | Three-Tier Memory Architecture | Accepted | Dec 2025 |
 | ADR-008 | Strategy Library Pattern | Accepted | Dec 2025 |
+| ADR-009 | React + Redux Toolkit Frontend | Accepted | Dec 2025 |
+| ADR-010 | WebSocket Lifecycle Management | Accepted | Dec 2025 |
 
 ---
 
@@ -295,6 +297,117 @@ We use **Azure OpenAI (GPT-4)** as the primary LLM backend.
 
 ### Status
 **Accepted**
+
+### Context
+We need to persist:
+
+---
+
+## ADR-009: React + Redux Toolkit Frontend
+
+### Status
+**Accepted** (Dec 15, 2025)
+
+### Context
+The platform requires a sophisticated web interface with:
+- Real-time updates from WebSocket
+- Complex state management (attack status, messages, reports)
+- Rich data visualization (charts, graphs)
+- Professional UI components
+- Type-safe development
+
+### Decision
+We chose **React 19 + TypeScript + Redux Toolkit** with Material-UI and Recharts.
+
+### Rationale
+
+| Requirement | Solution | Benefit |
+|-------------|----------|--------|
+| Component Reusability | React 19 | Efficient re-renders, concurrent features |
+| Type Safety | TypeScript 5.9 | Catch errors at compile time |
+| State Management | Redux Toolkit 2.11 | Centralized store, async thunks |
+| UI Components | Material-UI 7.3 | Professional, accessible components |
+| Charting | Recharts 3.5 | Real-time vulnerability visualization |
+| Build Performance | Vite 7.2 | Fast HMR, optimized builds |
+
+**Key Components:**
+- **ChatPanel**: Real-time attack conversation monitoring with tabs
+- **ReportsPanel**: Live vulnerability scoring and risk distribution charts
+- **Redux Store**: Manages WebSocket connection, API state, async operations
+
+### Consequences
+
+**Positive:**
+- Type-safe development reduces runtime errors
+- Redux DevTools for debugging state transitions
+- Material-UI provides professional, accessible UI out of the box
+- Recharts integrates seamlessly with React for real-time updates
+- Vite provides instant feedback during development
+
+**Negative:**
+- Larger bundle size compared to vanilla JS
+- Redux boilerplate (mitigated by Redux Toolkit)
+- Learning curve for team members unfamiliar with ecosystem
+
+---
+
+## ADR-010: WebSocket Lifecycle Management Fixes
+
+### Status
+**Accepted** (Dec 15, 2025)
+
+### Context
+Initial implementation had critical issues:
+1. **Memory Leak**: ReportsPanel re-added event listeners on every state update (vulnerabilityStats dependency)
+2. **Tab Switch Disconnect**: ChatPanel closed global WebSocket on component unmount
+3. **Redux Warning**: Non-serializable WebSocket stored in Redux state
+
+### Problem Details
+
+**Memory Leak:**
+```typescript
+// BEFORE: Memory leak - listener added on every stats update
+useEffect(() => {
+  monitorSocket.addEventListener("message", handleMessage);
+  return () => monitorSocket.removeEventListener("message", handleMessage);
+}, [monitorSocket, vulnerabilityStats]);  // ❌ vulnerabilityStats causes re-runs
+```
+
+**Tab Switch Disconnect:**
+```typescript
+// BEFORE: Closed socket when switching tabs
+useEffect(() => {
+  return () => {
+    if (monitorSocket) {
+      monitorSocket.close(1000, "component-disconnect");  // ❌ Global socket closed
+    }
+  };
+}, [dispatch, monitorSocket]);
+```
+
+### Decision
+1. **Remove dependency causing listener duplication**
+2. **Comment out unmount socket close** (components remove listeners, don't close socket)
+3. **Add console logging** for debugging message flow
+
+### Consequences
+
+**Positive:**
+- Skeleton Key and Obfuscation attacks now visible after Crescendo completes
+- Memory usage stable (10 listeners vs 500+ before)
+- WebSocket stays connected across tab switches
+- Real-time updates flow correctly to all components
+
+**Negative:**
+- WebSocket in Redux still triggers serialization warning (future: move to module-level singleton)
+- Socket lifecycle now less explicit (requires documentation)
+
+**Future Enhancement:**
+Refactor to centralized SocketManager outside Redux for cleaner lifecycle management.
+
+---
+
+## ADR-006: DuckDB for Local Persistence (Continued)
 
 ### Context
 We need to persist:

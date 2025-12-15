@@ -10,12 +10,18 @@ Welcome to the comprehensive documentation for the AI Red Teaming Platform. This
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [01 - High-Level Design](./01_HIGH_LEVEL_DESIGN.md) | System overview, architecture, and technology stack | All stakeholders |
+| [01 - High-Level Design](./01_HIGH_LEVEL_DESIGN.md) | System overview, architecture, and technology stack (Updated Dec 2025) | All stakeholders |
 | [02 - Low-Level Design](./02_LOW_LEVEL_DESIGN.md) | Detailed technical specifications and class designs | Developers |
 | [03 - Architecture Decision Records](./03_ARCHITECTURE_DECISION_RECORDS.md) | Design decisions and rationale | Architects, Tech Leads |
 | [04 - C4 Diagrams](./04_C4_DIAGRAMS.md) | Visual architecture at multiple levels | All technical staff |
 | [05 - Sequence Diagrams](./05_SEQUENCE_DIAGRAMS.md) | Process flows and interactions | Developers |
 | [06 - Functional Documentation](./06_FUNCTIONAL_DOCUMENTATION.md) | Business functionality guide | Non-technical stakeholders |
+
+**Latest Updates (Dec 15, 2025):**
+- Frontend migrated to React 19 + TypeScript with Redux Toolkit
+- WebSocket lifecycle improvements (memory leak fixes)
+- Material-UI and Recharts for rich visualization
+- Real-time reporting with vulnerability scoring
 
 ---
 
@@ -163,6 +169,7 @@ When updating documentation:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | December 15, 2025 | Updated for React/TypeScript frontend, WebSocket fixes |
 | 1.0 | December 2025 | Initial comprehensive documentation |
 
 ---

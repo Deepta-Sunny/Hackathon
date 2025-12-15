@@ -11,12 +11,13 @@ This document provides detailed technical specifications for all components of t
 ### 2.1 Project Directory Layout
 
 ```
-RedTeaming/BACKEND/
-├── api_server.py              # FastAPI application entry point
-├── main.py                    # CLI entry point
-├── config/
-│   ├── __init__.py
-│   └── settings.py            # Configuration and environment variables
+RedTeaming/
+├── BACKEND/
+│   ├── api_server.py              # FastAPI application entry point
+│   ├── main.py                    # CLI entry point
+│   ├── config/
+│   │   ├── __init__.py
+│   │   └── settings.py            # Configuration and environment variables
 ├── core/
 │   ├── __init__.py
 │   ├── azure_client.py        # Azure OpenAI integration
@@ -39,10 +40,30 @@ RedTeaming/BACKEND/
 │   ├── boundary_testing.py
 │   ├── exploitation.py
 │   └── obfuscation.py
-├── utils/
-│   ├── __init__.py
-│   └── architecture_utils.py  # Helper functions
-└── doc/                       # Documentation folder
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── architecture_utils.py  # Helper functions
+│   └── doc/                       # Documentation folder
+├── FRONTEND/
+│   └── testeragent/
+│       ├── src/
+│       │   ├── components/
+│       │   │   ├── ChatPanel.tsx          # Real-time chat monitoring
+│       │   │   ├── ReportsPanel.tsx       # Vulnerability charts
+│       │   │   ├── InputForm.tsx          # Attack configuration
+│       │   │   └── BottomNav.tsx          # Navigation
+│       │   ├── store/
+│       │   │   ├── Store.ts               # Redux store configuration
+│       │   │   └── Slice.ts               # API state slice
+│       │   ├── thunk/
+│       │   │   └── ApiThunk.ts            # Async actions
+│       │   ├── services/
+│       │   │   └── ApiService.ts          # Backend API client
+│       │   └── types/
+│       │       └── Types.ts               # TypeScript definitions
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── vite.config.ts
 ```
 
 ---
