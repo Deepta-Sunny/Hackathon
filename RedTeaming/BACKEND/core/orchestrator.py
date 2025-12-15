@@ -859,7 +859,7 @@ class ThreeRunCrescendoOrchestrator:
                     "run": run_number,
                     "turn": turn,
                     "technique": current_prompt.attack_technique,
-                    "response": chatbot_response[:200] + "..." if len(chatbot_response) > 200 else chatbot_response,
+                    "response": chatbot_response,
                     "risk_category": risk_cat,
                     "risk_display": risk_display,
                     "vulnerability_found": risk_cat >= 2,

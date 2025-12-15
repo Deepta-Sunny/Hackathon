@@ -163,44 +163,8 @@ const ChatPanel: React.FC = () => {
         } else if (payload.type === "turn_completed" && payload.data) {
           const data = payload.data as Record<string, unknown>;
           
-          // Extract text from response - handle both plain text and JSON/dict format
-          let responseText = String(data.response ?? "");
-          
-          // Check if it starts with a dict/JSON format
-          if (responseText.trim().startsWith('{') && responseText.includes('response')) {
-            // Try to parse as JSON first
-            try {
-              const parsed = JSON.parse(responseText);
-              if (parsed && typeof parsed === 'object' && 'response' in parsed) {
-                responseText = String(parsed.response);
-              }
-            } catch {
-              // If JSON parse fails, handle Python dict-like format {'response': '...'}
-              // This regex handles both single and double quotes, and extracts everything after 'response':
-              const match = responseText.match(/['"]response['"]\s*:\s*["'](.+?)["'](?:\s*[,}]|$)/s);
-              if (match) {
-                responseText = match[1];
-              } else {
-                // Try without quotes around the value (edge case)
-                const noQuoteMatch = responseText.match(/['"]response['"]\s*:\s*(.+?)(?:\s*[,}]|$)/s);
-                if (noQuoteMatch) {
-                  responseText = noQuoteMatch[1].trim();
-                } else {
-                  // Last resort: remove the leading dict syntax
-                  responseText = responseText.replace(/^\s*\{\s*['"]response['"]\s*:\s*['"]/, '').replace(/['"]\s*\}\s*$/, '');
-                }
-              }
-              
-              // Unescape common escape sequences
-              responseText = responseText
-                .replace(/\\n/g, '\n')
-                .replace(/\\t/g, '\t')
-                .replace(/\\r/g, '\r')
-                .replace(/\\'/g, "'")
-                .replace(/\\"/g, '"')
-                .replace(/\\\\/g, '\\');
-            }
-          }
+          // Response is now sent as plain text from backend
+          const responseText = String(data.response ?? "");
           
           setMessages((prev) => [
             ...prev,
