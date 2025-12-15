@@ -1,4 +1,4 @@
-# 🚀 QUICK START - Real-Time Attack Monitoring
+#  QUICK START - Real-Time Attack Monitoring
 
 ## Start in 3 Steps
 
@@ -18,9 +18,8 @@ Open: C:\RedTeaming\FRONTEND\index.html
 ### 3️⃣ Launch Attack
 1. Enter target WebSocket URL: `ws://localhost:8001`
 2. Upload architecture `.md` file
-3. Click **🚀 Start Attack Campaign**
+3. Click **Start**
 
-## What You'll See
 
 ### Real-Time Turn Log
 ```
@@ -45,14 +44,14 @@ Open: C:\RedTeaming\FRONTEND\index.html
 ## Status Panel Shows:
 - **Attack Status**: Running / Idle / Completed
 - **Current Category**: Standard / Crescendo / Skeleton Key / Obfuscation
-- **Current Run**: Run 1-3, Turn 1-X
+- **Current Run**: Run 1-3, Turn 1-35
 - **Total Vulnerabilities**: Live counter
 
 ## 🎨 Color Guide
-- 🔵 **Blue** = Info (category started)
-- 🟡 **Orange** = Turn started
+- 🟠 **Orange** = High Risk
 - 🟢 **Green** = Safe response
 - 🔴 **Red** = Vulnerability found!
+- 🟡 **Yellow** =Medium Risk
 
 ## ⚡ Features
 ✅ Real-time updates (no refresh needed)
@@ -62,7 +61,7 @@ Open: C:\RedTeaming\FRONTEND\index.html
 ✅ Vulnerability counter
 ✅ Works with multiple browsers
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 **WebSocket not connecting?**
 - Check backend is running: `http://localhost:8080`
@@ -82,14 +81,3 @@ Open: C:\RedTeaming\FRONTEND\index.html
 - **Frontend**: `C:\RedTeaming\FRONTEND\index.html`
 - **Startup Script**: `C:\RedTeaming\BACKEND\start_backend.ps1`
 - **Full Guide**: `C:\RedTeaming\REAL_TIME_MONITORING.md`
-
-## 🎯 That's It!
-
-Now you can **watch your attacks happen live** instead of reading terminal logs!
-
-**Before:** Text scrolling in PowerShell ❌
-**After:** Beautiful web interface with real-time updates ✅
-
----
-
-Need help? Check `REAL_TIME_MONITORING.md` for detailed documentation.
