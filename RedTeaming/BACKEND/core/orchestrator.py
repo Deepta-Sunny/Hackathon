@@ -739,7 +739,7 @@ class ThreeRunCrescendoOrchestrator:
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url) if websocket_url else ChatbotWebSocketTarget()
         self.vulnerable_memory = VulnerableResponseMemory()
         self.context = ConversationContext()
-        self.db_manager = DuckDBMemoryManager()
+        self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
         self.attack_planner = AttackPlanGenerator(self.azure_client, self.db_manager)
         self.response_analyzer = ResponseAnalyzer(self.azure_client)
         self.report_generator = ReportGenerator()
@@ -884,6 +884,11 @@ class ThreeRunCrescendoOrchestrator:
                     response_received=response_received
                 )
                 print(f"    [!!!] VULNERABILITY: {analysis.get('vulnerability_type', 'unknown')}")
+                
+                # Save to DB and JSON if db_manager is available
+                if self.db_manager:
+                    finding = self.vulnerable_memory.findings[-1]  # Get the just-added finding
+                    await self.db_manager.save_vulnerable_finding(finding)
             
             # Collect turn data
             turn_data = {
