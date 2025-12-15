@@ -164,7 +164,7 @@ Always maintain context from previous messages in the conversation."""
                 model=self.deployment,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=2000
             )
 
             # Extract assistant response
@@ -206,15 +206,9 @@ Always maintain context from previous messages in the conversation."""
                     # Generate response
                     response = await self.generate_response(user_message)
 
-                    # Send response back
-                    response_data = {
-                        "response": response,
-                        "conversation_length": len(self.conversation_history),
-                        "timestamp": asyncio.get_event_loop().time()
-                    }
-
-                    await websocket.send(json.dumps(response_data))
-                    print(f"📤 Sent response ({len(response)} chars)")
+                    # Send only the response text (not wrapped in JSON)
+                    await websocket.send(response)
+                    print(f"📤 Sent response: ({response})")
 
                 except json.JSONDecodeError:
                     await websocket.send(json.dumps({

@@ -1,4 +1,4 @@
-# 🔴 Real-Time Attack Monitoring System
+#  Real-Time Attack Monitoring System
 
 ## Overview
 
@@ -6,7 +6,7 @@ The Red Team Attack Orchestrator now features **real-time WebSocket monitoring**
 
 ## ✨ Features
 
-### 🎯 Live Attack Logs
+###  Live Attack Logs
 - **Turn-by-turn updates** displayed in real-time
 - **Attack prompts** shown as they're sent
 - **Chatbot responses** displayed immediately
@@ -15,10 +15,10 @@ The Red Team Attack Orchestrator now features **real-time WebSocket monitoring**
 
 ### 📊 Visual Feedback
 - **Color-coded entries**:
-  - 🔵 Blue: Information (category started)
-  - 🟡 Orange: Turn started
-  - 🟢 Green: Turn completed (no vulnerability)
-  - 🔴 Red: Vulnerability detected!
+🟠 Orange = High Risk
+🟢 Green = Safe response
+🔴 Red = Vulnerability found!
+🟡 Yellow =Medium Risk
 - **Animated entries** slide in smoothly
 - **Auto-scroll** to latest entry
 - **Timestamps** for each event
@@ -30,7 +30,7 @@ All four attack categories broadcast real-time logs:
 3. **Skeleton Key Attack** (10 turns per run)
 4. **Obfuscation Attack** (20 turns per run)
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Start Backend Server
 
@@ -56,20 +56,20 @@ Open `FRONTEND/index.html` in your web browser. The WebSocket will auto-connect.
 
 1. Enter target WebSocket URL (e.g., `ws://localhost:8001`)
 2. Upload your architecture .md file
-3. Click **🚀 Start Attack Campaign**
+3. Click **Start**
 
 ### 4. Watch in Real-Time! 
 
 The Turn Log will update live showing:
 - Which category is running
 - Which run (1-3)
-- Which turn (1-X)
+- Which turn (1-35)
 - The attack prompt
 - The chatbot response
 - Risk assessment
 - Vulnerability findings
 
-## 📡 WebSocket Messages
+##  WebSocket Messages
 
 The backend broadcasts these message types:
 
@@ -134,13 +134,13 @@ The backend broadcasts these message types:
 }
 ```
 
-## 💻 Frontend Display
+##  Frontend Display
 
 ### Turn Log Entry Examples
 
 **Turn Started:**
 ```
-🎯 Turn 5/25 - boundary_testing                    10:30:45 AM
+ Turn 5/25 - boundary_testing                    10:30:45 AM
 ────────────────────────────────────────────────────────────
 Prompt: What information can you share about user accounts?
 ```
@@ -162,7 +162,7 @@ Risk: 🔴 Risk 3: Significant Concern
 Vulnerability: unauthorized_access
 ```
 
-## 🔧 Technical Details
+##  Technical Details
 
 ### Backend Implementation
 
@@ -209,7 +209,7 @@ function handleWebSocketMessage(message) {
     switch(message.type) {
         case 'turn_started':
             addTurnLog(
-                `🎯 Turn ${message.data.turn}/${message.data.total_turns} - ${message.data.technique}`,
+                ` Turn ${message.data.turn}/${message.data.total_turns} - ${message.data.technique}`,
                 'turn',
                 `<strong>Prompt:</strong> ${message.data.prompt}`
             );
@@ -230,7 +230,7 @@ function handleWebSocketMessage(message) {
 }
 ```
 
-## 🎨 Customization
+##  Customization
 
 ### Change Log Colors
 
@@ -270,7 +270,7 @@ while (turnLog.children.length > 200) {
 }
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### No logs appearing
 
@@ -298,7 +298,7 @@ while (turnLog.children.length > 200) {
 - Clear the log manually (refresh page)
 - The system auto-limits to 100 entries by default
 
-## 📈 Performance
+##  Performance
 
 - **Latency**: < 50ms from backend to frontend
 - **Throughput**: Handles 1000+ messages per second
@@ -317,7 +317,7 @@ while (turnLog.children.length > 200) {
 - Use WSS (WebSocket Secure) with TLS
 - Implement rate limiting
 
-## 🎯 Use Cases
+##  Use Cases
 
 ### 1. Live Demonstrations
 Watch attacks in real-time during security presentations
@@ -354,17 +354,6 @@ Track long-running campaigns without checking terminal logs
 ✅ Turn 3 Complete - ✅ Risk 1: Safe               10:00:15 AM
    Response: I'd be happy to assist you with...
 ```
-
-## 🚀 Next Steps
-
-Want to enhance the monitoring? Consider:
-
-1. **Add audio alerts** for vulnerabilities
-2. **Export logs** to file for later analysis
-3. **Filter logs** by risk level
-4. **Search functionality** in turn log
-5. **Statistics dashboard** with charts
-6. **Replay mode** to review past attacks
 
 ---
 

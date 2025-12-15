@@ -49,7 +49,7 @@ Then open: **http://localhost:3000**
 
 1. Enter target WebSocket URL (e.g., `ws://localhost:8001`)
 2. Upload architecture .md file
-3. Click "🚀 Start Attack Campaign"
+3. Click "Start"
 
 ### 3. Monitor Attacks
 
@@ -134,7 +134,7 @@ Each Run → JSON File → attack_results/
 
 ## Features
 
-### ✅ Implemented
+###  Implemented
 
 1. **FastAPI Backend**
    - RESTful API endpoints
@@ -158,7 +158,7 @@ Each Run → JSON File → attack_results/
    - Heartbeat/ping-pong mechanism
    - Broadcast messages to all clients
 
-### 🎯 Category & Run Identification
+###  Category & Run Identification
 
 The frontend clearly differentiates:
 
@@ -169,7 +169,7 @@ The frontend clearly differentiates:
   - Active: Green glow (currently running)
   - Completed: Blue (finished successfully)
 
-### 📊 Data Display
+###  Data Display
 
 Each run card shows:
 - Run number (1, 2, 3)
@@ -211,7 +211,7 @@ Open `C:\RedTeaming\FRONTEND\index.html` in your browser.
 
 1. **WebSocket URL**: `ws://localhost:8001`
 2. **Architecture File**: Upload your `AZURE_AGENT_ARCHITECTURE.md`
-3. Click **🚀 Start Attack Campaign**
+3. Click **Start**
 
 ### 4. Monitor Progress
 
@@ -301,20 +301,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 ```
-
-## Next Steps
-
-To extend functionality:
-
-1. **Turn-by-turn updates**: Modify orchestrators to broadcast each turn
-2. **Detailed turn logs**: Display attack prompts and responses in frontend
-3. **Export results**: Add download button for JSON results
-4. **Attack history**: Store and display previous campaigns
-5. **Authentication**: Add user authentication for multi-user environments
-6. **Rate limiting**: Prevent API abuse
-7. **Result analysis**: Add automated vulnerability analysis dashboard
-
----
 
 **Created**: December 11, 2025  
 **Backend**: FastAPI + WebSockets  

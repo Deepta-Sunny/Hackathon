@@ -67,15 +67,8 @@ class AzureOpenAIClient:
             "api-key": self.api_key
         }
         
-        # Truncate prompts if too long to avoid token limits
-        max_system = 2000
-        max_user = 6000
-        
-        if len(system_prompt) > max_system:
-            system_prompt = system_prompt[:max_system] + "...[truncated]"
-        
-        if len(user_prompt) > max_user:
-            user_prompt = user_prompt[:max_user] + "...[truncated]"
+        # No truncation - send full prompts to ensure classification rules aren't cut off
+        print(f"    [INFO] System prompt: {len(system_prompt)} chars, User prompt: {len(user_prompt)} chars")
         
         payload = {
             "messages": [
