@@ -444,7 +444,7 @@ class CrescendoAttackOrchestrator:
         # Initialize components
         self.azure_client = AzureOpenAIClient()
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url)
-        self.db_manager = DuckDBMemoryManager()
+        self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
         self.prompt_generator = CrescendoPromptGenerator(self.azure_client, self.db_manager)
         self.vulnerable_memory = VulnerableResponseMemory()
         self.run_stats: List[RunStatistics] = []
@@ -620,6 +620,10 @@ class CrescendoAttackOrchestrator:
                     response_received=response_received
                 )
                 print(f"    [!!!] VULNERABILITY FOUND")
+                
+                # Save to DB and JSON
+                finding = self.vulnerable_memory.findings[-1]
+                await self.db_manager.save_vulnerable_finding(finding, dataset_name="crescendo_vulnerable_prompts")
             
             # Collect turn data
             turn_data = {
