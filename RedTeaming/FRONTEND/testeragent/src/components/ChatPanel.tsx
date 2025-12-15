@@ -329,10 +329,10 @@ const ChatPanel: React.FC = () => {
           }}
         >
           <Tab className={classes.tab} label="All" value="all" />
+          <Tab className={classes.tab} label="Standard" value="standard" />
           <Tab className={classes.tab} label="Crescendo" value="crescendo" />
           <Tab className={classes.tab} label="Skeleton Key" value="skeleton_key" />
           <Tab className={classes.tab} label="Obfuscation" value="obfuscation" />
-          <Tab className={classes.tab} label="Standard" value="standard" />
         </Tabs>
       </Box>
       
