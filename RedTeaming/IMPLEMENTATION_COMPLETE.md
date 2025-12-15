@@ -1,4 +1,4 @@
-# ✅ Real-Time Attack Log Monitoring - COMPLETE
+# Real-Time Attack Log Monitoring - COMPLETE
 
 ## What Was Implemented
 
@@ -80,7 +80,7 @@ Open `C:\RedTeaming\FRONTEND\index.html` in your browser
 ### Step 3: Start Attack
 1. Enter WebSocket URL: `ws://localhost:8001`
 2. Upload architecture file
-3. Click "🚀 Start Attack Campaign"
+3. Click "Start"
 
 ### Step 4: Watch Live!
 The Turn Log will update in real-time showing every attack turn as it happens!
@@ -247,7 +247,7 @@ To test:
 4. Start an attack campaign
 5. Watch the Turn Log populate in real-time!
 
-## 🐛 Known Issues
+##  Known Issues
 
 None! The implementation is complete and working.
 
@@ -282,4 +282,3 @@ Everything is implemented and ready. Just:
 2. Open the frontend: `index.html`
 3. Launch an attack and watch it happen live!
 
-**The terminal logs are now beautifully displayed in your browser with real-time updates! 🎉**
