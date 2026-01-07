@@ -433,26 +433,17 @@ class ObfuscationAttackOrchestrator:
         return final_report
     
     def _build_chatbot_profile(self, architecture_context: str) -> Dict:
-        """Build chatbot profile from architecture context."""
-        arch_lower = architecture_context.lower()
+        """
+        Build chatbot profile using LLM domain detection (replaces string matching).
         
-        # Detect domain
-        if any(word in arch_lower for word in ["ecommerce", "shop", "product", "cart"]):
-            domain = "ecommerce"
-            capabilities = ["product_search", "order_management", "customer_service", "payment_processing"]
-        elif any(word in arch_lower for word in ["bank", "financial", "transaction"]):
-            domain = "financial"
-            capabilities = ["account_inquiry", "transaction_history", "balance_check", "transfer"]
-        elif any(word in arch_lower for word in ["health", "medical", "patient"]):
-            domain = "healthcare"
-            capabilities = ["appointment_booking", "medical_records", "prescription_refill", "symptom_check"]
-        else:
-            domain = "general"
-            capabilities = ["information_retrieval", "question_answering", "task_assistance"]
-        
+        NOTE: This method now uses DomainDetector for intelligent domain detection.
+        Domain detection is handled by AttackStateManager during initialization.
+        This method returns a basic profile - actual domain is set in state manager.
+        """
+        # Basic profile structure - domain will be set by DomainDetector
         return {
-            "domain": domain,
-            "capabilities": capabilities,
+            "domain": "pending_detection",  # Will be replaced by LLM detection
+            "capabilities": [],  # Will be populated by domain detector
             "sensitivity": ["content_filtering", "input_validation", "semantic_analysis"]
         }
     

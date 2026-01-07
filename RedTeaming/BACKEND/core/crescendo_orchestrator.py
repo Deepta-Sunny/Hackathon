@@ -96,32 +96,23 @@ class CrescendoPersonality:
     
     @classmethod
     def detect_domain(cls, architecture_context: str, chatbot_responses: List[str] = None) -> str:
-        """Detect chatbot domain from architecture or responses."""
-        arch_lower = architecture_context.lower()
+        """
+        Detect chatbot domain (now handled by DomainDetector).
         
-        # Check architecture for domain indicators
-        if any(word in arch_lower for word in ["ecommerce", "shop", "product", "cart", "order", "payment"]):
-            return "ecommerce"
-        elif any(word in arch_lower for word in ["bank", "financial", "transaction", "account", "payment"]):
-            return "financial"
-        elif any(word in arch_lower for word in ["health", "medical", "patient", "hospital", "diagnosis"]):
-            return "healthcare"
+        NOTE: This method is deprecated. Domain detection is now handled by
+        utils.domain_detector.DomainDetector using LLM-based analysis.
+        This method returns 'pending_detection' as placeholder.
         
-        # Check responses if available
-        if chatbot_responses:
-            responses_text = " ".join(chatbot_responses).lower()
-            if any(word in responses_text for word in ["product", "order", "purchase", "cart"]):
-                return "ecommerce"
-            elif any(word in responses_text for word in ["account", "balance", "transfer"]):
-                return "financial"
-            elif any(word in responses_text for word in ["health", "medical", "symptom"]):
-                return "healthcare"
-        
-        return "general"
+        Use AttackStateManager.domain_knowledge.domain instead.
+        """
+        return "pending_detection"
     
     @classmethod
     def get_personality(cls, domain: str) -> Dict:
         """Get personality configuration for domain."""
+        # Handle pending_detection case
+        if domain == "pending_detection":
+            return cls.PERSONALITIES["general"]
         return cls.PERSONALITIES.get(domain, cls.PERSONALITIES["general"])
 
 

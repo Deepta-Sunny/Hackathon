@@ -114,7 +114,8 @@ class PyRITSeedLoader:
             'jailbreak': ['many_shot', 'harmbench'],
             'harmful': ['harmbench', 'advbench'],
             'sensitive': ['forbidden', 'tdc23'],
-            'adversarial': ['advbench', 'many_shot', 'harmbench']
+            'adversarial': ['advbench', 'many_shot', 'harmbench'],
+            'skeleton_key': ['many_shot', 'harmbench', 'advbench']  # Skeleton key uses jailbreak-style prompts
         }
         
         dataset_names = category_mapping.get(category, list(self._datasets.keys()))
@@ -200,3 +201,44 @@ def get_pyrit_examples_by_category(category: str, count: int = 5) -> List[str]:
     """
     loader = get_pyrit_seed_loader()
     return loader.get_prompts_by_category(category, count)
+
+
+def get_skeleton_key_prompts(count: int = 20) -> List[str]:
+    """
+    Get diverse skeleton key jailbreak prompts from PyRIT datasets.
+    These are prompts designed to bypass safety mechanisms.
+    
+    Args:
+        count: Number of prompts to return
+        
+    Returns:
+        List of skeleton key seed prompts
+    """
+    loader = get_pyrit_seed_loader()
+    return loader.get_prompts_by_category('skeleton_key', count)
+
+
+def get_formatted_pyrit_examples(category: str, count: int = 5) -> str:
+    """
+    Get formatted PyRIT examples as a numbered string for LLM context.
+    
+    Args:
+        category: Attack category
+        count: Number of examples
+        
+    Returns:
+        Formatted string with numbered examples
+    """
+    loader = get_pyrit_seed_loader()
+    prompts = loader.get_prompts_by_category(category, count)
+    
+    if not prompts:
+        return ""
+    
+    lines = []
+    for i, prompt in enumerate(prompts, 1):
+        # Truncate long prompts for context
+        truncated = prompt[:200] + "..." if len(prompt) > 200 else prompt
+        lines.append(f"{i}. {truncated}")
+    
+    return "\n".join(lines)

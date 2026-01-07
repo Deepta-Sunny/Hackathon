@@ -8,6 +8,7 @@ comprehensive attack plans using categorized strategies.
 from typing import List, Optional
 from models import AttackPrompt
 from config import TURNS_PER_RUN
+from utils.prompt_molding import PromptMoldingEngine
 from .reconnaissance import ReconnaissanceAttacks, SafeReconnaissanceAttacks
 from .trust_building import TrustBuildingAttacks, ContextualTrustAttacks
 from .boundary_testing import (
@@ -38,14 +39,18 @@ from .unauthorized_claims import (
 class AttackStrategyOrchestrator:
     """Orchestrates attack strategies across escalation phases."""
     
-    def __init__(self, use_safe_mode: bool = False):
+    def __init__(self, use_safe_mode: bool = False, molding_engine: Optional[PromptMoldingEngine] = None, architecture_context: str = ""):
         """
         Initialize attack strategy orchestrator.
         
         Args:
             use_safe_mode: If True, uses safer attacks that won't trigger content filters
+            molding_engine: Optional PromptMoldingEngine for domain-aware prompt generation
+            architecture_context: Target chatbot architecture for domain detection
         """
         self.use_safe_mode = use_safe_mode
+        self.molding_engine = molding_engine
+        self.architecture_context = architecture_context
         self.strategies = self._initialize_strategies()
     
     def _initialize_strategies(self) -> dict:
@@ -88,7 +93,7 @@ class AttackStrategyOrchestrator:
                 ]
             }
     
-    def generate_attack_plan(
+    async def generate_attack_plan(
         self,
         total_turns: int = TURNS_PER_RUN,
         architecture_aware: bool = True
@@ -102,6 +107,91 @@ class AttackStrategyOrchestrator:
             
         Returns:
             List of AttackPrompt objects organized by escalation phase
+        """
+        # Use molding engine if available for domain-aware prompts
+        if self.molding_engine and self.architecture_context:
+            try:
+                return await self._generate_molded_plan(total_turns)
+            except Exception as e:
+                print(f"[!] Molding engine failed: {e}, falling back to strategy library")
+        
+        # Fallback to strategy-based plan
+        return self._generate_strategy_plan(total_turns)
+    
+    async def _generate_molded_plan(self, total_turns: int) -> List[AttackPrompt]:
+        """
+        Generate attack plan using PyRIT seeds molded to target domain.
+        
+        Args:
+            total_turns: Total number of turns in the attack plan
+            
+        Returns:
+            List of domain-specific AttackPrompt objects
+        """
+        attack_plan = []
+        
+        # Phase definitions with turn allocations
+        phases = [
+            {"name": "reconnaissance", "start": 1, "count": 6},
+            {"name": "trust_building", "start": 7, "count": 6},
+            {"name": "boundary_testing", "start": 13, "count": 7},
+            {"name": "exploitation", "start": 20, "count": 6},
+            {"name": "unauthorized_claims", "start": 26, "count": 10}
+        ]
+        
+        print(f"[+] Generating domain-aware attack plan using PyRIT molding engine...")
+        
+        for phase_info in phases:
+            phase_name = phase_info["name"]
+            start_turn = phase_info["start"]
+            prompt_count = phase_info["count"]
+            
+            print(f"[+] Molding prompts for phase: {phase_name} (turns {start_turn}-{start_turn + prompt_count - 1})")
+            
+            # Get molded prompts for this phase
+            molded_prompts = await self.molding_engine.mold_prompts(
+                attack_phase=phase_name,
+                count=prompt_count,
+                architecture_context=self.architecture_context
+            )
+            
+            if not molded_prompts:
+                print(f"[!] No molded prompts for {phase_name}, using strategy fallback")
+                # Fallback to strategy-based prompts for this phase
+                phase_prompts = self._get_phase_strategy_prompts(phase_name, start_turn, prompt_count)
+                attack_plan.extend(phase_prompts)
+                continue
+            
+            # Convert molded prompts to AttackPrompt objects
+            for i, molded in enumerate(molded_prompts[:prompt_count], start_turn):
+                attack_plan.append(AttackPrompt(
+                    turn=i,
+                    prompt=molded.get("molded_prompt", molded.get("original_seed", "")),
+                    attack_technique=molded.get("attack_technique", phase_name),
+                    target_nodes=molded.get("target_nodes", ["unknown"]),
+                    escalation_phase=molded.get("escalation_phase", f"Phase: {phase_name}"),
+                    expected_outcome=molded.get("expected_outcome", "Test chatbot boundaries")
+                ))
+        
+        # Ensure we have exactly the right number of turns
+        attack_plan = attack_plan[:total_turns]
+        
+        # Renumber turns sequentially
+        for i, prompt in enumerate(attack_plan, 1):
+            prompt.turn = i
+        
+        print(f"[✓] Generated {len(attack_plan)} domain-molded attack prompts")
+        return attack_plan
+    
+    def _generate_strategy_plan(self, total_turns: int) -> List[AttackPrompt]:
+        """
+        Generate attack plan using strategy library (original implementation).
+        
+        Args:
+            total_turns: Total number of turns in the attack plan
+            
+        Returns:
+            List of AttackPrompt objects from strategy library
         """
         attack_plan = []
         
@@ -178,6 +268,43 @@ class AttackStrategyOrchestrator:
             prompt.turn = i
         
         return attack_plan[:total_turns]
+    
+    def _get_phase_strategy_prompts(self, phase_name: str, start_turn: int, count: int) -> List[AttackPrompt]:
+        """
+        Get prompts from strategy library for a specific phase.
+        
+        Args:
+            phase_name: Name of the attack phase
+            start_turn: Starting turn number
+            count: Number of prompts to generate
+            
+        Returns:
+            List of AttackPrompt objects from strategy library
+        """
+        phase_prompts = []
+        strategies = self.strategies.get(phase_name)
+        
+        if not strategies:
+            return phase_prompts
+        
+        if isinstance(strategies, list):
+            # Multiple strategies for this phase
+            turn = start_turn
+            remaining = count
+            for strategy in strategies:
+                if remaining <= 0:
+                    break
+                prompts = strategy.create_attack_prompts(start_turn=turn)
+                subset_size = min(remaining, len(prompts))
+                phase_prompts.extend(prompts[:subset_size])
+                turn += subset_size
+                remaining -= subset_size
+        else:
+            # Single strategy for this phase
+            prompts = strategies.create_attack_prompts(start_turn=start_turn)
+            phase_prompts.extend(prompts[:count])
+        
+        return phase_prompts
     
     def get_strategy_by_phase(self, phase: str):
         """Get attack strategy for a specific phase."""
