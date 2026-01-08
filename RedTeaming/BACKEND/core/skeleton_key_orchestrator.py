@@ -661,7 +661,7 @@ class SkeletonKeyAttackOrchestrator:
         architecture_context = extract_chatbot_architecture_context(self.architecture_file)
         
         # Build chatbot profile
-        chatbot_profile = self._build_chatbot_profile(architecture_context)
+        chatbot_profile = await self._build_chatbot_profile(architecture_context)
         
         print(f"\n🔓 CHATBOT PROFILE")
         print(f"   • Domain: {chatbot_profile['domain']}")
