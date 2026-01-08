@@ -9,7 +9,7 @@ export default function Header() {
       <AppBar position="fixed" color='inherit'>
         <Toolbar variant="dense">
           <Typography variant='h6' color={'#20a100ff'} component='header' fontFamily='inherit' fontWeight={700}>
-            Red Teaming Attack Orchestrator Agent
+            Red Teaming Orchestrator Agent
           </Typography>
         </Toolbar>
       </AppBar>
