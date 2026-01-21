@@ -18,6 +18,7 @@ from .obfuscation import (
     ChainedObfuscationAttacks
 )
 from .base_strategy import BaseAttackStrategy
+from .adaptive_response_handler import AdaptiveResponseHandler, ChatbotIntent, ConversationState
 
 __all__ = [
     "ReconnaissanceAttacks",
@@ -30,5 +31,8 @@ __all__ = [
     "ContextualObfuscationAttacks",
     "TokenObfuscationAttacks",
     "ChainedObfuscationAttacks",
-    "BaseAttackStrategy"
+    "BaseAttackStrategy",
+    "AdaptiveResponseHandler",
+    "ChatbotIntent",
+    "ConversationState"
 ]

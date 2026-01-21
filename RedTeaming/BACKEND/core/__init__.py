@@ -3,6 +3,12 @@
 from .azure_client import AzureOpenAIClient
 from .websocket_target import ChatbotWebSocketTarget
 from .memory_manager import VulnerableResponseMemory, DuckDBMemoryManager
+from .enhanced_conversation_memory import (
+    EnhancedConversationMemory,
+    EnhancedMemoryManager,
+    ConversationPhase,
+    ChatbotBehavior
+)
 from .orchestrator import (
     ConversationContext,
     AttackPlanGenerator,
@@ -16,6 +22,10 @@ __all__ = [
     "ChatbotWebSocketTarget",
     "VulnerableResponseMemory",
     "DuckDBMemoryManager",
+    "EnhancedConversationMemory",
+    "EnhancedMemoryManager",
+    "ConversationPhase",
+    "ChatbotBehavior",
     "ConversationContext",
     "AttackPlanGenerator",
     "ResponseAnalyzer",
