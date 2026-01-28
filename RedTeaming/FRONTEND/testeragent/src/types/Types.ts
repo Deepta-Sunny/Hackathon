@@ -36,10 +36,26 @@ export interface AttackResultsResponse {
   results: AttackSummary[];
 }
 
-export interface StartAttackPayload {
+export interface ChatbotProfile {
+  username: string;
+  websocket_url: string;
+  domain: string;
+  primary_objective: string;
+  intended_audience: string;
+  chatbot_role: string;
+  capabilities: string[];
+  boundaries: string;
+  communication_style: string;
+  context_awareness: string;
+}
+
+export interface LegacyAttackPayload {
   websocketUrl: string;
   architectureFile: File;
 }
+
+export type StartAttackPayload = ChatbotProfile | LegacyAttackPayload;
+
 export type AsyncState<T> = {
   data: T | null;
   loading: boolean;

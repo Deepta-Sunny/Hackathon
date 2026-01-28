@@ -33,21 +33,29 @@ export async function getStatus(): Promise<StatusResponse> {
   return response.data;
 }
 
-export async function startAttack({
-  websocketUrl,
-  architectureFile,
-}: StartAttackPayload) {
-  const formData = new FormData();
-  formData.append("websocket_url", websocketUrl);
-  formData.append("architecture_file", architectureFile);
+export async function startAttack(payload: StartAttackPayload) {
+  // Check if it's a profile-based attack or legacy file upload
+  if ('username' in payload) {
+    // New profile-based attack
+    const response = await apiClient.post("/api/attack/start-with-profile", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } else {
+    // Legacy file upload (backward compatibility)
+    const formData = new FormData();
+    formData.append("websocket_url", payload.websocketUrl);
+    formData.append("architecture_file", payload.architectureFile);
 
-  const response = await apiClient.post("/api/attack/start", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return response.data;
+    const response = await apiClient.post("/api/attack/start", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  }
 }
 
 export async function stopAttack() {

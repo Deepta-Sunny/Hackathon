@@ -24,6 +24,8 @@ from core.orchestrator import ThreeRunCrescendoOrchestrator
 from core.crescendo_orchestrator import CrescendoAttackOrchestrator
 from core.skeleton_key_orchestrator import SkeletonKeyAttackOrchestrator
 from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
+from models.chatbot_profile import ChatbotProfile
+from utils.report_generator import save_final_report
 
 # Risk severity weights for vulnerability scoring
 RISK_WEIGHTS = {
@@ -141,7 +143,7 @@ async def start_attack(
     architecture_file: UploadFile = File(...)
 ):
     """
-    Start automated multi-category attack campaign
+    Start automated multi-category attack campaign (Legacy .md file upload)
     
     Args:
         websocket_url: Target chatbot WebSocket URL
@@ -164,6 +166,8 @@ async def start_attack(
     attack_state["websocket_url"] = websocket_url
     attack_state["architecture_file"] = arch_filename
     attack_state["start_time"] = datetime.now().isoformat()
+    attack_state["username"] = "anonymous"
+    attack_state["chatbot_profile"] = None
     
     # Broadcast start message
     await manager.broadcast({
@@ -176,13 +180,69 @@ async def start_attack(
     })
     
     # Start attack in background
-    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename))
+    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename, None, "anonymous"))
     
     return {
         "status": "started",
         "message": "Attack campaign initiated",
         "websocket_url": websocket_url,
         "architecture_file": architecture_file.filename
+    }
+
+
+@app.post("/api/attack/start-with-profile")
+async def start_attack_with_profile(profile: ChatbotProfile):
+    """
+    Start automated multi-category attack campaign using chatbot profile
+    
+    Args:
+        profile: Comprehensive chatbot profile from frontend form
+    """
+    
+    if attack_state["running"]:
+        raise HTTPException(status_code=400, detail="Attack already running")
+    
+    # Save chatbot profile
+    os.makedirs("uploads", exist_ok=True)
+    profile_filename = f"uploads/profile_{profile.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    with open(profile_filename, "w", encoding="utf-8") as f:
+        json.dump(profile.to_dict(), f, indent=2)
+    
+    # Update attack state
+    attack_state["running"] = True
+    attack_state["websocket_url"] = profile.websocket_url
+    attack_state["username"] = profile.username
+    attack_state["chatbot_profile"] = profile.to_dict()
+    attack_state["profile_file"] = profile_filename
+    attack_state["start_time"] = datetime.now().isoformat()
+    
+    # Broadcast start message
+    await manager.broadcast({
+        "type": "attack_started",
+        "data": {
+            "username": profile.username,
+            "websocket_url": profile.websocket_url,
+            "domain": profile.domain,
+            "chatbot_role": profile.chatbot_role,
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+    
+    # Start attack in background with profile
+    asyncio.create_task(execute_attack_campaign(
+        profile.websocket_url, 
+        None,  # No .md file
+        profile,
+        profile.username
+    ))
+    
+    return {
+        "status": "started",
+        "message": "Attack campaign initiated with chatbot profile",
+        "username": profile.username,
+        "websocket_url": profile.websocket_url,
+        "domain": profile.domain
     }
 
 
@@ -808,7 +868,12 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-async def execute_attack_campaign(websocket_url: str, architecture_file: str):
+async def execute_attack_campaign(
+    websocket_url: str, 
+    architecture_file: Optional[str] = None,
+    chatbot_profile: Optional[ChatbotProfile] = None,
+    username: str = "anonymous"
+):
     """Execute the full multi-category attack campaign with real-time updates"""
     
     attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
@@ -821,6 +886,10 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
     }
     
     all_reports = {}
+    
+    # Save chatbot profile in attack state for orchestrators to access
+    if chatbot_profile:
+        attack_state["chatbot_profile_obj"] = chatbot_profile
     
     try:
         for idx, attack_mode in enumerate(attack_modes, 1):
@@ -838,12 +907,13 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 }
             })
             
-            # Create orchestrator
+            # Create orchestrator (pass either architecture_file or chatbot_profile)
             if attack_mode == "obfuscation":
                 from config.settings import OBFUSCATION_RUNS, OBFUSCATION_TURNS_PER_RUN
                 orchestrator = ObfuscationAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=OBFUSCATION_RUNS,
                     turns_per_run=OBFUSCATION_TURNS_PER_RUN
                 )
@@ -853,6 +923,7 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 orchestrator = SkeletonKeyAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=SKELETON_KEY_RUNS,
                     turns_per_run=SKELETON_KEY_TURNS_PER_RUN
                 )
@@ -862,6 +933,7 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 orchestrator = CrescendoAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=CRESCENDO_RUNS,
                     turns_per_run=CRESCENDO_TURNS_PER_RUN
                 )
@@ -869,7 +941,8 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
             else:
                 orchestrator = ThreeRunCrescendoOrchestrator(
                     websocket_url=websocket_url,
-                    architecture_file=architecture_file
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile
                 )
                 final_report = await orchestrator.execute_full_assessment()
             
@@ -886,16 +959,20 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 }
             })
         
-        # Campaign complete
+        # Campaign complete - Save comprehensive report with username and chatbot profile
         attack_state["running"] = False
         attack_state["end_time"] = datetime.now().isoformat()
         attack_state["results"] = all_reports
+        
+        # Save final comprehensive report
+        await save_final_report(username, chatbot_profile, all_reports)
         
         await manager.broadcast({
             "type": "campaign_completed",
             "data": {
                 "total_categories": len(attack_modes),
                 "results": all_reports,
+                "username": username,
                 "timestamp": datetime.now().isoformat()
             }
         })
