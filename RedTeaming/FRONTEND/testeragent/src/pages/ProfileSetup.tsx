@@ -118,7 +118,7 @@ const ProfileSetup = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-white font-['Inter']">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col justify-between py-8 px-6 sticky top-0 h-screen overflow-hidden">
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col justify-between pt-0 pb-6 px-6 sticky top-0 h-screen overflow-hidden">
         <div className="flex flex-col gap-12">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -219,8 +219,8 @@ const ProfileSetup = () => {
       </aside>
 
       {/* Main Content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50" onScroll={handleScroll}>
-        <div className="max-w-6xl ml-12 py-12 pr-12 text-left">
+      <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-100" onScroll={handleScroll}>
+        <div className="max-w-6xl ml-12 pt-4 pr-12 text-left">
           {/* Header */}
           <header className="mb-14 border-b border-gray-200 pb-10">
             <div className="flex justify-between items-start">
