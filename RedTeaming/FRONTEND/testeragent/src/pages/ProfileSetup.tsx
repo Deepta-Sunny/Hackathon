@@ -11,6 +11,7 @@ interface ChatbotProfile {
   capabilities: string[];
   boundaries: string;
   communication_style: string;
+  agent_type?: string;
   context_awareness: string;
   backend_integration?: string;
   training_context?: string;
@@ -31,7 +32,9 @@ const ProfileSetup = () => {
   const [primaryObjective, setPrimaryObjective] = useState("");
   const [intendedAudience, setIntendedAudience] = useState("");
   const [chatbotRole, setChatbotRole] = useState("");
+  const [agentType, setAgentType] = useState("");
   const [capabilities, setCapabilities] = useState<string[]>([""]);
+  const [newCapability, setNewCapability] = useState("");
   const [boundaries, setBoundaries] = useState("");
   const [communicationStyle, setCommunicationStyle] = useState("");
   const [backendIntegration, setBackendIntegration] = useState("");
@@ -39,6 +42,26 @@ const ProfileSetup = () => {
 
   const addCapability = () => {
     setCapabilities([...capabilities, ""]);
+  };
+
+  const toggleCapability = (cap: string) => {
+    const exists = capabilities.find((c) => c.toLowerCase() === cap.toLowerCase());
+    if (exists) {
+      setCapabilities(capabilities.filter((c) => c.toLowerCase() !== cap.toLowerCase()));
+    } else {
+      setCapabilities([...capabilities.filter((c) => c.trim() !== ""), cap]);
+    }
+  };
+
+  const addCustomCapability = () => {
+    const val = newCapability.trim();
+    if (!val) return;
+    if (capabilities.find((c) => c.toLowerCase() === val.toLowerCase())) {
+      setNewCapability("");
+      return;
+    }
+    setCapabilities([...capabilities.filter((c) => c.trim() !== ""), val]);
+    setNewCapability("");
   };
 
   const removeCapability = (index: number) => {
@@ -61,6 +84,7 @@ const ProfileSetup = () => {
       primary_objective: primaryObjective,
       intended_audience: intendedAudience,
       chatbot_role: chatbotRole || username,
+      agent_type: agentType,
       capabilities: capabilities.filter((c) => c.trim() !== ""),
       boundaries,
       communication_style: communicationStyle,
@@ -252,7 +276,7 @@ const ProfileSetup = () => {
               </div>
 
               <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-8">
                   <div className="space-y-2.5">
                     <label className="text-left text-black text-[13px] font-bold flex items-center gap-1.5 ">
                       Agent Name
@@ -293,7 +317,7 @@ const ProfileSetup = () => {
                     <label className="text-left text-black text-[13px] font-bold ">Tone & Style</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
+                        className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
                         value={communicationStyle}
                         onChange={(e) => setCommunicationStyle(e.target.value)}
                       >
@@ -303,7 +327,26 @@ const ProfileSetup = () => {
                         <option value="clinical">Clinical & Objective</option>
                         <option value="hostile">Hostile & Defensive</option>
                       </select>
-                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xl">expand_more</span>
+                      
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <label className="text-left text-black text-[13px] font-bold ">Agent Type</label>
+                    <div className="relative">
+                      <select
+                        className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
+                        value={agentType}
+                        onChange={(e) => setAgentType(e.target.value)}
+                      >
+                        <option value="">Select agent type</option>
+                        <option value="rag">RAG</option>
+                        <option value="graph">Graph-Based</option>
+                        <option value="retrieval">Retrieval-Based</option>
+                        <option value="rules">Rules-Based</option>
+                        <option value="other">Other</option>
+                      </select>
+                      
                     </div>
                   </div>
                 </div>
@@ -370,40 +413,60 @@ const ProfileSetup = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div>
                     <label className="text-left text-black text-[13px] font-bold ">
                       System Capabilities (Tools/APIs)
-                      <span className="block text-[11px] font-normal text-gray-400 mt-1 normal-case tracking-normal">What can this agent actually do?</span>
+                      <span className="block text-[11px] font-normal text-gray-400 mt-1 normal-case tracking-normal">What can this agent actually do? Click to select, or add below.</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={addCapability}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#17cf54] text-white rounded-lg text-xs font-bold hover:bg-[#15ba4a] transition-all shadow-lg shadow-[#17cf54]/20"
-                    >
-                      <span className="material-symbols-outlined text-base">add_circle</span>
-                      Add Capability
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-3">
-                    {capabilities.map((cap, index) => (
-                      <div key={index} className="flex gap-3 items-center p-3 bg-[#f9fafb] rounded-xl border border-gray-200">
-                        <input
-                          className="flex-1 rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
-                          placeholder="e.g., structured DB / unstructured DB / Additional docs / external API"
-                          type="text"
-                          value={cap}
-                          onChange={(e) => updateCapability(index, e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeCapability(index)}
-                          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <span className="material-symbols-outlined text-lg">delete</span>
-                        </button>
-                      </div>
-                    ))}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {[
+                        'Structured DB',
+                        'Unstructured DB',
+                        'Web browsing API',
+                        'External API',
+                        'Knowledge Graph',
+                      ].map((opt) => {
+                        const selected = capabilities.find((c) => c.toLowerCase() === opt.toLowerCase());
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => toggleCapability(opt)}
+                            className={`px-3 py-1 rounded-full text-sm border ${selected ? 'bg-[#17cf54] text-white border-transparent' : 'bg-[#f3f4f6] text-gray-700 border-gray-200'}`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 flex gap-2 items-center">
+                      <input
+                        value={newCapability}
+                        onChange={(e) => setNewCapability(e.target.value)}
+                        placeholder="Other capability (type and Add)"
+                        className="flex-1 rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomCapability}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#17cf54] text-white rounded-lg text-sm font-bold hover:bg-[#15ba4a] transition-all shadow-sm"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {capabilities.filter((c) => c.trim() !== "").map((cap, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-[#f9fafb] rounded-full px-3 py-1 border border-gray-200 text-sm">
+                          <span className="text-[13px] text-gray-700">{cap}</span>
+                          <button type="button" onClick={() => removeCapability(index)} className="text-gray-400 hover:text-red-500">
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
