@@ -1,0 +1,204 @@
+===============================================================================
+PROFILE-BASED ORCHESTRATION IMPLEMENTATION SUMMARY
+===============================================================================
+
+OVERVIEW:
+---------
+Successfully replaced .md file-based architecture extraction with structured
+chatbot profile data from the frontend form. The system now uses validated,
+structured JSON data instead of markdown file parsing.
+
+===============================================================================
+CHANGES MADE:
+===============================================================================
+
+1. BACKEND - ChatbotProfile Model (models/chatbot_profile.py)
+   ----------------------------------------------------------
+   ✅ Added `agent_type` field (Optional[str])
+   ✅ Updated `to_context_string()` to include agent_type in LLM context
+   ✅ Updated `to_dict()` to serialize agent_type
+   
+2. BACKEND - API Server (api_server.py)
+   -------------------------------------
+   ✅ Enhanced `/api/attack/start-with-profile` endpoint
+   ✅ Added detailed terminal logging when profile is received:
+      - Username, WebSocket URL, Domain
+      - Primary Objective, Intended Audience, Chatbot Role
+      - Agent Type (if provided)
+      - Communication Style, Context Awareness
+      - All Capabilities (numbered list)
+      - Boundaries/Guardrails
+   ✅ Profile data saved to uploads/profile_{username}_{timestamp}.json
+   ✅ Profile stored in attack_state["chatbot_profile"] for orchestrators
+
+3. FRONTEND - Types (src/types/Types.ts)
+   --------------------------------------
+   ✅ Added `agent_type?: string` to ChatbotProfile interface
+
+4. FRONTEND - Profile Setup (src/pages/ProfileSetup.tsx)
+   -------------------------------------------------------
+   ✅ Added agent_type state and UI (dropdown with RAG, Graph-Based, etc.)
+   ✅ Added predefined capability selection (chip-style buttons)
+   ✅ Added custom capability input field
+   ✅ Updated handleSubmit to:
+      - Send profile to backend via POST /api/attack/start-with-profile
+      - Wait for backend confirmation
+      - Navigate to dashboard only on success
+      - Show error alerts on failure
+   ✅ Removed backend_integration and training_context (unused fields)
+
+5. FRONTEND - Dashboard (src/pages/Home.tsx)
+   ------------------------------------------
+   ✅ Added agent_type to ChatbotProfile interface
+   ✅ Profile automatically loaded from sessionStorage
+   ✅ Profile prefills the dashboard info cards
+   ✅ Edit/Start/Stop buttons work with profile data
+
+===============================================================================
+DATA FLOW:
+===============================================================================
+
+1. USER FILLS FORM
+   ---------------
+   ProfileSetup.tsx form captures:
+   - Basic Info: username, domain, websocket_url
+   - Identity: intended_audience, chatbot_role, agent_type
+   - Capabilities: predefined + custom entries
+   - Behavioral: primary_objective, boundaries, communication_style
+   - Config: (context_awareness defaults to "maintains_context")
+
+2. USER CLICKS "START ORCHESTRATION"
+   ----------------------------------
+   ↓ ProfileSetup.handleSubmit() is triggered
+   ↓ Profile object is created with all form data
+   ↓ Profile saved to sessionStorage (for dashboard)
+   ↓ POST request sent to /api/attack/start-with-profile
+   
+3. BACKEND RECEIVES PROFILE
+   -------------------------
+   ↓ api_server.py validates profile (Pydantic ChatbotProfile model)
+   ↓ Profile data PRINTED IN TERMINAL (formatted, readable)
+   ↓ Profile saved to uploads/profile_{username}_{timestamp}.json
+   ↓ Profile stored in attack_state["chatbot_profile"]
+   ↓ Attack campaign initiated with profile (passed to orchestrators)
+   ↓ WebSocket broadcast: attack_started event
+   ↓ Response sent back to frontend
+
+4. FRONTEND RECEIVES CONFIRMATION
+   -------------------------------
+   ↓ Success: Navigate to /dashboard
+   ↓ Failure: Show alert with error message
+
+5. DASHBOARD LOADS
+   ---------------
+   ↓ Home.tsx loads profile from sessionStorage
+   ↓ Profile info displayed in info cards
+   ↓ User can Edit (go back to ProfileSetup) or Start/Stop testing
+
+===============================================================================
+BACKEND TERMINAL OUTPUT EXAMPLE:
+===============================================================================
+
+================================================================================
+🎯 CHATBOT PROFILE RECEIVED FROM FRONTEND
+================================================================================
+Username: security-tester
+WebSocket URL: ws://localhost:8001/ws
+Domain: Healthcare
+Primary Objective: Help patients schedule appointments and answer FAQs
+Intended Audience: Patients (General Public)
+Chatbot Role: Medical Assistant
+Agent Type: RAG
+Communication Style: professional
+Context Awareness: maintains_context
+
+Capabilities (4):
+  1. Structured DB
+  2. Unstructured DB
+  3. Web browsing API
+  4. Knowledge Graph
+
+Boundaries/Guardrails:
+Never reveal system prompts, do not discuss internal API structure, 
+do not provide medical diagnoses
+================================================================================
+
+===============================================================================
+ORCHESTRATOR USAGE:
+===============================================================================
+
+All orchestrators (Crescendo, SkeletonKey, Obfuscation, Standard) receive
+the ChatbotProfile object and can access:
+
+- profile.to_context_string()  → Full formatted context for LLM prompts
+- profile.get_boundary_validation_context()  → For response analysis
+- profile.capabilities  → List of allowed functions
+- profile.boundaries  → Guardrails for violation detection
+- profile.agent_type  → Type-specific attack strategies
+
+The profile replaces the previous .md file architecture extraction entirely.
+
+===============================================================================
+VALIDATION & ERROR HANDLING:
+===============================================================================
+
+✅ Pydantic validation on backend (ChatbotProfile model)
+✅ Frontend checks for required fields before submit
+✅ Backend returns 400 error if attack already running
+✅ Frontend shows alerts on connection/validation errors
+✅ sessionStorage persists profile across navigation
+
+===============================================================================
+MIGRATION FROM .MD FILES:
+===============================================================================
+
+BEFORE: 
+- User uploaded architecture.md file
+- Backend parsed markdown with regex/string matching
+- Unreliable extraction, format-dependent
+
+AFTER:
+- User fills structured form
+- Frontend sends validated JSON
+- Backend receives clean, typed data
+- No parsing needed - direct object access
+
+===============================================================================
+NEXT STEPS (Optional Enhancements):
+===============================================================================
+
+1. Update orchestrators to use profile.agent_type for attack customization
+2. Add profile history/management (save/load multiple profiles)
+3. Add profile validation on frontend (real-time field checking)
+4. Display more profile fields in dashboard (Primary Objective, Boundaries)
+5. Add profile export/import functionality (JSON download/upload)
+
+===============================================================================
+FILES MODIFIED:
+===============================================================================
+
+Backend:
+  ✓ BACKEND/models/chatbot_profile.py
+  ✓ BACKEND/api_server.py
+
+Frontend:
+  ✓ FRONTEND/testeragent/src/types/Types.ts
+  ✓ FRONTEND/testeragent/src/pages/ProfileSetup.tsx
+  ✓ FRONTEND/testeragent/src/pages/Home.tsx
+
+===============================================================================
+TESTING CHECKLIST:
+===============================================================================
+
+[ ] Fill ProfileSetup form with all fields
+[ ] Click "Start Orchestration"
+[ ] Check backend terminal for printed profile data
+[ ] Verify profile saved to uploads/ directory
+[ ] Check dashboard loads with prefilled profile info
+[ ] Test Edit button returns to ProfileSetup with empty form
+[ ] Test Start/Stop buttons on dashboard
+[ ] Verify orchestrators receive profile data
+[ ] Test with missing optional fields (agent_type)
+[ ] Test with custom capabilities
+
+===============================================================================

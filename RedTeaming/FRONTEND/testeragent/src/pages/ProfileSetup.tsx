@@ -74,7 +74,7 @@ const ProfileSetup = () => {
     setCapabilities(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const profile: ChatbotProfile = {
@@ -89,12 +89,36 @@ const ProfileSetup = () => {
       boundaries,
       communication_style: communicationStyle,
       context_awareness: "maintains_context",
-      backend_integration: backendIntegration,
-      training_context: trainingContext,
     };
 
+    // Save profile to sessionStorage for dashboard
     sessionStorage.setItem("chatbotProfile", JSON.stringify(profile));
-    navigate("/dashboard");
+    
+    // Send profile to backend and start orchestration
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE_URL}/api/attack/start-with-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(profile),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Profile sent to backend:", data);
+        // Navigate to dashboard to monitor orchestration
+        navigate("/dashboard");
+      } else {
+        const error = await response.json();
+        console.error("❌ Failed to start orchestration:", error);
+        alert(`Failed to start orchestration: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("❌ Error sending profile to backend:", error);
+      alert(`Error connecting to backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const isFormValid =
@@ -340,11 +364,13 @@ const ProfileSetup = () => {
                         onChange={(e) => setAgentType(e.target.value)}
                       >
                         <option value="">Select agent type</option>
-                        <option value="rag">RAG</option>
-                        <option value="graph">Graph-Based</option>
-                        <option value="retrieval">Retrieval-Based</option>
-                        <option value="rules">Rules-Based</option>
-                        <option value="other">Other</option>
+                        <option value="Simple Chat Assistant">Simple Chat Assistant</option>
+                        <option value="Customer Support Bot">Customer Support Bot</option>
+                        <option value="Technical Support Agent">Technical Support Agent</option>
+                        <option value="Sales Assistant">Sales Assistant</option>
+                        <option value="Information Helper">Information Helper</option>
+                        <option value="General Chatbot">General Chatbot</option>
+                        <option value="Other">Other</option>
                       </select>
                       
                     </div>

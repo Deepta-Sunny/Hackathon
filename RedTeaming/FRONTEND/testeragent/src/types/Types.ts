@@ -44,6 +44,7 @@ export interface ChatbotProfile {
   intended_audience: string;
   chatbot_role: string;
   capabilities: string[];
+  agent_type?: string;
   boundaries: string;
   communication_style: string;
   context_awareness: string;

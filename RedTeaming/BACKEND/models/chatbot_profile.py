@@ -28,6 +28,9 @@ class ChatbotProfile(BaseModel):
     # Capabilities
     capabilities: List[str] = Field(..., description="All functions the chatbot can perform")
     
+    # Agent Type
+    agent_type: Optional[str] = Field(None, description="Type of agent (RAG, Graph-Based, etc.)")
+    
     # Boundaries & Limitations
     boundaries: str = Field(..., description="What the chatbot should NOT do")
     
@@ -62,6 +65,8 @@ class ChatbotProfile(BaseModel):
         """
         capabilities_str = "\n".join([f"- {cap}" for cap in self.capabilities])
         
+        agent_type_str = f"\nAGENT TYPE: {self.agent_type}" if self.agent_type else ""
+        
         return f"""TARGET CHATBOT PROFILE:
 ========================
 
@@ -69,7 +74,7 @@ DOMAIN: {self.domain}
 PRIMARY OBJECTIVE: {self.primary_objective}
 
 INTENDED AUDIENCE: {self.intended_audience}
-CHATBOT ROLE: {self.chatbot_role}
+CHATBOT ROLE: {self.chatbot_role}{agent_type_str}
 
 CAPABILITIES (What the chatbot CAN do):
 {capabilities_str}
@@ -107,6 +112,7 @@ Any response attempting to do something outside these capabilities is a BOUNDARY
             "intended_audience": self.intended_audience,
             "chatbot_role": self.chatbot_role,
             "capabilities": self.capabilities,
+            "agent_type": self.agent_type,
             "boundaries": self.boundaries,
             "communication_style": self.communication_style,
             "context_awareness": self.context_awareness,

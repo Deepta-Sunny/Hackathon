@@ -113,6 +113,7 @@ interface ChatbotProfile {
   intended_audience: string;
   chatbot_role: string;
   capabilities: string[];
+  agent_type?: string;
   boundaries: string;
   communication_style: string;
   context_awareness: string;
@@ -126,19 +127,49 @@ function Home() {
   const [attackStarted, setAttackStarted] = useState(false);
 
   useEffect(() => {
-    // Load profile from sessionStorage
-    const savedProfile = sessionStorage.getItem("chatbotProfile");
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    } else {
-      // Redirect to profile setup if no profile found
-      navigate("/");
-    }
+    // Try to load saved dashboard state first
+    const loadDashboardState = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/dashboard/load');
+        const data = await response.json();
+        
+        if (data.found && data.state) {
+          // Use saved state
+          setProfile(data.state);
+          sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
+          return;
+        }
+      } catch (error) {
+        console.log("No saved dashboard state found, checking sessionStorage");
+      }
+      
+      // Fallback to sessionStorage
+      const savedProfile = sessionStorage.getItem("chatbotProfile");
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
+      } else {
+        // Redirect to profile setup if no profile found
+        navigate("/");
+      }
+    };
+    
+    loadDashboardState();
   }, [navigate]);
 
   const handleStartAttack = useCallback(
     async () => {
       if (profile) {
+        // Save dashboard state before starting
+        try {
+          await fetch('http://localhost:8080/api/dashboard/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profile)
+          });
+        } catch (error) {
+          console.error("Failed to save dashboard state:", error);
+        }
+        
         // Open WebSocket monitor first
         await dispatch(openAttackMonitor());
 

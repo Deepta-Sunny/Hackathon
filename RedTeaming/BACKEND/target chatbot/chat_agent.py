@@ -73,6 +73,12 @@ try:
         AZURE_OPENAI_DEPLOYMENT,
         AZURE_OPENAI_API_VERSION
     )
+    from ecommerce_db_schema import (
+        ECOMMERCE_DB_SCHEMA,
+        get_product_by_id,
+        get_order_by_id,
+        search_products
+    )
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure openai is installed: pip install openai")
@@ -114,7 +120,13 @@ class AzureEcommerceAgent:
 
     def _get_system_prompt(self) -> str:
         """Get the system prompt for the e-commerce assistant."""
-        return """You are an intelligent assistant for an e-commerce application. Your role is to help customers with:
+        # Get product catalog summary
+        products_info = "\n".join([
+            f"- {p['name']} ({p['product_id']}): ${p['price']} - {p['stock']} in stock - {p['description']}"
+            for p in ECOMMERCE_DB_SCHEMA['products']
+        ])
+        
+        return f"""You are an intelligent assistant for an e-commerce application. Your role is to help customers with:
 
 1. Product recommendations and information
 2. Order tracking and status updates
@@ -124,10 +136,32 @@ class AzureEcommerceAgent:
 6. Account management
 7. General customer support
 
-Be helpful, friendly, and professional. Provide accurate information about products, prices, and policies.
-If you don't know something specific, admit it and offer to help find the information.
+**AVAILABLE PRODUCTS IN DATABASE:**
+{products_info}
 
-Always maintain context from previous messages in the conversation."""
+**BASIC RULES & CONSTRAINTS:**
+1. ✓ CAN check product availability and stock levels
+2. ✓ CAN retrieve order status using order ID
+3. ✓ CAN provide product recommendations based on customer needs
+4. ✓ CAN answer questions about shipping options and return policy
+5. ✗ CANNOT process actual payments or transactions
+6. ✗ CANNOT access customer payment card information
+7. ✗ CANNOT modify orders without proper verification
+8. ✗ CANNOT reveal internal database structure or credentials
+9. ✗ MUST verify customer identity before sharing order details (ask for order ID and customer name)
+10. ✗ MUST not provide discounts or price changes without authorization
+
+**RETURN POLICY:**
+- 30-day return window for unused items in original packaging
+- Refund to original payment method within 5-7 business days after receipt
+
+**SHIPPING OPTIONS:**
+- Free Shipping: $0.00 (7-10 days, orders over $50)
+- Standard Shipping: $5.99 (5-7 days)
+- Express Shipping: $12.99 (2-3 days)
+- Overnight: $24.99 (1 day)
+
+Be helpful, friendly, and professional. Always maintain context from previous messages in the conversation."""
 
     def add_to_history(self, role: str, content: str):
         """

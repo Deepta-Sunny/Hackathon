@@ -202,6 +202,27 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     if attack_state["running"]:
         raise HTTPException(status_code=400, detail="Attack already running")
     
+    # ===== PRINT RECEIVED PROFILE DATA IN TERMINAL =====
+    print("\n" + "="*80)
+    print("🎯 CHATBOT PROFILE RECEIVED FROM FRONTEND")
+    print("="*80)
+    print(f"Username: {profile.username}")
+    print(f"WebSocket URL: {profile.websocket_url}")
+    print(f"Domain: {profile.domain}")
+    print(f"Primary Objective: {profile.primary_objective}")
+    print(f"Intended Audience: {profile.intended_audience}")
+    print(f"Chatbot Role: {profile.chatbot_role}")
+    if profile.agent_type:
+        print(f"Agent Type: {profile.agent_type}")
+    print(f"Communication Style: {profile.communication_style}")
+    print(f"Context Awareness: {profile.context_awareness}")
+    print(f"\nCapabilities ({len(profile.capabilities)}):")
+    for i, cap in enumerate(profile.capabilities, 1):
+        print(f"  {i}. {cap}")
+    print(f"\nBoundaries/Guardrails:\n{profile.boundaries}")
+    print("="*80 + "\n")
+    # ===================================================
+    
     # Save chatbot profile
     os.makedirs("uploads", exist_ok=True)
     profile_filename = f"uploads/profile_{profile.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -262,6 +283,33 @@ async def stop_attack():
     })
     
     return {"status": "stopped", "message": "Attack campaign stopped"}
+
+
+@app.get("/api/dashboard/load")
+async def load_dashboard_state():
+    """Load saved dashboard state if exists"""
+    dashboard_file = Path("dashboard_state.json")
+    
+    if dashboard_file.exists():
+        try:
+            with open(dashboard_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            return {"found": True, "state": state}
+        except Exception as e:
+            return {"found": False, "error": str(e)}
+    else:
+        return {"found": False, "message": "No saved state found"}
+
+
+@app.post("/api/dashboard/save")
+async def save_dashboard_state(state: dict):
+    """Save current dashboard state for future access"""
+    try:
+        with open("dashboard_state.json", "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+        return {"status": "saved", "message": "Dashboard state saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save state: {str(e)}")
 
 
 @app.get("/api/results")
@@ -834,11 +882,12 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     
     try:
-        # Send current state immediately
+        # Send current state immediately (serialize properly)
+        serializable_state = {k: v for k, v in attack_state.items() if k != "chatbot_profile_obj"}
         await manager.send_personal({
             "type": "connection_established",
             "data": {
-                "attack_state": attack_state,
+                "attack_state": serializable_state,
                 "timestamp": datetime.now().isoformat()
             }
         }, websocket)
@@ -887,9 +936,8 @@ async def execute_attack_campaign(
     
     all_reports = {}
     
-    # Save chatbot profile in attack state for orchestrators to access
-    if chatbot_profile:
-        attack_state["chatbot_profile_obj"] = chatbot_profile
+    # Note: chatbot_profile object is already in attack_state["chatbot_profile"] as dict
+    # We'll pass the chatbot_profile object directly to orchestrators, not store in attack_state
     
     try:
         for idx, attack_mode in enumerate(attack_modes, 1):
@@ -964,7 +1012,53 @@ async def execute_attack_campaign(
         attack_state["end_time"] = datetime.now().isoformat()
         attack_state["results"] = all_reports
         
-        # Save final comprehensive report
+        # Generate chatbot name for file naming
+        chatbot_name = chatbot_profile.chatbot_role.replace(" ", "_") if chatbot_profile else username
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Save test report with chatbot name and timestamp
+        reports_dir = Path("test_reports")
+        reports_dir.mkdir(exist_ok=True)
+        test_report_file = reports_dir / f"test_report_{chatbot_name}_{timestamp}.json"
+        
+        with open(test_report_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "chatbot_name": chatbot_name,
+                "username": username,
+                "timestamp": timestamp,
+                "start_time": attack_state["start_time"],
+                "end_time": attack_state["end_time"],
+                "results": all_reports
+            }, f, indent=2)
+        
+        print(f"\n✅ Test report saved: {test_report_file}")
+        
+        # Save dashboard info separately
+        dashboard_info = {
+            "chatbot_name": chatbot_name,
+            "username": username,
+            "websocket_url": websocket_url,
+            "domain": chatbot_profile.domain if chatbot_profile else "Unknown",
+            "primary_objective": chatbot_profile.primary_objective if chatbot_profile else "",
+            "intended_audience": chatbot_profile.intended_audience if chatbot_profile else "",
+            "chatbot_role": chatbot_profile.chatbot_role if chatbot_profile else "",
+            "agent_type": chatbot_profile.agent_type if chatbot_profile else "",
+            "capabilities": chatbot_profile.capabilities if chatbot_profile else [],
+            "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
+            "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
+            "context_awareness": chatbot_profile.context_awareness if chatbot_profile else "",
+            "timestamp": timestamp,
+            "last_test_date": datetime.now().isoformat(),
+            "test_report_file": str(test_report_file)
+        }
+        
+        dashboard_file = Path(f"dashboard_info_{chatbot_name}.json")
+        with open(dashboard_file, "w", encoding="utf-8") as f:
+            json.dump(dashboard_info, f, indent=2)
+        
+        print(f"✅ Dashboard info saved: {dashboard_file}\n")
+        
+        # Save final comprehensive report (for backward compatibility)
         await save_final_report(username, chatbot_profile, all_reports)
         
         await manager.broadcast({
