@@ -118,7 +118,7 @@ const ProfileSetup = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-white font-['Inter']">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col justify-between pt-0 pb-6 px-6 sticky top-0 h-screen overflow-hidden">
+      <aside className="w-56 bg-white border-r border-gray-300 flex flex-col justify-between pt-0 pb-6 px-2 sticky top-0 h-screen overflow-hidden">
         <div className="flex flex-col gap-12">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ const ProfileSetup = () => {
           </div>
 
           {/* Navigation Steps */}
-          <nav className="flex flex-col relative pl-2">
+          <nav className="flex flex-col relative pl-1">
             {/* Step 1 */}
             <div className="flex items-start gap-4 pb-10 relative">
               <div className="flex flex-col items-center z-10">
@@ -143,7 +143,7 @@ const ProfileSetup = () => {
                 <p className="text-[11px] text-gray-400 font-medium">Core agent profile</p>
               </div>
               {/* Connecting Line */}
-              <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
+                <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
                  {/* Active Line Segment with Flow Animation */}
                  <div 
                    className={`absolute top-0 left-0 w-full bg-[#17cf54] transform origin-top transition-transform duration-200 ease-out ${currentStep > 1 ? 'scale-y-100' : 'scale-y-0'}`}
@@ -161,7 +161,7 @@ const ProfileSetup = () => {
                 <p className="text-[11px] text-gray-400 font-medium">Guardrails & objectives</p>
               </div>
                {/* Connecting Line */}
-               <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
+               <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
                   {/* Active Line Segment with Flow Animation */}
                   <div 
                      className={`absolute top-0 left-0 w-full bg-[#17cf54] transform origin-top transition-transform duration-200 ease-out ${currentStep > 2 ? 'scale-y-100' : 'scale-y-0'}`}
@@ -201,25 +201,30 @@ const ProfileSetup = () => {
              <span className="material-symbols-outlined ml-auto text-gray-400 text-lg">expand_less</span>
           </button>
           
-          {isProfileMenuOpen && (
-            <div className="absolute bottom-full left-0 w-full mb-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 animate-in fade-in slide-in-from-bottom-2">
-               <div className="p-1">
-                 <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors" onClick={() => navigate('/dashboard')}>
-                    <span className="material-symbols-outlined text-gray-400 text-[18px]">dashboard</span>
-                    <span className="text-[13px] font-medium text-gray-700">Dashboard</span>
-                 </button>
-                 <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors">
-                    <span className="material-symbols-outlined text-gray-400 text-[18px]">history</span>
-                    <span className="text-[13px] font-medium text-gray-700">History</span>
-                 </button>
-               </div>
+           {isProfileMenuOpen && (
+            <div className="absolute bottom-full left-0 -ml-4 w-44 mb-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 animate-in fade-in slide-in-from-bottom-2">
+              <div className="p-1">
+                <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors" onClick={() => navigate('/dashboard')}>
+                  <span className="material-symbols-outlined text-gray-400 text-[18px]">dashboard</span>
+                  <span className="text-[13px] font-medium text-gray-700">Dashboard</span>
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors">
+                  <span className="material-symbols-outlined text-gray-400 text-[18px]">history</span>
+                  <span className="text-[13px] font-medium text-gray-700">History</span>
+                </button>
+              </div>
             </div>
-          )}
+           )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-100" onScroll={handleScroll}>
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-auto"
+        style={{ backgroundColor: 'rgba(255,255,255,0.85)' }}
+        onScroll={handleScroll}
+      >
         <div className="max-w-6xl ml-12 pt-4 pr-12 text-left">
           {/* Header */}
           <header className="mb-14 border-b border-gray-200 pb-10">
@@ -233,7 +238,7 @@ const ProfileSetup = () => {
             </div>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-12 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-12 pb-16">
             {/* Section 1: Target Identity */}
             <section ref={section1Ref} className="border-b border-gray-200 pb-12">
               <div className="flex items-center gap-4 mb-5">
@@ -405,7 +410,7 @@ const ProfileSetup = () => {
             </section>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-6 border-t border-gray-200/60">
+            <div className="flex justify-end pt-6 mb-8 border-t border-gray-200/60">
               <button
                 type="submit"
                 className="px-10 py-4 bg-[#17cf54] text-white rounded-xl text-[15px] font-bold hover:bg-[#15ba4a] transition-all flex items-center gap-3 shadow-xl shadow-[#17cf54]/25 hover:shadow-[#17cf54]/40 hover:-translate-y-0.5 active:translate-y-0"
