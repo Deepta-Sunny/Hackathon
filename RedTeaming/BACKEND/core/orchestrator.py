@@ -734,7 +734,7 @@ Return JSON:
 class ThreeRunCrescendoOrchestrator:
     """Main orchestrator for 3-run adaptive crescendo attack."""
     
-    def __init__(self, websocket_url: str = None, architecture_file: str = None):
+    def __init__(self, websocket_url: str = None, architecture_file: str = None, chatbot_profile = None):
         self.azure_client = AzureOpenAIClient()
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url) if websocket_url else ChatbotWebSocketTarget()
         self.vulnerable_memory = VulnerableResponseMemory()
@@ -745,6 +745,7 @@ class ThreeRunCrescendoOrchestrator:
         self.report_generator = ReportGenerator()
         self.run_stats: List[RunStatistics] = []
         self.architecture_file = architecture_file
+        self.chatbot_profile = chatbot_profile
         self.architecture_context = None
     
     async def execute_single_run(
@@ -990,11 +991,15 @@ class ThreeRunCrescendoOrchestrator:
         
         # Load architecture
         print("\n📋 PHASE 1: Architecture Intelligence")
-        if self.architecture_file:
+        if self.chatbot_profile:
+            self.architecture_context = self.chatbot_profile.to_context_string()
+            print(f"✅ Using chatbot profile for domain: {self.chatbot_profile.domain}")
+        elif self.architecture_file:
             self.architecture_context = extract_chatbot_architecture_context(self.architecture_file)
+            print("✅ Architecture context loaded from file")
         else:
             self.architecture_context = extract_chatbot_architecture_context()
-        print("✅ Architecture context loaded")
+            print("✅ Architecture context loaded (default)")
         
         # Display the extracted architecture information
         print("\n" + "="*70)

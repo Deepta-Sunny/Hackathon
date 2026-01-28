@@ -925,6 +925,14 @@ async def execute_attack_campaign(
 ):
     """Execute the full multi-category attack campaign with real-time updates"""
     
+    print("\n" + "="*80)
+    print("🚀 STARTING ATTACK CAMPAIGN EXECUTION")
+    print("="*80)
+    print(f"WebSocket URL: {websocket_url}")
+    print(f"Username: {username}")
+    print(f"Profile provided: {chatbot_profile is not None}")
+    print("="*80 + "\n")
+    
     attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
     
     mode_names = {
@@ -1075,10 +1083,21 @@ async def execute_attack_campaign(
         attack_state["running"] = False
         attack_state["error"] = str(e)
         
+        # Print detailed error for debugging
+        print("\n" + "="*80)
+        print("❌ ATTACK CAMPAIGN ERROR")
+        print("="*80)
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {str(e)}")
+        import traceback
+        print(f"Traceback:\n{traceback.format_exc()}")
+        print("="*80 + "\n")
+        
         await manager.broadcast({
             "type": "error",
             "data": {
                 "error": str(e),
+                "error_type": type(e).__name__,
                 "timestamp": datetime.now().isoformat()
             }
         })
