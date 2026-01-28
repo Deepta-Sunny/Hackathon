@@ -7,15 +7,15 @@ import Header from "../components/Header";
 import ChatPanel from "../components/ChatPanel";
 import ReportsPanel from "../components/ReportsPanel";
 import type { AppDispatch } from "../store/Store";
-import { initiateAttack, openAttackMonitor } from "../thunk/ApiThunk";
+import { initiateAttack, openAttackMonitor, haltAttack } from "../thunk/ApiThunk";
 import Button from "@mui/joy/Button";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import EditIcon from "@mui/icons-material/Edit";
 
 const useStyles = createUseStyles({
   profileCard: {
-    padding: 24,
-    marginBottom: 20,
+    padding: 12,
+    marginBottom: 12,
     background: "#fff",
     color: "#2c3e50",
     borderRadius: 12,
@@ -26,9 +26,9 @@ const useStyles = createUseStyles({
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 8,
     borderBottom: "1px solid #eee",
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   profileTitle: {
     fontSize: 24,
@@ -41,23 +41,23 @@ const useStyles = createUseStyles({
   },
   profileInfo: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: 16,
+    gridTemplateColumns: "repeat(5, 1fr)",
+    gap: 12,
   },
   infoItem: {
     background: "#f8f9fa",
-    padding: 16,
+    padding: 10,
     borderRadius: 8,
     border: "1px solid #eee",
-    transition: "all 0.2s",
+    transition: "all 0.12s",
     "&:hover": {
       borderColor: "#20a100",
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
     },
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#888",
     marginBottom: 4,
     fontFamily: "monospace",
@@ -65,7 +65,7 @@ const useStyles = createUseStyles({
     letterSpacing: "1px",
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 600,
     fontFamily: "monospace",
     color: "#333",
@@ -75,8 +75,10 @@ const useStyles = createUseStyles({
     color: "white !important",
     fontFamily: "monospace !important",
     fontWeight: "700 !important",
-    padding: "10px 24px !important",
-    fontSize: "14px !important",
+    padding: "6px 12px !important",
+    minWidth: "110px",
+    height: "36px",
+    fontSize: "13px !important",
     borderRadius: "6px !important",
     transition: "all 0.2s !important",
     border: "none !important",
@@ -90,8 +92,10 @@ const useStyles = createUseStyles({
     background: "#f1f1f1 !important",
     color: "#555 !important",
     fontFamily: "monospace !important",
-    padding: "10px 20px !important",
-    fontSize: "14px !important",
+    padding: "6px 12px !important",
+    minWidth: "110px",
+    height: "36px",
+    fontSize: "13px !important",
     borderRadius: "6px !important",
     border: "1px solid #ddd !important",
     "&:hover": {
@@ -137,8 +141,8 @@ function Home() {
       if (profile) {
         // Open WebSocket monitor first
         await dispatch(openAttackMonitor());
-        
-        // Start attack with profile
+
+        // Start testing with profile
         dispatch(initiateAttack(profile));
         setAttackStarted(true);
       }
@@ -146,7 +150,16 @@ function Home() {
     [dispatch, profile]
   );
 
+  const handleStopAttack = useCallback(async () => {
+    try {
+      await dispatch(haltAttack());
+    } finally {
+      setAttackStarted(false);
+    }
+  }, [dispatch]);
+
   const handleEditProfile = () => {
+    if (attackStarted) return; // prevent navigation while testing
     navigate("/");
   };
 
@@ -159,44 +172,20 @@ function Home() {
       <Header />
       <Box display={"flex"} flexDirection={"column"} gap={2} marginTop={4}>
         {/* Profile Information Card */}
-        <Paper className={classes.profileCard} elevation={8}>
-          <div className={classes.profileHeader}>
-            <Typography className={classes.profileTitle}>
-              🎯 Target: {profile.chatbot_role}
-            </Typography>
-            <Box display="flex" gap={2}>
-              <Button
-                variant="solid"
-                className={classes.editButton}
-                startDecorator={<EditIcon />}
-                onClick={handleEditProfile}
-              >
-                Edit Profile
-              </Button>
-              {!attackStarted && (
-                <Button
-                  variant="solid"
-                  className={classes.startButton}
-                  startDecorator={<RocketLaunchIcon />}
-                  onClick={handleStartAttack}
-                >
-                  Start Attack
-                </Button>
-              )}
-            </Box>
-          </div>
+          <Paper className={classes.profileCard} elevation={8}>
+          <div className={classes.profileHeader} />
           <div className={classes.profileInfo}>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel}>Username</div>
-              <div className={classes.infoValue}>{profile.username}</div>
+              <div className={classes.infoValue}>{profile.username || '-'}</div>
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel}>WebSocket Endpoint</div>
-              <div className={classes.infoValue}>{profile.websocket_url}</div>
+              <div className={classes.infoValue}>{profile.websocket_url || 'ws://localhost:8001/ws'}</div>
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel}>Domain</div>
-              <div className={classes.infoValue}>{profile.domain}</div>
+              <div className={classes.infoValue}>{profile.domain || '-'}</div>
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel}>Capabilities</div>
@@ -206,6 +195,41 @@ function Home() {
                   size="small" 
                   style={{ color: "#20a100", background: "rgba(32, 161, 0, 0.1)", fontWeight: 600 }}
                 />
+              </div>
+            </div>
+            <div className={classes.infoItem}>
+              <div className={classes.infoLabel} style={{visibility: 'hidden'}}>actions</div>
+              <div style={{display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between'}}>
+                <Button
+                  variant="solid"
+                  className={classes.editButton}
+                  startDecorator={<EditIcon />}
+                  onClick={handleEditProfile}
+                  disabled={attackStarted}
+                >
+                  Edit
+                </Button>
+                {!attackStarted ? (
+                  <Button
+                    variant="solid"
+                    className={classes.startButton}
+                    startDecorator={<RocketLaunchIcon />}
+                    onClick={handleStartAttack}
+                  >
+                    Start
+                  </Button>
+                ) : (
+                  <Button
+                    variant="solid"
+                    color="neutral"
+                    className={classes.startButton}
+                    startDecorator={<RocketLaunchIcon />}
+                    onClick={handleStopAttack}
+                    style={{ background: "#c62828" }}
+                  >
+                    Stop
+                  </Button>
+                )}
               </div>
             </div>
           </div>

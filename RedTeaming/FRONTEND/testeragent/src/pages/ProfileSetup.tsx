@@ -385,7 +385,7 @@ const ProfileSetup = () => {
                       <div key={index} className="flex gap-3 items-center p-3 bg-[#f9fafb] rounded-xl border border-gray-200">
                         <input
                           className="flex-1 rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
-                          placeholder="e.g., structured DB / unstructured docs / external API"
+                          placeholder="e.g., structured DB / unstructured DB / Additional docs / external API"
                           type="text"
                           value={cap}
                           onChange={(e) => updateCapability(index, e.target.value)}
