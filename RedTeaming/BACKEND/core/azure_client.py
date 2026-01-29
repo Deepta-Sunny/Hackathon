@@ -34,6 +34,10 @@ class AzureOpenAIClient:
         # Statistics
         self.error_count = 0
         self.success_count = 0
+        
+        # Global token counters
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
     
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
@@ -85,6 +89,23 @@ class AzureOpenAIClient:
             response.raise_for_status()
             result = response.json()
             self.success_count += 1
+            
+            # Track token usage
+            usage = result.get('usage', {})
+            if usage:
+                input_tokens = usage.get('prompt_tokens', 0)
+                output_tokens = usage.get('completion_tokens', 0)
+                total_tokens = usage.get('total_tokens', 0)
+                
+                # Update global counters
+                self.total_input_tokens += input_tokens
+                self.total_output_tokens += output_tokens
+                
+                # Print real-time token usage
+                print(f"    💰 Tokens: +{input_tokens} input, +{output_tokens} output, +{total_tokens} total | "
+                      f"Running Totals: {self.total_input_tokens:,} input, {self.total_output_tokens:,} output, "
+                      f"{self.total_input_tokens + self.total_output_tokens:,} total")
+            
             return result["choices"][0]["message"]["content"]
             
         except Exception as e:
@@ -134,11 +155,24 @@ class AzureOpenAIClient:
             
         if self.success_count > 0 or self.error_count > 0:
             print(f"\n📊 Azure API Stats: {self.success_count} success, {self.error_count} errors")
+            print(f"💰 Total Token Usage:")
+            print(f"   Input tokens:  {self.total_input_tokens:,}")
+            print(f"   Output tokens: {self.total_output_tokens:,}")
+            print(f"   Total tokens:  {self.total_input_tokens + self.total_output_tokens:,}")
+            
+            # Cost estimate (Azure OpenAI GPT-4 pricing)
+            input_cost = (self.total_input_tokens / 1000) * 0.03  # $0.03 per 1K
+            output_cost = (self.total_output_tokens / 1000) * 0.06
+            total_cost = input_cost + output_cost
+            print(f"   Estimated cost: ${total_cost:.4f}")
     
     def get_stats(self):
         """Get API call statistics."""
         return {
             "success": self.success_count,
             "errors": self.error_count,
-            "total": self.success_count + self.error_count
+            "total": self.success_count + self.error_count,
+            "input_tokens": self.total_input_tokens,
+            "output_tokens": self.total_output_tokens,
+            "total_tokens": self.total_input_tokens + self.total_output_tokens
         }
