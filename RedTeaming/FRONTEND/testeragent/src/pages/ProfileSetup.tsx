@@ -320,7 +320,7 @@ const ProfileSetup = () => {
                   <span className="material-symbols-outlined text-gray-400 text-[18px]">dashboard</span>
                   <span className="text-[13px] font-medium text-gray-700">Dashboard</span>
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors">
+                <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-left transition-colors" onClick={() => navigate('/history')}>
                   <span className="material-symbols-outlined text-gray-400 text-[18px]">history</span>
                   <span className="text-[13px] font-medium text-gray-700">History</span>
                 </button>

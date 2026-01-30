@@ -391,6 +391,52 @@ async def get_bucket_file(bucket_name: str, filename: str):
 # === END BUCKET OPERATIONS ===
 
 
+# === HISTORY OPERATIONS ===
+
+@app.get("/api/history")
+async def list_history():
+    """List all history files"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return {"history": []}
+    
+    files = []
+    for f in history_dir.glob("*.json"):
+        if f.is_file():
+             try:
+                with open(f, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    # Basic validation or minimal data
+                    files.append({
+                        "id": data.get("id", f.stem),
+                        "filename": f.name,
+                        "chatbot_name": data.get("chatbot_name", "Unknown"),
+                        "date": data.get("date", ""),
+                        "total_vulnerabilities": data.get("total_vulnerabilities", 0),
+                        "duration": data.get("duration", "")
+                    })
+             except Exception:
+                 continue # skip broken files
+    
+    # Sort by date desc if possible
+    files.sort(key=lambda x: x["date"], reverse=True)
+    return {"history": files}
+
+@app.get("/api/history/{filename}")
+async def get_history_detail(filename: str):
+    """Get content of a history file"""
+    history_dir = Path("history")
+    file_path = history_dir / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="History file not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# === END HISTORY OPERATIONS ===
+
+
 @app.get("/api/profile/latest")
 async def get_latest_profile():
     """Get the latest saved chatbot profile"""
