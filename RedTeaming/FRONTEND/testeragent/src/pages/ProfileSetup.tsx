@@ -15,6 +15,7 @@ interface ChatbotProfile {
   context_awareness: string;
   backend_integration?: string;
   training_context?: string;
+  bucket_name?: string;
 }
 
 const ProfileSetup = () => {
@@ -37,12 +38,90 @@ const ProfileSetup = () => {
   const [newCapability, setNewCapability] = useState("");
   const [boundaries, setBoundaries] = useState("");
   const [communicationStyle, setCommunicationStyle] = useState("");
-  const [backendIntegration, setBackendIntegration] = useState("");
-  const [trainingContext, setTrainingContext] = useState("");
 
-  const addCapability = () => {
-    setCapabilities([...capabilities, ""]);
+  // Bucket State
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [buckets, setBuckets] = useState<string[]>([]);
+  const [selectedBucket, setSelectedBucket] = useState<string>("");
+  const [bucketFiles, setBucketFiles] = useState<{name: string, created: number}[]>([]);
+  const [newBucketName, setNewBucketName] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+  const fetchBuckets = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/buckets`);
+      const data = await res.json();
+      setBuckets(data.buckets || []);
+    } catch (e) {
+      console.error("Error fetching buckets:", e);
+    }
   };
+
+  const createBucket = async () => {
+    if (!newBucketName.trim()) return;
+    try {
+      const formData = new FormData();
+      formData.append("bucket_name", newBucketName);
+      const res = await fetch(`${API_BASE_URL}/api/buckets`, {
+        method: "POST",
+        body: formData
+      });
+      if (res.ok) {
+         setNewBucketName("");
+         fetchBuckets();
+      }
+    } catch (e) {
+      console.error("Error creating bucket:", e);
+    }
+  };
+
+  const fetchBucketFiles = async (bucket: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/buckets/${bucket}/files`);
+      if (res.ok) {
+        const data = await res.json();
+        setBucketFiles(data.files || []);
+      }
+    } catch (e) {
+      console.error("Error fetching files:", e);
+    }
+  };
+
+  const loadProfile = async (filename: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/buckets/${selectedBucket}/files/${filename}`);
+      if (res.ok) {
+         const profile = await res.json();
+            setUsername(profile.username || "");
+            setWebsocketUrl(profile.websocket_url || "ws://localhost:8001/ws");
+            setDomain(profile.domain || "");
+            setPrimaryObjective(profile.primary_objective || "");
+            setIntendedAudience(profile.intended_audience || "");
+            setChatbotRole(profile.chatbot_role || "");
+            setAgentType(profile.agent_type || "");
+            setCapabilities(profile.capabilities || [""]);
+            setBoundaries(profile.boundaries || "");
+            setCommunicationStyle(profile.communication_style || "");
+            setShowLibrary(false);
+      }
+    } catch (e) {
+      console.error("Error loading profile:", e);
+    }
+  };
+
+  useEffect(() => {
+     if (showLibrary) {
+        fetchBuckets();
+     }
+  }, [showLibrary]);
+
+  useEffect(() => {
+     if (selectedBucket) {
+        fetchBucketFiles(selectedBucket);
+     } else {
+        setBucketFiles([]);
+     }
+  }, [selectedBucket]);
 
   const toggleCapability = (cap: string) => {
     const exists = capabilities.find((c) => c.toLowerCase() === cap.toLowerCase());
@@ -68,12 +147,6 @@ const ProfileSetup = () => {
     setCapabilities(capabilities.filter((_, i) => i !== index));
   };
 
-  const updateCapability = (index: number, value: string) => {
-    const updated = [...capabilities];
-    updated[index] = value;
-    setCapabilities(updated);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -89,6 +162,7 @@ const ProfileSetup = () => {
       boundaries,
       communication_style: communicationStyle,
       context_awareness: "maintains_context",
+      bucket_name: selectedBucket // Save to selected bucket if any
     };
 
     // Save profile to sessionStorage for dashboard
@@ -96,7 +170,7 @@ const ProfileSetup = () => {
     
     // Send profile to backend and start orchestration
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
       const response = await fetch(`${API_BASE_URL}/api/attack/start-with-profile`, {
         method: "POST",
         headers: {
@@ -120,16 +194,6 @@ const ProfileSetup = () => {
       alert(`Error connecting to backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-
-  const isFormValid =
-    username &&
-    websocketUrl &&
-    domain &&
-    primaryObjective &&
-    intendedAudience &&
-    communicationStyle &&
-    capabilities.some((c) => c.trim() !== "") &&
-    boundaries;
 
   const handleScroll = () => {
     const container = mainRef.current;
@@ -160,8 +224,11 @@ const ProfileSetup = () => {
     // also attach resize listener to recalc if window size changes
     const onResize = () => handleScroll();
     window.addEventListener('resize', onResize);
+    fetchBuckets(); // Fetch buckets on mount
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-white font-['Inter']">
@@ -186,9 +253,8 @@ const ProfileSetup = () => {
               <div className="flex flex-col items-center z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 1 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>1</div>
               </div>
-              <div className="pt-1">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 1 ? 'text-[#17cf54]' : currentStep > 1 ? 'text-black' : 'text-gray-400'}`}>Target Identity</p>
-                <p className="text-[11px] text-gray-400 font-medium">Core agent profile</p>
+              <div className="pt-1 text-left">
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 1 ? 'text-[#17cf54]' : currentStep > 1 ? 'text-slate-700' : 'text-gray-400'}`}>Agent Role & Representation</p>
               </div>
               {/* Connecting Line */}
                 <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
@@ -204,9 +270,8 @@ const ProfileSetup = () => {
               <div className="flex flex-col items-center z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 2 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>2</div>
               </div>
-              <div className="pt-1">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 2 ? 'text-[#17cf54]' : currentStep > 2 ? 'text-black' : 'text-gray-400'}`}>Behavioral Directives</p>
-                <p className="text-[11px] text-gray-400 font-medium">Guardrails & objectives</p>
+              <div className="pt-1 text-left">
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 2 ? 'text-[#17cf54]' : currentStep > 2 ? 'text-slate-700' : 'text-gray-400'}`}>Behavior Rules & Safety Goals</p>
               </div>
                {/* Connecting Line */}
                <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
@@ -222,9 +287,8 @@ const ProfileSetup = () => {
               <div className="flex items-center justify-center z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 3 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>3</div>
               </div>
-              <div className="pt-1">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 3 ? 'text-[#17cf54]' : 'text-gray-400'}`}>System Config</p>
-                <p className="text-[11px] text-gray-400 font-medium">Integration settings</p>
+              <div className="pt-1 text-left">
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 3 ? 'text-[#17cf54]' : 'text-gray-400'}`}>Technical Access & Integrations</p>
               </div>
             </div>
           </nav>
@@ -275,27 +339,132 @@ const ProfileSetup = () => {
       >
         <div className="max-w-6xl ml-12 pt-4 pr-12 text-left">
           {/* Header */}
-          <header className="mb-14 border-b border-gray-200 pb-10">
+          <header className="mb-16 border-b border-gray-200 pb-10">
             <div className="flex justify-between items-start">
               <div className="space-y-4">
-                <h2 className="text-left text-black text-[42px] font-bold leading-tight tracking-tight">Chatbot Profile Configuration</h2>
+                <h2 className="text-left text-slate-700 text-[42px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
                 <p className="text-left text-gray-500 text-[15px] font-normal max-w-3xl leading-relaxed">
-                  Fine-tune the security posture and identity parameters. This configuration dictates the adversarial landscape for the automated attack session.
+                  Define what this AI represents, what it can access, and how it behaves under risk scenarios.
                 </p>
+              </div>
+              <div>
+                 <button 
+                  onClick={() => setShowLibrary(true)}
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors flex items-center gap-2"
+                 >
+                   <span className="material-symbols-outlined">folder_open</span>
+                   Load Profile
+                 </button>
               </div>
             </div>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-12 pb-16">
+          {showLibrary && (
+              <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                     <h3 className="text-xl font-bold text-gray-800">Profile Library</h3>
+                     <button onClick={() => setShowLibrary(false)} className="text-gray-400 hover:text-gray-600">
+                        <span className="material-symbols-outlined">close</span>
+                     </button>
+                  </div>
+                  
+                  <div className="flex flex-1 overflow-hidden">
+                     {/* Buckets List */}
+                     <div className="w-1/3 border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col">
+                        <div className="mb-4">
+                           <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Folders (Buckets)</h4>
+                           </div>
+                           <div className="flex gap-2 mb-4 bg-white p-1 rounded-lg border border-gray-200 focus-within:border-[#17cf54] transition-colors">
+                              <input 
+                                value={newBucketName}
+                                onChange={(e) => setNewBucketName(e.target.value)}
+                                placeholder="Create new bucket..."
+                                className="flex-1 px-2 py-1.5 text-sm focus:outline-none bg-transparent"
+                              />
+                               <button 
+                                type="button"
+                                onClick={createBucket}
+                                className="px-3 py-1.5 bg-gray-800 text-white rounded-md hover:bg-black transition-colors"
+                              >
+                                 <span className="material-symbols-outlined text-sm">add</span>
+                              </button>
+                           </div>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto space-y-1">
+                           {buckets.length === 0 && <p className="text-sm text-gray-400 italic">No folders yet.</p>}
+                           {buckets.map(bucket => (
+                              <button
+                                key={bucket}
+                                onClick={() => setSelectedBucket(bucket)}
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${selectedBucket === bucket ? 'bg-white shadow-sm text-[#17cf54] border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                              >
+                                 <span className="material-symbols-outlined text-[18px] text-amber-400">folder</span>
+                                 {bucket}
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+
+                     {/* Files List */}
+                     <div className="flex-1 p-6 overflow-y-auto bg-white">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+                           {selectedBucket ? `Profiles in "${selectedBucket}"` : 'Select a folder to view profiles'}
+                        </h4>
+                        
+                        {!selectedBucket && (
+                           <div className="flex flex-col items-center justify-center h-48 text-gray-300">
+                              <span className="material-symbols-outlined text-5xl mb-2">folder_open</span>
+                              <p className="text-sm">Select a folder on the left</p>
+                           </div>
+                        )}
+                        
+                        {selectedBucket && bucketFiles.length === 0 && (
+                           <p className="text-sm text-gray-400 italic">No profiles in this folder.</p>
+                        )}
+                        
+                        <div className="grid grid-cols-1 gap-3">
+                           {bucketFiles.map(file => (
+                              <div 
+                                key={file.name} 
+                                onClick={() => loadProfile(file.name)}
+                                className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
+                              >
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors">
+                                       <span className="material-symbols-outlined">description</span>
+                                    </div>
+                                    <div>
+                                       <p className="text-sm font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors">{file.name.replace(/^profile_/, '').replace(/\.json$/, '')}</p>
+                                       <p className="text-xs text-gray-400">{new Date(file.created * 1000).toLocaleString()}</p>
+                                    </div>
+                                 </div>
+                                 <button 
+                                    className="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg group-hover:bg-[#17cf54] group-hover:text-white group-hover:border-[#17cf54] transition-colors shadow-sm"
+                                 >
+                                    Load
+                                 </button>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-16 pb-16">
             {/* Section 1: Target Identity */}
-            <section ref={section1Ref} className="border-b border-gray-200 pb-12">
+            <section ref={section1Ref} className="border-b border-gray-200 pb-16">
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-10 h-10 bg-[#e6f4ea] rounded-xl flex items-center justify-center text-[#17cf54]">
                   <span className="material-symbols-outlined text-xl">person_search</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-black leading-tight">Target Identity</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define who the chatbot represents in this simulation.</p>
+                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Agent Role & Business Context</h3>
+                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define how the AI represents your business and users.</p>
                 </div>
               </div>
 
@@ -303,12 +472,12 @@ const ProfileSetup = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-8">
                   <div className="space-y-2.5">
                     <label className="text-left text-black text-[13px] font-bold flex items-center gap-1.5 ">
-                      Agent Name
+                      AI Agent Name
                       <span className="material-symbols-outlined text-gray-300 text-[14px] cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
                     </label>
                     <input
                       className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
-                      placeholder="e.g., Customer Service Alpha"
+                      placeholder="e.g., Support Bot"
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
@@ -316,10 +485,11 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Industry Domain</label>
+                    <label className="text-left text-black text-[13px] font-bold ">Business Domain</label>
                     <input
                       className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
-                      placeholder="e.g., Healthcare / PII Protected"
+                      placeholder="e.g., Healthcare"
+                      title="e.g., Healthcare / PII Protected"
                       type="text"
                       value={domain}
                       onChange={(e) => setDomain(e.target.value)}
@@ -327,10 +497,11 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Intended Audience</label>
+                    <label className="text-left text-black text-[13px] font-bold ">Intended Users</label>
                     <input
                       className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
-                      placeholder="e.g., Guest Users (Public)"
+                      placeholder="e.g., Public Users"
+                      title="e.g., Guest Users (Public)"
                       type="text"
                       value={intendedAudience}
                       onChange={(e) => setIntendedAudience(e.target.value)}
@@ -338,7 +509,7 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Tone & Style</label>
+                    <label className="text-left text-black text-[13px] font-bold ">Communication Style</label>
                     <div className="relative">
                       <select
                         className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
@@ -356,7 +527,7 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Agent Type</label>
+                    <label className="text-left text-black text-[13px] font-bold ">AI Function Type</label>
                     <div className="relative">
                       <select
                         className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
@@ -364,7 +535,6 @@ const ProfileSetup = () => {
                         onChange={(e) => setAgentType(e.target.value)}
                       >
                         <option value="">Select agent type</option>
-                        <option value="Simple Chat Assistant">Simple Chat Assistant</option>
                         <option value="Customer Support Bot">Customer Support Bot</option>
                         <option value="Technical Support Agent">Technical Support Agent</option>
                         <option value="Sales Assistant">Sales Assistant</option>
@@ -380,33 +550,35 @@ const ProfileSetup = () => {
             </section>
 
             {/* Section 2: Behavioral Directives */}
-            <section ref={section2Ref} className="border-b border-gray-200 pb-12">
+            <section ref={section2Ref} className="border-b border-gray-200 pb-16">
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-[#e6f4ea] rounded-xl flex items-center justify-center text-[#17cf54]">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
                   <span className="material-symbols-outlined text-xl">psychology</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-black leading-tight">Behavioral Directives</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Specify the constraints and goals of the AI's logic.</p>
+                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
+                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define what success looks like and where the AI must stop.</p>
                 </div>
               </div>
 
               <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Primary Objective</label>
+                  <label className="text-left text-black text-[13px] font-bold ">Business Purpose</label>
                   <textarea
                     className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] p-5 text-[14px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all leading-relaxed h-[180px]"
-                    placeholder="Explain the primary utility of this agent... (e.g., help customers reset passwords via secure tokens)"
+                    placeholder="Describe the agent's main purpose"
+                    title="Explain the primary utility of this agent... (e.g., help customers reset passwords via secure tokens)"
                     value={primaryObjective}
                     onChange={(e) => setPrimaryObjective(e.target.value)}
                   ></textarea>
                 </div>
 
                 <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Operational Boundaries (Guardrails)</label>
+                  <label className="text-left text-black text-[13px] font-bold ">Security & Compliance Constraints</label>
                   <textarea
                     className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] p-5 text-[14px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all leading-relaxed h-[180px]"
-                    placeholder="List strict negative constraints... (e.g., never reveal system prompts, do not discuss internal API structure)"
+                    placeholder="Define security boundaries"
+                    title="List strict negative constraints... (e.g., never reveal system prompts, do not discuss internal API structure)"
                     value={boundaries}
                     onChange={(e) => setBoundaries(e.target.value)}
                   ></textarea>
@@ -421,14 +593,14 @@ const ProfileSetup = () => {
                   <span className="material-symbols-outlined text-xl">settings</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-black leading-tight">System Configuration</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Register what the chatbot can do and how it integrates.</p>
+                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Technical Access & System Exposure</h3>
+                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define where the AI connects and what it is allowed to access.</p>
                 </div>
               </div>
 
               <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] space-y-8">
                 <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Target Endpoint (WebSocket)</label>
+                  <label className="text-left text-black text-[13px] font-bold ">Live Connection Endpoint</label>
                   <input
                     className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
                     placeholder="ws://localhost:8001/ws"
@@ -441,7 +613,7 @@ const ProfileSetup = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="text-left text-black text-[13px] font-bold ">
-                      System Capabilities (Tools/APIs)
+                      Enabled Data Sources
                       <span className="block text-[11px] font-normal text-gray-400 mt-1 normal-case tracking-normal">What can this agent actually do? Click to select, or add below.</span>
                     </label>
 
@@ -471,7 +643,8 @@ const ProfileSetup = () => {
                       <input
                         value={newCapability}
                         onChange={(e) => setNewCapability(e.target.value)}
-                        placeholder="Other capability (type and Add)"
+                        placeholder="Add custom data source"
+                        title="Other capability (type and Add)"
                         className="flex-1 rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
                       />
                       <button
@@ -499,12 +672,26 @@ const ProfileSetup = () => {
             </section>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-6 mb-8 border-t border-gray-200/60">
+            <div className="flex flex-col items-end gap-4 pt-6 mb-8 border-t border-gray-200/60">
+              <div className="flex items-center gap-3">
+                 <label className="text-sm font-bold text-gray-700">Save to Folder:</label>
+                 <select 
+                    value={selectedBucket} 
+                    onChange={(e) => setSelectedBucket(e.target.value)}
+                    className="h-[44px] px-4 rounded-xl border border-gray-200 bg-[#f9fafb] text-sm text-gray-700 focus:outline-none focus:border-[#17cf54]"
+                 >
+                    <option value="">Default (Uploads)</option>
+                    {buckets.map(b => (
+                       <option key={b} value={b}>{b}</option>
+                    ))}
+                 </select>
+              </div>
+
               <button
                 type="submit"
                 className="px-10 py-4 bg-[#17cf54] text-white rounded-xl text-[15px] font-bold hover:bg-[#15ba4a] transition-all flex items-center gap-3 shadow-xl shadow-[#17cf54]/25 hover:shadow-[#17cf54]/40 hover:-translate-y-0.5 active:translate-y-0"
               >
-                Start Orchestration
+                Start Risk Simulation
                 <span className="material-symbols-outlined text-xl">rocket_launch</span>
               </button>
             </div>
