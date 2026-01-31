@@ -30,6 +30,7 @@ class ChatbotProfile(BaseModel):
     
     # Agent Type
     agent_type: Optional[str] = Field(None, description="Type of agent (RAG, Graph-Based, etc.)")
+    bucket_name: Optional[str] = Field(None, description="Bucket/folder name to store the profile in")
     
     # Boundaries & Limitations
     boundaries: str = Field(..., description="What the chatbot should NOT do")

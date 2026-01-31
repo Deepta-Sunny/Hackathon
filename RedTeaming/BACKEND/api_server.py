@@ -225,7 +225,13 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     
     # Save chatbot profile
     os.makedirs("uploads", exist_ok=True)
-    profile_filename = f"uploads/profile_{profile.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    if profile.bucket_name:
+        # Create bucket if uses sends one
+        bucket_dir = Path("uploads") / profile.bucket_name
+        bucket_dir.mkdir(exist_ok=True, parents=True)
+        profile_filename = str(bucket_dir / f"profile_{profile.username}.json")
+    else:
+        profile_filename = f"uploads/profile_{profile.username}.json"
     
     with open(profile_filename, "w", encoding="utf-8") as f:
         json.dump(profile.to_dict(), f, indent=2)
@@ -310,6 +316,151 @@ async def save_dashboard_state(state: dict):
         return {"status": "saved", "message": "Dashboard state saved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save state: {str(e)}")
+
+
+# === BUCKET OPERATIONS ===
+
+@app.get("/api/buckets")
+async def list_buckets():
+    """List all buckets (subdirectories in uploads)"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        return {"buckets": []}
+    
+    buckets = [d.name for d in uploads_dir.iterdir() if d.is_dir()]
+    return {"buckets": buckets}
+
+@app.post("/api/buckets")
+async def create_bucket(bucket_name: str = Form(...)):
+    """Create a new bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if bucket_path.exists():
+        raise HTTPException(status_code=400, detail="Bucket already exists")
+    
+    try:
+        bucket_path.mkdir(parents=True, exist_ok=True)
+        return {"status": "success", "bucket": bucket_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/buckets/{bucket_name}/files")
+async def list_bucket_files(bucket_name: str):
+    """List profile files in a bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if not bucket_path.exists() or not bucket_path.is_dir():
+        # If bucket is "default" or empty, maybe check uploads root? 
+        # But for now assume strict buckets.
+        # However, for backward compatibility, handle "root" if needed, but UI will drive this.
+        if bucket_name == "root": # convention for root
+             bucket_path = uploads_dir
+        else:
+             raise HTTPException(status_code=404, detail="Bucket not found")
+        
+    files = []
+    # Search for files in the bucket
+    for f in bucket_path.glob("profile_*.json"):
+        if f.is_file():
+             files.append({
+                "name": f.name,
+                "created": f.stat().st_mtime
+            })
+    
+    # Sort by creation time desc
+    files.sort(key=lambda x: x["created"], reverse=True)
+    return {"files": files}
+
+@app.get("/api/buckets/{bucket_name}/files/{filename}")
+async def get_bucket_file(bucket_name: str, filename: str):
+    """Get content of a profile file"""
+    uploads_dir = Path("uploads")
+    if bucket_name == "root":
+         file_path = uploads_dir / filename
+    else:
+         file_path = uploads_dir / bucket_name / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# === END BUCKET OPERATIONS ===
+
+
+# === HISTORY OPERATIONS ===
+
+@app.get("/api/history")
+async def list_history():
+    """List all history files"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return {"history": []}
+    
+    files = []
+    for f in history_dir.glob("*.json"):
+        if f.is_file():
+             try:
+                with open(f, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    # Basic validation or minimal data
+                    files.append({
+                        "id": data.get("id", f.stem),
+                        "filename": f.name,
+                        "chatbot_name": data.get("chatbot_name", "Unknown"),
+                        "date": data.get("date", ""),
+                        "total_vulnerabilities": data.get("total_vulnerabilities", 0),
+                        "duration": data.get("duration", "")
+                    })
+             except Exception:
+                 continue # skip broken files
+    
+    # Sort by date desc if possible
+    files.sort(key=lambda x: x["date"], reverse=True)
+    return {"history": files}
+
+@app.get("/api/history/{filename}")
+async def get_history_detail(filename: str):
+    """Get content of a history file"""
+    history_dir = Path("history")
+    file_path = history_dir / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="History file not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# === END HISTORY OPERATIONS ===
+
+
+@app.get("/api/profile/latest")
+async def get_latest_profile():
+    """Get the latest saved chatbot profile"""
+    uploads_dir = Path("uploads")
+    
+    if not uploads_dir.exists():
+        return {"found": False, "message": "No uploads directory found"}
+    
+    # Find all profile JSON files
+    profile_files = list(uploads_dir.glob("profile_*.json"))
+    
+    if not profile_files:
+        return {"found": False, "message": "No profile files found"}
+    
+    # Sort by modification time (latest first)
+    profile_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    latest_file = profile_files[0]
+    
+    try:
+        with open(latest_file, "r", encoding="utf-8") as f:
+            profile_data = json.load(f)
+        return {"found": True, "profile": profile_data, "filename": latest_file.name}
+    except Exception as e:
+        return {"found": False, "error": str(e)}
 
 
 @app.get("/api/results")
