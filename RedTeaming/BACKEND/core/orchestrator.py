@@ -88,14 +88,16 @@ class ConversationContext:
 class AttackPlanGenerator:
     """Generates attack plans using PyRIT seeds molded to target domain."""
     
-    def __init__(self, azure_client: AzureOpenAIClient, db_manager: DuckDBMemoryManager = None, md_file_path: Optional[str] = None):
+    def __init__(self, azure_client: AzureOpenAIClient, db_manager: DuckDBMemoryManager = None, md_file_path: Optional[str] = None, chatbot_profile = None):
         self.azure_client = azure_client
         self.db_manager = db_manager
         self.strategy_orchestrator = None
         self.molding_engine = PromptMoldingEngine(azure_client)
         self.domain_detected = False
-        self.architecture_loader = ArchitectureLoader(md_file_path)
+        # Only create ArchitectureLoader if we have an MD file path (not using chatbot_profile)
+        self.architecture_loader = ArchitectureLoader(md_file_path) if md_file_path else None
         self.cached_architecture = None
+        self.chatbot_profile = chatbot_profile
     
     async def generate_attack_plan(
         self,
@@ -115,15 +117,21 @@ class AttackPlanGenerator:
         
         Args:
             run_number: Current attack run number
-            architecture_context: Optional architecture context (if None, loads from MD file)
+            architecture_context: Optional architecture context (if None, loads from MD file or chatbot_profile)
             previous_findings: Previous vulnerability findings for adaptation
         """
         
-        # Load architecture from MD file if not provided
+        # Load architecture from MD file or chatbot profile if not provided
         if architecture_context is None:
             if self.cached_architecture is None:
-                print(f"[+] Loading architecture from MD file...")
-                self.cached_architecture = self.architecture_loader.load_architecture()
+                if self.chatbot_profile:
+                    print(f"[+] Using chatbot profile for architecture context...")
+                    self.cached_architecture = self.chatbot_profile.to_context_string()
+                elif self.architecture_loader:
+                    print(f"[+] Loading architecture from MD file...")
+                    self.cached_architecture = self.architecture_loader.load_architecture()
+                else:
+                    raise ValueError("No architecture context available. Provide either md_file_path or chatbot_profile.")
             architecture_context = self.cached_architecture
         
         # Detect domain on first run
@@ -900,17 +908,18 @@ Return JSON:
 class ThreeRunCrescendoOrchestrator:
     """Main orchestrator for 3-run adaptive crescendo attack."""
     
-    def __init__(self, websocket_url: str = None, architecture_file: str = None, use_adaptive_mode: bool = True):
+    def __init__(self, websocket_url: str = None, architecture_file: str = None, chatbot_profile = None, use_adaptive_mode: bool = True):
         self.azure_client = AzureOpenAIClient()
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url) if websocket_url else ChatbotWebSocketTarget()
         self.vulnerable_memory = VulnerableResponseMemory()
         self.context = ConversationContext()
         self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
-        self.attack_planner = AttackPlanGenerator(self.azure_client, self.db_manager, md_file_path=architecture_file)
+        self.attack_planner = AttackPlanGenerator(self.azure_client, self.db_manager, md_file_path=architecture_file, chatbot_profile=chatbot_profile)
         self.response_analyzer = ResponseAnalyzer(self.azure_client)
         self.report_generator = ReportGenerator()
         self.run_stats: List[RunStatistics] = []
         self.architecture_file = architecture_file
+        self.chatbot_profile = chatbot_profile
         
         # Adaptive response handling
         self.use_adaptive_mode = use_adaptive_mode

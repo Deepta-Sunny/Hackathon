@@ -425,13 +425,15 @@ class CrescendoAttackOrchestrator:
     def __init__(
         self,
         websocket_url: str,
-        architecture_file: str,
+        architecture_file: str = None,
+        chatbot_profile = None,
         total_runs: int = 3,
         turns_per_run: int = 15,
         use_adaptive_mode: bool = True
     ):
         self.websocket_url = websocket_url
         self.architecture_file = architecture_file
+        self.chatbot_profile = chatbot_profile
         self.total_runs = total_runs
         self.turns_per_run = turns_per_run
         
@@ -460,9 +462,16 @@ class CrescendoAttackOrchestrator:
         print(f"   • Self-Learning: Enabled")
         print("="*70)
         
-        # Load architecture
-        from utils import extract_chatbot_architecture_context
-        architecture_context = extract_chatbot_architecture_context(self.architecture_file)
+        # Load architecture from chatbot profile or MD file
+        if self.chatbot_profile:
+            # Use chatbot profile from frontend form
+            architecture_context = self.chatbot_profile.to_context_string()
+        elif self.architecture_file:
+            # Use architecture MD file upload
+            from utils import extract_chatbot_architecture_context
+            architecture_context = extract_chatbot_architecture_context(self.architecture_file)
+        else:
+            raise ValueError("Either chatbot_profile or architecture_file must be provided")
         
         # Detect domain and select personality
         domain = CrescendoPersonality.detect_domain(architecture_context)
