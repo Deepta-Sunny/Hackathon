@@ -463,6 +463,133 @@ async def get_latest_profile():
         return {"found": False, "error": str(e)}
 
 
+@app.get("/api/profiles")
+async def list_profiles():
+    """Get list of all saved chatbot profiles for Load Profile popup"""
+    uploads_dir = Path("uploads")
+    profiles_dir = Path("profiles")
+    
+    profiles = []
+    
+    # Check both uploads and profiles directories
+    for search_dir in [uploads_dir, profiles_dir]:
+        if not search_dir.exists():
+            continue
+        
+        # Find all profile JSON files
+        for profile_file in search_dir.glob("profile_*.json"):
+            try:
+                with open(profile_file, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                
+                # Get file stats for timestamp
+                file_stat = profile_file.stat()
+                
+                profiles.append({
+                    "filename": profile_file.name,
+                    "filepath": str(profile_file),
+                    "username": profile_data.get("username", "Unknown"),
+                    "domain": profile_data.get("domain", "Unknown"),
+                    "chatbot_role": profile_data.get("chatbot_role", "Unknown"),
+                    "websocket_url": profile_data.get("websocket_url", ""),
+                    "created_at": datetime.fromtimestamp(file_stat.st_ctime).isoformat(),
+                    "modified_at": datetime.fromtimestamp(file_stat.st_mtime).isoformat()
+                })
+            except Exception as e:
+                print(f"Error reading profile {profile_file}: {e}")
+                continue
+    
+    # Sort by modified time (latest first)
+    profiles.sort(key=lambda x: x["modified_at"], reverse=True)
+    
+    return {"profiles": profiles, "count": len(profiles)}
+
+
+@app.get("/api/profiles/{filename}")
+async def get_profile_by_filename(filename: str):
+    """Get a specific profile by filename"""
+    # Search in both directories
+    for search_dir in [Path("uploads"), Path("profiles")]:
+        file_path = search_dir / filename
+        if file_path.exists():
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                return {"found": True, "profile": profile_data, "filename": filename}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error reading profile: {e}")
+    
+    raise HTTPException(status_code=404, detail="Profile not found")
+
+
+@app.post("/api/profiles/save")
+async def save_profile(profile: ChatbotProfile):
+    """Save a chatbot profile without starting an attack"""
+    os.makedirs("profiles", exist_ok=True)
+    
+    # Create filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"profiles/profile_{profile.username}_{timestamp}.json"
+    
+    # Also save as latest for this username
+    latest_filename = f"profiles/profile_{profile.username}.json"
+    
+    profile_dict = profile.to_dict()
+    profile_dict["saved_at"] = datetime.now().isoformat()
+    
+    # Save timestamped version
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Save as latest
+    with open(latest_filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Also save to profile history
+    history_file = Path("profiles/profile_history.json")
+    history = []
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except:
+            history = []
+    
+    history.append({
+        "filename": filename,
+        "username": profile.username,
+        "domain": profile.domain,
+        "chatbot_role": profile.chatbot_role,
+        "saved_at": datetime.now().isoformat()
+    })
+    
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+    
+    return {
+        "status": "saved",
+        "filename": filename,
+        "latest_filename": latest_filename,
+        "message": f"Profile saved for {profile.username}"
+    }
+
+
+@app.get("/api/profiles/history")
+async def get_profile_history():
+    """Get history of all saved profiles"""
+    history_file = Path("profiles/profile_history.json")
+    
+    if not history_file.exists():
+        return {"history": [], "count": 0}
+    
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        return {"history": history, "count": len(history)}
+    except Exception as e:
+        return {"history": [], "count": 0, "error": str(e)}
+
+
 @app.get("/api/results")
 async def get_results():
     """Get all attack results"""
@@ -500,6 +627,105 @@ async def get_run_result(category: str, run_number: int):
         data = json.load(f)
     
     return data
+
+
+# ============================================================================
+# OWASP LLM Top 10 Compliance Endpoints
+# ============================================================================
+
+from utils.owasp_scoring import get_owasp_report, owasp_live_state, OWASP_CATEGORIES
+
+
+@app.get("/api/owasp/report")
+async def get_owasp_compliance_report():
+    """
+    Get complete OWASP LLM Top 10 compliance report.
+    
+    Returns full report with summary and all category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP report: {str(e)}")
+
+
+@app.get("/api/owasp/summary")
+async def get_owasp_summary():
+    """
+    Get OWASP compliance summary only.
+    
+    Returns high-level compliance metrics without category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"summary": report["summary"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP summary: {str(e)}")
+
+
+@app.get("/api/owasp/categories")
+async def get_owasp_categories():
+    """
+    Get all OWASP LLM Top 10 categories with their compliance status.
+    
+    Returns list of categories with test counts and compliance percentages.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"categories": report["categories"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting OWASP categories: {str(e)}")
+
+
+@app.get("/api/owasp/category/{category_id}")
+async def get_owasp_category_details(category_id: str):
+    """
+    Get detailed information for a specific OWASP category.
+    
+    Args:
+        category_id: OWASP category ID (e.g., LLM01, LLM02, etc.)
+    """
+    if category_id not in OWASP_CATEGORIES:
+        raise HTTPException(status_code=404, detail=f"Unknown OWASP category: {category_id}")
+    
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        
+        # Find the specific category
+        for cat in report["categories"]:
+            if cat["id"] == category_id:
+                return {"category": cat}
+        
+        return {"category": None, "message": "No test data for this category"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting category details: {str(e)}")
+
+
+@app.get("/api/owasp/live")
+async def get_owasp_live_state():
+    """
+    Get live OWASP scoring state during active attacks.
+    
+    Returns current real-time OWASP compliance metrics.
+    """
+    return owasp_live_state.get_summary()
+
+
+@app.post("/api/owasp/reset")
+async def reset_owasp_live_state():
+    """Reset the live OWASP scoring state."""
+    owasp_live_state.reset()
+    return {"status": "success", "message": "OWASP live state reset"}
+
+
+# ============================================================================
+# Dashboard Endpoints (continued)
+# ============================================================================
 
 
 @app.get("/api/dashboard/category_success_rate")

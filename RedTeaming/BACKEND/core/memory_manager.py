@@ -32,7 +32,8 @@ class VulnerableResponseMemory:
         context_messages: List[dict],
         attack_technique: str,
         target_nodes: List[str],
-        response_received: bool = True
+        response_received: bool = True,
+        owasp_category: str = "LLM01"
     ):
         """Add a vulnerability finding."""
         finding = VulnerabilityFinding(
@@ -45,7 +46,8 @@ class VulnerableResponseMemory:
             context_messages=context_messages,
             attack_technique=attack_technique,
             target_nodes=target_nodes,
-            response_received=response_received
+            response_received=response_received,
+            owasp_category=owasp_category
         )
         self.findings.append(finding)
     

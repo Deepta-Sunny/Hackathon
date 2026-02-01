@@ -8,6 +8,7 @@ import { createUseStyles } from "react-jss";
 import { useSelector } from "react-redux";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import type { RootState } from "../store/Store";
+import OwaspComplianceReport from "./OwaspComplianceReport";
 
 const useStyles = createUseStyles({
   container: {
@@ -31,7 +32,7 @@ const useStyles = createUseStyles({
   },
   headerTitle: {
     fontWeight: 600,
-    fontSize: "18px",
+    fontSize: "14px",
   },
   content: {
     flex: 1,
@@ -43,31 +44,31 @@ const useStyles = createUseStyles({
   },
   statsContainer: {
     display: "grid",
-    gridTemplateColumns: "200px 1fr",
+    gridTemplateColumns: "140px 1fr",
     gridTemplateRows: "auto auto",
-    gap: "16px",
-    marginBottom: "8px",
+    gap: "10px",
+    marginBottom: "4px",
   },
   statsRow: {
     display: "flex",
-    gap: "16px",
+    gap: "10px",
   },
   statCard: {
-    flex: "1 1 150px",
-    padding: "16px",
+    flex: "1 1 120px",
+    padding: "10px",
     backgroundColor: "#f8f9fa",
-    borderRadius: "8px",
+    borderRadius: "6px",
     border: "1px solid #e0e0e0",
     textAlign: "center",
   },
   statValue: {
-    fontSize: "32px",
+    fontSize: "16px",
     fontWeight: "bold",
     color: "#20a100ff",
-    marginBottom: "8px",
+    marginBottom: "2px",
   },
   statLabel: {
-    fontSize: "14px",
+    fontSize: "10px",
     color: "#666",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
@@ -77,10 +78,10 @@ const useStyles = createUseStyles({
     minHeight: "300px",
   },
   chartTitle: {
-    fontSize: "16px",
+    fontSize: "12px",
     fontWeight: 600,
     color: "#333",
-    marginBottom: "12px",
+    marginBottom: "8px",
   },
   circularScoreContainer: {
     gridRow: "1 / 3",
@@ -88,13 +89,13 @@ const useStyles = createUseStyles({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    padding: "16px",
+    padding: "10px",
     backgroundColor: "#f8f9fa",
-    borderRadius: "8px",
+    borderRadius: "6px",
     border: "1px solid #e0e0e0",
   },
   scoreLabel: {
-    fontSize: "14px",
+    fontSize: "10px",
     color: "#666",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
@@ -120,6 +121,9 @@ interface VulnerabilityData {
 const ReportsPanel: React.FC = () => {
   const classes = useStyles();
   const { monitorSocket } = useSelector((state: RootState) => state.api);
+  
+  // Toggle state for Overall vs OWASP view
+  const [activeView, setActiveView] = useState<'overall' | 'owasp'>('overall');
   
   // Track vulnerabilities by category, run, and risk level
   const [vulnerabilityStats, setVulnerabilityStats] = useState<{
@@ -338,23 +342,66 @@ const ReportsPanel: React.FC = () => {
   return (
     <Paper className={classes.container} elevation={2}>
       <Box className={classes.header}>
-        <Typography fontFamily="inherit" className={classes.headerTitle}>
-          Vulnerability Reports
-        </Typography>
+        <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography fontFamily="inherit" className={classes.headerTitle}>
+            Vulnerability Reports
+          </Typography>
+          
+          {/* Toggle Button */}
+          <Box style={{ display: 'flex', gap: '8px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '4px', border: '1px solid #20a100ff' }}>
+            <button
+              onClick={() => setActiveView('overall')}
+              style={{
+                padding: '6px 12px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: activeView === 'overall' ? '#20a100ff' : 'transparent',
+                color: activeView === 'overall' ? '#ffffff' : '#20a100ff',
+                fontWeight: 600,
+                fontSize: '11px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontFamily: 'inherit'
+              }}
+            >
+              Overall Vulnerability Report
+            </button>
+            <button
+              onClick={() => setActiveView('owasp')}
+              style={{
+                padding: '6px 12px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: activeView === 'owasp' ? '#20a100ff' : 'transparent',
+                color: activeView === 'owasp' ? '#ffffff' : '#20a100ff',
+                fontWeight: 600,
+                fontSize: '11px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontFamily: 'inherit'
+              }}
+            >
+              OWASP Compliance Report
+            </button>
+          </Box>
+        </Box>
       </Box>
       
       <Box className={classes.content}>
+        {/* Overall Vulnerability Report View */}
+        {activeView === 'overall' && (
+        <>
         {/* Summary Statistics */}
         <Box className={classes.statsContainer}>
           {/* Circular Progress Bar for Vulnerability Score - Column 1, Row span 2 */}
           <Box className={classes.circularScoreContainer}>
-            <ResponsiveContainer width={140} height={140}>
+            <ResponsiveContainer width={100} height={100}>
               <RadialBarChart 
                 cx="50%" 
                 cy="50%" 
                 innerRadius="70%" 
                 outerRadius="100%" 
-                barSize={12}
+                barSize={10}
                 data={[{
                   name: 'Score',
                   value: parseFloat(vulnerabilityScore),
@@ -367,7 +414,7 @@ const ReportsPanel: React.FC = () => {
                 <RadialBar
                   background={{ fill: '#e0e0e0' }}
                   dataKey="value"
-                  cornerRadius={10}
+                  cornerRadius={8}
                 />
                 <text
                   x="50%"
@@ -375,7 +422,7 @@ const ReportsPanel: React.FC = () => {
                   textAnchor="middle"
                   dominantBaseline="middle"
                   style={{
-                    fontSize: '24px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
                     fill: parseFloat(vulnerabilityScore) > 66.6 ? '#d32f2f' : parseFloat(vulnerabilityScore) > 33.3 ? '#f57c00' : '#388e3c'
                   }}
@@ -443,13 +490,13 @@ const ReportsPanel: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="category" 
-                style={{ fontSize: '10px', fontFamily: 'inherit' }}
+                style={{ fontSize: '8px', fontFamily: 'inherit' }}
                 angle={-45}
                 textAnchor="end"
-                height={120}
+                height={100}
                 interval={0}
               />
-              <YAxis style={{ fontSize: '12px', fontFamily: 'inherit' }} allowDecimals={false} />
+              <YAxis style={{ fontSize: '9px', fontFamily: 'inherit' }} allowDecimals={false} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#fff', 
@@ -458,7 +505,7 @@ const ReportsPanel: React.FC = () => {
                   fontFamily: 'inherit'
                 }}
               />
-              <Legend wrapperStyle={{ fontFamily: 'inherit', fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontFamily: 'inherit', fontSize: '9px' }} />
               <Bar dataKey="critical" stackId="a" fill="#d32f2f" name="Critical" />
               <Bar dataKey="high" stackId="a" fill="#f57c00" name="High" />
               <Bar dataKey="medium" stackId="a" fill="#fbc02d" name="Medium" />
@@ -466,6 +513,13 @@ const ReportsPanel: React.FC = () => {
             </BarChart>
           </ResponsiveContainer>
         </Box>
+        </>
+        )}
+        
+        {/* OWASP Compliance Report View */}
+        {activeView === 'owasp' && (
+          <OwaspComplianceReport />
+        )}
       </Box>
     </Paper>
   );

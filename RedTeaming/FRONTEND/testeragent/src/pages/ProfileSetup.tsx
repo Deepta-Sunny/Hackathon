@@ -45,7 +45,55 @@ const ProfileSetup = () => {
   const [selectedBucket, setSelectedBucket] = useState<string>("");
   const [bucketFiles, setBucketFiles] = useState<{name: string, created: number}[]>([]);
   const [newBucketName, setNewBucketName] = useState("");
+  
+  // Profile History State
+  const [savedProfiles, setSavedProfiles] = useState<{
+    filename: string;
+    username: string;
+    domain: string;
+    chatbot_role: string;
+    websocket_url: string;
+    created_at: string;
+    modified_at: string;
+  }[]>([]);
+  const [activeTab, setActiveTab] = useState<'saved' | 'buckets'>('saved');
+  
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+  // Fetch saved profiles from backend
+  const fetchSavedProfiles = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profiles`);
+      const data = await res.json();
+      setSavedProfiles(data.profiles || []);
+    } catch (e) {
+      console.error("Error fetching saved profiles:", e);
+    }
+  };
+
+  // Load a saved profile by filename
+  const loadSavedProfile = async (filename: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profiles/${filename}`);
+      if (res.ok) {
+        const data = await res.json();
+        const profile = data.profile;
+        setUsername(profile.username || "");
+        setWebsocketUrl(profile.websocket_url || "ws://localhost:8001/ws");
+        setDomain(profile.domain || "");
+        setPrimaryObjective(profile.primary_objective || "");
+        setIntendedAudience(profile.intended_audience || "");
+        setChatbotRole(profile.chatbot_role || "");
+        setAgentType(profile.agent_type || "");
+        setCapabilities(profile.capabilities || [""]);
+        setBoundaries(profile.boundaries || "");
+        setCommunicationStyle(profile.communication_style || "");
+        setShowLibrary(false);
+      }
+    } catch (e) {
+      console.error("Error loading saved profile:", e);
+    }
+  };
 
   const fetchBuckets = async () => {
     try {
@@ -112,6 +160,7 @@ const ProfileSetup = () => {
   useEffect(() => {
      if (showLibrary) {
         fetchBuckets();
+        fetchSavedProfiles();
      }
   }, [showLibrary]);
 
@@ -369,6 +418,80 @@ const ProfileSetup = () => {
                      </button>
                   </div>
                   
+                  {/* Tabs */}
+                  <div className="flex border-b border-gray-100">
+                     <button
+                       onClick={() => setActiveTab('saved')}
+                       className={`px-6 py-3 text-sm font-medium transition-colors ${
+                         activeTab === 'saved'
+                           ? 'text-[#17cf54] border-b-2 border-[#17cf54] bg-white'
+                           : 'text-gray-500 hover:text-gray-700'
+                       }`}
+                     >
+                       <span className="flex items-center gap-2">
+                         <span className="material-symbols-outlined text-sm">history</span>
+                         Saved Profiles
+                       </span>
+                     </button>
+                     <button
+                       onClick={() => setActiveTab('buckets')}
+                       className={`px-6 py-3 text-sm font-medium transition-colors ${
+                         activeTab === 'buckets'
+                           ? 'text-[#17cf54] border-b-2 border-[#17cf54] bg-white'
+                           : 'text-gray-500 hover:text-gray-700'
+                       }`}
+                     >
+                       <span className="flex items-center gap-2">
+                         <span className="material-symbols-outlined text-sm">folder</span>
+                         Buckets
+                       </span>
+                     </button>
+                  </div>
+                  
+                  {/* Saved Profiles Tab Content */}
+                  {activeTab === 'saved' && (
+                    <div className="flex-1 p-6 overflow-y-auto">
+                      {savedProfiles.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-gray-300">
+                          <span className="material-symbols-outlined text-5xl mb-2">person_off</span>
+                          <p className="text-sm">No saved profiles yet</p>
+                          <p className="text-xs text-gray-400 mt-1">Profiles are saved when you start a simulation</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {savedProfiles.map((profile) => (
+                            <div
+                              key={profile.filename}
+                              onClick={() => loadSavedProfile(profile.filename)}
+                              className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors flex-shrink-0">
+                                  <span className="material-symbols-outlined">person</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors truncate">
+                                    {profile.username || 'Unnamed Profile'}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">{profile.domain || 'No domain'}</p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {new Date(profile.modified_at).toLocaleDateString()} at {new Date(profile.modified_at).toLocaleTimeString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
+                                <span className="material-symbols-outlined text-sm">smart_toy</span>
+                                <span className="truncate">{profile.chatbot_role || 'No role defined'}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Buckets Tab Content */}
+                  {activeTab === 'buckets' && (
                   <div className="flex flex-1 overflow-hidden">
                      {/* Buckets List */}
                      <div className="w-1/3 border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col">
@@ -451,6 +574,7 @@ const ProfileSetup = () => {
                         </div>
                      </div>
                   </div>
+                  )}
                 </div>
               </div>
           )}

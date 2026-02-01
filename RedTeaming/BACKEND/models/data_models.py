@@ -32,6 +32,7 @@ class VulnerabilityFinding:
     target_nodes: List[str]
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     response_received: bool = True
+    owasp_category: str = "LLM01"  # Default to Prompt Injection
     
 
 @dataclass
