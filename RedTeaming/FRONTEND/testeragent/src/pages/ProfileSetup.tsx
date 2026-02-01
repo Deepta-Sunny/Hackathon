@@ -272,7 +272,7 @@ const ProfileSetup = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-white font-sans">
       {/* Sidebar */}
-      <aside className="w-56 bg-white border-r border-gray-300 flex flex-col justify-between pt-0 pb-6 px-2 sticky top-0 h-screen overflow-visible">
+      <aside className="w-56 bg-white border-r border-gray-300 flex flex-col justify-between pt-4 pb-6 px-2 sticky top-0 h-screen overflow-visible">
         <div className="flex flex-col gap-12">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -334,12 +334,12 @@ const ProfileSetup = () => {
 
         {/* User Profile */}
         <div 
-            className="mt-auto relative group"
+            className="mt-auto relative group mb-6"
             onMouseEnter={() => setIsProfileMenuOpen(true)}
             onMouseLeave={() => setIsProfileMenuOpen(false)}
         >
           <div 
-            className="w-full bg-[#f9fafb] rounded-xl p-3 flex items-center gap-3 border border-gray-100/50 group-hover:bg-white group-hover:border-[#0f62fe]/20 transition-all cursor-default text-left"
+            className="w-full bg-[#f9fafb] rounded-xl p-4 flex items-center gap-3 border border-gray-100/50 group-hover:bg-white group-hover:border-[#0f62fe]/20 transition-all cursor-default text-left"
           >
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white">
@@ -380,11 +380,11 @@ const ProfileSetup = () => {
       >
         <div className="max-w-6xl ml-12 pt-4 pr-12 text-left">
           {/* Header */}
-          <header className="mb-6 border-b border-gray-200 pb-4">
+          <header className="mb-10 border-b border-gray-200 pb-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
-                <h2 className="text-left text-slate-700 text-[28px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
-                <p className="text-left text-gray-500 text-sm font-normal max-w-3xl leading-relaxed">
+                <h2 className="text-left text-slate-700 text-[36px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
+                <p className="text-left text-gray-500 text-base font-medium max-w-3xl leading-relaxed">
                   Define what this AI represents, what it can access, and how it behaves under risk scenarios.
                 </p>
               </div>
@@ -537,27 +537,27 @@ const ProfileSetup = () => {
               </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-12 pb-8">
             {/* Section 1: Target Identity */}
-            <section ref={section1Ref} className="border-b border-gray-200 pb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-[#edf5ff] rounded-lg flex items-center justify-center text-[#0f62fe]">
-                  <span className="material-symbols-outlined text-sm">person_search</span>
+            <section ref={section1Ref} className="border-b border-gray-200 pb-12">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-[#edf5ff] rounded-lg flex items-center justify-center text-[#0f62fe]">
+                  <span className="material-symbols-outlined text-xl">person_search</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-base text-slate-700 leading-tight">Agent Role & Business Context</h3>
-                  <p className="text-left text-gray-500 text-base mt-0.5">Define how the AI represents your business and users.</p>
+                  <h3 className="text-left text-2xl font-bold text-slate-700 leading-tight">Agent Role & Business Context</h3>
+                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Define how the AI represents your business and users.</p>
                 </div>
               </div>
               <div className="bg-[#ffffff] p-4 rounded-xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-left text-black text-base font-bold flex items-center gap-1.5 ">
+                    <label className="text-left text-black text-base font-semibold flex items-center gap-1.5 ">
                       AI Agent Name
                       <span className="material-symbols-outlined text-gray-300 text-base cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
                     </label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Support Bot"
                       type="text"
                       value={username}
@@ -566,9 +566,9 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-left text-black text-base font-bold ">Business Domain</label>
+                    <label className="text-left text-black text-base font-semibold ">Business Domain</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Healthcare"
                       title="e.g., Healthcare / PII Protected"
                       type="text"
@@ -578,9 +578,9 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-left text-black text-base font-bold ">Intended Users</label>
+                    <label className="text-left text-black text-base font-semibold ">Intended Users</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Public Users"
                       title="e.g., Guest Users (Public)"
                       type="text"
@@ -590,10 +590,10 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-left text-black text-base font-bold ">Communication Style</label>
+                    <label className="text-left text-black text-base font-semibold ">Communication Style</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-lg border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
+                        className="w-full rounded-lg border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
                         value={communicationStyle}
                         onChange={(e) => setCommunicationStyle(e.target.value)}
                       >
@@ -608,10 +608,10 @@ const ProfileSetup = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-left text-black text-base font-bold ">AI Function Type</label>
+                    <label className="text-left text-black text-base font-semibold ">AI Function Type</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-xl border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
+                        className="w-full rounded-xl border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
                         value={agentType}
                         onChange={(e) => setAgentType(e.target.value)}
                       >
@@ -631,21 +631,21 @@ const ProfileSetup = () => {
             </section>
 
             {/* Section 2: Behavioral Directives */}
-            <section ref={section2Ref} className="border-b border-gray-200 pb-16">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-[#edf5ff] rounded-xl flex items-center justify-center text-[#0f62fe]">
-                  <span className="material-symbols-outlined text-base">verified_user</span>
+            <section ref={section2Ref} className="border-b border-gray-200 pb-12">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-[#edf5ff] rounded-xl flex items-center justify-center text-[#0f62fe]">
+                  <span className="material-symbols-outlined text-xl">verified_user</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-base text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
-                  <p className="text-left text-gray-500 text-base mt-0.5">Define what success looks like and where the AI must stop.</p>
+                  <h3 className="text-left text-2xl font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
+                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Define what success looks like and where the AI must stop.</p>
                 </div>
               </div>
               <div className="bg-[#ffffff] p-4 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-left text-black text-base font-bold ">Business Purpose</label>
+                  <label className="text-left text-black text-base font-semibold ">Business Purpose</label>
                   <textarea
-                    className="w-full rounded-xl border border-gray-300 bg-white p-3 text-base text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[90px]"
+                    className="w-full rounded-xl border border-gray-300 bg-white p-3 text-base text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[120px]"
                     placeholder="Describe the agent's main purpose"
                     title="Explain the primary utility of this agent... (e.g., help customers reset passwords via secure tokens)"
                     value={primaryObjective}
@@ -653,9 +653,9 @@ const ProfileSetup = () => {
                   ></textarea>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-left text-black text-base font-bold ">Security & Compliance Constraints</label>
+                  <label className="text-left text-black text-base font-semibold ">Security & Compliance Constraints</label>
                   <textarea
-                    className="w-full rounded-xl border border-gray-300 bg-white p-3 text-base text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[90px]"
+                    className="w-full rounded-xl border border-gray-300 bg-white p-3 text-base text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[120px]"
                     placeholder="Define security boundaries"
                     title="List strict negative constraints... (e.g., never reveal system prompts, do not discuss internal API structure)"
                     value={boundaries}
@@ -667,20 +667,20 @@ const ProfileSetup = () => {
 
             {/* Section 3: System Configuration */}
             <section ref={section3Ref}>
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-[#edf5ff] rounded-xl flex items-center justify-center text-[#0f62fe]">
-                  <span className="material-symbols-outlined text-base">settings</span>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-[#edf5ff] rounded-xl flex items-center justify-center text-[#0f62fe]">
+                  <span className="material-symbols-outlined text-xl">settings</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-base text-slate-700 leading-tight">Technical Access & System Exposure</h3>
-                  <p className="text-left text-gray-500 text-base mt-0.5">Define where the AI connects and what it is allowed to access.</p>
+                  <h3 className="text-left text-2xl font-bold text-slate-700 leading-tight">Technical Access & System Exposure</h3>
+                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Define where the AI connects and what it is allowed to access.</p>
                 </div>
               </div>
               <div className="bg-[#ffffff] p-4 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-2">
-                  <label className="text-left text-black text-base font-bold ">Live Connection Endpoint</label>
+                  <label className="text-left text-black text-base font-semibold ">Live Connection Endpoint</label>
                   <input
-                    className="w-full rounded-xl border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
+                    className="w-full rounded-xl border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                     placeholder="ws://localhost:8001/ws"
                     type="text"
                     value={websocketUrl}
@@ -689,7 +689,7 @@ const ProfileSetup = () => {
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label className="text-left text-black text-base font-bold ">
+                    <label className="text-left text-black text-base font-semibold ">
                       Enabled Data Sources
                       <span className="block text-sm font-normal text-gray-400 mt-1 normal-case tracking-normal">What can this agent actually do? Click to select, or add below.</span>
                     </label>
@@ -720,7 +720,7 @@ const ProfileSetup = () => {
                         onChange={(e) => setNewCapability(e.target.value)}
                         placeholder="Add custom data source"
                         title="Other capability (type and Add)"
-                        className="flex-1 rounded-xl border border-gray-300 bg-white h-[36px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
+                          className="flex-1 rounded-xl border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       />
                       <button
                         type="button"
@@ -748,11 +748,11 @@ const ProfileSetup = () => {
             {/* Submit Button */}
             <div className="flex flex-col items-end gap-4 pt-6 pb-8 mb-24 border-t border-gray-200/60">
               <div className="flex items-center gap-2">
-                <label className="text-base font-bold text-gray-700">Save to Folder:</label>
+                <label className="text-base font-semibold text-gray-700">Save to Folder:</label>
                 <select 
                   value={selectedBucket} 
                   onChange={(e) => setSelectedBucket(e.target.value)}
-                  className="h-[36px] px-3 rounded-xl border border-gray-300 bg-white text-base text-gray-700 focus:outline-none focus:border-[#0f62fe]"
+                  className="h-[42px] px-3 rounded-xl border border-gray-300 bg-white text-base text-gray-700 focus:outline-none focus:border-[#0f62fe]"
                 >
                   <option value="">Default (Uploads)</option>
                   {buckets.map(b => (
