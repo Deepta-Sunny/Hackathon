@@ -46,54 +46,11 @@ const ProfileSetup = () => {
   const [bucketFiles, setBucketFiles] = useState<{name: string, created: number}[]>([]);
   const [newBucketName, setNewBucketName] = useState("");
   
-  // Profile History State
-  const [savedProfiles, setSavedProfiles] = useState<{
-    filename: string;
-    username: string;
-    domain: string;
-    chatbot_role: string;
-    websocket_url: string;
-    created_at: string;
-    modified_at: string;
-  }[]>([]);
-  const [activeTab, setActiveTab] = useState<'saved' | 'buckets'>('saved');
+  // Move File State
+  const [fileToMove, setFileToMove] = useState<string | null>(null);
+  const [moveTargetBucket, setMoveTargetBucket] = useState<string>("");
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
-  // Fetch saved profiles from backend
-  const fetchSavedProfiles = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profiles`);
-      const data = await res.json();
-      setSavedProfiles(data.profiles || []);
-    } catch (e) {
-      console.error("Error fetching saved profiles:", e);
-    }
-  };
-
-  // Load a saved profile by filename
-  const loadSavedProfile = async (filename: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profiles/${filename}`);
-      if (res.ok) {
-        const data = await res.json();
-        const profile = data.profile;
-        setUsername(profile.username || "");
-        setWebsocketUrl(profile.websocket_url || "ws://localhost:8001/ws");
-        setDomain(profile.domain || "");
-        setPrimaryObjective(profile.primary_objective || "");
-        setIntendedAudience(profile.intended_audience || "");
-        setChatbotRole(profile.chatbot_role || "");
-        setAgentType(profile.agent_type || "");
-        setCapabilities(profile.capabilities || [""]);
-        setBoundaries(profile.boundaries || "");
-        setCommunicationStyle(profile.communication_style || "");
-        setShowLibrary(false);
-      }
-    } catch (e) {
-      console.error("Error loading saved profile:", e);
-    }
-  };
 
   const fetchBuckets = async () => {
     try {
@@ -157,12 +114,45 @@ const ProfileSetup = () => {
     }
   };
 
+  const handleMoveFile = async () => {
+    if (!fileToMove || !moveTargetBucket || !selectedBucket) return;
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/buckets/move`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                filename: fileToMove,
+                source_bucket: selectedBucket,
+                target_bucket: moveTargetBucket
+            })
+        });
+        
+        if (res.ok) {
+            setFileToMove(null);
+            setMoveTargetBucket("");
+            fetchBucketFiles(selectedBucket); 
+        } else {
+            console.error("Failed to move file");
+        }
+    } catch (e) {
+        console.error("Error moving file:", e);
+    }
+  };
+
   useEffect(() => {
      if (showLibrary) {
         fetchBuckets();
-        fetchSavedProfiles();
      }
   }, [showLibrary]);
+
+  useEffect(() => {
+      if (buckets.includes("General") && !selectedBucket) {
+          setSelectedBucket("General");
+      } else if (buckets.length > 0 && !selectedBucket) {
+          setSelectedBucket(buckets[0]);
+      }
+  }, [buckets]);
 
   useEffect(() => {
      if (selectedBucket) {
@@ -388,20 +378,20 @@ const ProfileSetup = () => {
       >
         <div className="max-w-6xl ml-12 pt-4 pr-12 text-left">
           {/* Header */}
-          <header className="mb-16 border-b border-gray-200 pb-10">
+          <header className="mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-start">
-              <div className="space-y-4">
-                <h2 className="text-left text-slate-700 text-[42px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
-                <p className="text-left text-gray-500 text-[15px] font-normal max-w-3xl leading-relaxed">
+              <div className="space-y-2">
+                <h2 className="text-left text-slate-700 text-[28px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
+                <p className="text-left text-gray-500 text-sm font-normal max-w-3xl leading-relaxed">
                   Define what this AI represents, what it can access, and how it behaves under risk scenarios.
                 </p>
               </div>
               <div>
                  <button 
                   onClick={() => setShowLibrary(true)}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition-colors flex items-center gap-2"
                  >
-                   <span className="material-symbols-outlined">folder_open</span>
+                   <span className="material-symbols-outlined text-lg">folder_open</span>
                    Load Profile
                  </button>
               </div>
@@ -409,89 +399,15 @@ const ProfileSetup = () => {
           </header>
 
           {showLibrary && (
-              <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                     <h3 className="text-xl font-bold text-gray-800">Profile Library</h3>
+              <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
+                <div className="bg-white rounded-xl shadow-2xl w-[900px] h-[700px] flex flex-col overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                     <h3 className="text-lg font-bold text-gray-800">Profile Library</h3>
                      <button onClick={() => setShowLibrary(false)} className="text-gray-400 hover:text-gray-600">
                         <span className="material-symbols-outlined">close</span>
                      </button>
                   </div>
                   
-                  {/* Tabs */}
-                  <div className="flex border-b border-gray-100">
-                     <button
-                       onClick={() => setActiveTab('saved')}
-                       className={`px-6 py-3 text-sm font-medium transition-colors ${
-                         activeTab === 'saved'
-                           ? 'text-[#17cf54] border-b-2 border-[#17cf54] bg-white'
-                           : 'text-gray-500 hover:text-gray-700'
-                       }`}
-                     >
-                       <span className="flex items-center gap-2">
-                         <span className="material-symbols-outlined text-sm">history</span>
-                         Saved Profiles
-                       </span>
-                     </button>
-                     <button
-                       onClick={() => setActiveTab('buckets')}
-                       className={`px-6 py-3 text-sm font-medium transition-colors ${
-                         activeTab === 'buckets'
-                           ? 'text-[#17cf54] border-b-2 border-[#17cf54] bg-white'
-                           : 'text-gray-500 hover:text-gray-700'
-                       }`}
-                     >
-                       <span className="flex items-center gap-2">
-                         <span className="material-symbols-outlined text-sm">folder</span>
-                         Buckets
-                       </span>
-                     </button>
-                  </div>
-                  
-                  {/* Saved Profiles Tab Content */}
-                  {activeTab === 'saved' && (
-                    <div className="flex-1 p-6 overflow-y-auto">
-                      {savedProfiles.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-48 text-gray-300">
-                          <span className="material-symbols-outlined text-5xl mb-2">person_off</span>
-                          <p className="text-sm">No saved profiles yet</p>
-                          <p className="text-xs text-gray-400 mt-1">Profiles are saved when you start a simulation</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {savedProfiles.map((profile) => (
-                            <div
-                              key={profile.filename}
-                              onClick={() => loadSavedProfile(profile.filename)}
-                              className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="w-12 h-12 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors flex-shrink-0">
-                                  <span className="material-symbols-outlined">person</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors truncate">
-                                    {profile.username || 'Unnamed Profile'}
-                                  </p>
-                                  <p className="text-xs text-gray-500 truncate">{profile.domain || 'No domain'}</p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    {new Date(profile.modified_at).toLocaleDateString()} at {new Date(profile.modified_at).toLocaleTimeString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
-                                <span className="material-symbols-outlined text-sm">smart_toy</span>
-                                <span className="truncate">{profile.chatbot_role || 'No role defined'}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Buckets Tab Content */}
-                  {activeTab === 'buckets' && (
                   <div className="flex flex-1 overflow-hidden">
                      {/* Buckets List */}
                      <div className="w-1/3 border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col">
@@ -504,27 +420,27 @@ const ProfileSetup = () => {
                                 value={newBucketName}
                                 onChange={(e) => setNewBucketName(e.target.value)}
                                 placeholder="Create new bucket..."
-                                className="flex-1 px-2 py-1.5 text-sm focus:outline-none bg-transparent"
+                                className="flex-1 px-2 py-1.5 text-xs focus:outline-none bg-transparent"
                               />
                                <button 
                                 type="button"
                                 onClick={createBucket}
                                 className="px-3 py-1.5 bg-gray-800 text-white rounded-md hover:bg-black transition-colors"
                               >
-                                 <span className="material-symbols-outlined text-sm">add</span>
+                                 <span className="material-symbols-outlined text-xs">add</span>
                               </button>
                            </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto space-y-1">
-                           {buckets.length === 0 && <p className="text-sm text-gray-400 italic">No folders yet.</p>}
+                           {buckets.length === 0 && <p className="text-xs text-gray-400 italic">No folders yet.</p>}
                            {buckets.map(bucket => (
                               <button
                                 key={bucket}
                                 onClick={() => setSelectedBucket(bucket)}
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${selectedBucket === bucket ? 'bg-white shadow-sm text-[#17cf54] border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors ${selectedBucket === bucket ? 'bg-white shadow-sm text-[#17cf54] border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
                               >
-                                 <span className="material-symbols-outlined text-[18px] text-amber-400">folder</span>
+                                 <span className="material-symbols-outlined text-[16px] text-amber-400">folder</span>
                                  {bucket}
                               </button>
                            ))}
@@ -532,75 +448,115 @@ const ProfileSetup = () => {
                      </div>
 
                      {/* Files List */}
-                     <div className="flex-1 p-6 overflow-y-auto bg-white">
+                     <div className="flex-1 p-4 overflow-y-auto bg-white">
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
                            {selectedBucket ? `Profiles in "${selectedBucket}"` : 'Select a folder to view profiles'}
                         </h4>
                         
                         {!selectedBucket && (
                            <div className="flex flex-col items-center justify-center h-48 text-gray-300">
-                              <span className="material-symbols-outlined text-5xl mb-2">folder_open</span>
-                              <p className="text-sm">Select a folder on the left</p>
+                              <span className="material-symbols-outlined text-4xl mb-2">folder_open</span>
+                              <p className="text-xs">Select a folder on the left</p>
                            </div>
                         )}
                         
                         {selectedBucket && bucketFiles.length === 0 && (
-                           <p className="text-sm text-gray-400 italic">No profiles in this folder.</p>
+                           <p className="text-xs text-gray-400 italic">No profiles in this folder.</p>
                         )}
                         
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-2">
                            {bucketFiles.map(file => (
                               <div 
                                 key={file.name} 
                                 onClick={() => loadProfile(file.name)}
-                                className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
+                                className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
                               >
                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors">
-                                       <span className="material-symbols-outlined">description</span>
+                                    <div className="w-8 h-8 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors">
+                                       <span className="material-symbols-outlined text-lg">description</span>
                                     </div>
                                     <div>
-                                       <p className="text-sm font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors">{file.name.replace(/^profile_/, '').replace(/\.json$/, '')}</p>
-                                       <p className="text-xs text-gray-400">{new Date(file.created * 1000).toLocaleString()}</p>
+                                       <p className="text-xs font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors">{file.name.replace(/^profile_/, '').replace(/\.json$/, '')}</p>
+                                       <p className="text-[10px] text-gray-400">{new Date(file.created * 1000).toLocaleString()}</p>
                                     </div>
                                  </div>
-                                 <button 
-                                    className="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg group-hover:bg-[#17cf54] group-hover:text-white group-hover:border-[#17cf54] transition-colors shadow-sm"
-                                 >
-                                    Load
-                                 </button>
+                                 
+                                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                    {/* Move File UI */}
+                                    {fileToMove === file.name ? (
+                                        <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                                            <select 
+                                                className="text-[10px] border-none bg-transparent outline-none py-1 w-20"
+                                                value={moveTargetBucket}
+                                                onChange={e => setMoveTargetBucket(e.target.value)}
+                                            >
+                                                <option value="">Move...</option>
+                                                {buckets.filter(b => b !== selectedBucket).map(b => (
+                                                    <option key={b} value={b}>{b}</option>
+                                                ))}
+                                            </select>
+                                            <button 
+                                                onClick={handleMoveFile}
+                                                disabled={!moveTargetBucket}
+                                                className={`p-1 rounded ${moveTargetBucket ? 'text-green-600 hover:bg-green-50' : 'text-gray-300'}`}
+                                            >
+                                                <span className="material-symbols-outlined text-xs">check</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => {setFileToMove(null); setMoveTargetBucket("")}}
+                                                className="p-1 rounded text-red-500 hover:bg-red-50"
+                                            >
+                                                <span className="material-symbols-outlined text-xs">close</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={() => setFileToMove(file.name)}
+                                            title="Move file"
+                                            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">drive_file_move</span>
+                                        </button>
+                                    )}
+
+                                    <button 
+                                        onClick={() => loadProfile(file.name)}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg group-hover:bg-[#17cf54] group-hover:text-white group-hover:border-[#17cf54] transition-colors shadow-sm"
+                                    >
+                                        Load
+                                    </button>
+                                 </div>
                               </div>
                            ))}
                         </div>
                      </div>
                   </div>
-                  )}
                 </div>
               </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-16 pb-16">
+          <form onSubmit={handleSubmit} className="space-y-8 pb-8">
             {/* Section 1: Target Identity */}
-            <section ref={section1Ref} className="border-b border-gray-200 pb-16">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-[#e6f4ea] rounded-xl flex items-center justify-center text-[#17cf54]">
-                  <span className="material-symbols-outlined text-xl">person_search</span>
+            <section ref={section1Ref} className="border-b border-gray-200 pb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#e6f4ea] rounded-lg flex items-center justify-center text-[#17cf54]">
+                  <span className="material-symbols-outlined text-lg">person_search</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Agent Role & Business Context</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define how the AI represents your business and users.</p>
+                  <h3 className="text-left text-lg font-bold text-slate-700 leading-tight">Agent Role & Business Context</h3>
+                  <p className="text-left text-gray-500 text-xs mt-0.5">Define how the AI represents your business and users.</p>
                 </div>
               </div>
 
-              <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-8">
-                  <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold flex items-center gap-1.5 ">
+              <div className="bg-[#ffffff] p-5 rounded-xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-[11px] font-bold flex items-center gap-1.5 ">
                       AI Agent Name
-                      <span className="material-symbols-outlined text-gray-300 text-[14px] cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
+                      <span className="material-symbols-outlined text-gray-300 text-[12px] cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
                     </label>
                     <input
-                      className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
                       placeholder="e.g., Support Bot"
                       type="text"
                       value={username}
@@ -608,10 +564,10 @@ const ProfileSetup = () => {
                     />
                   </div>
 
-                  <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Business Domain</label>
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-[11px] font-bold ">Business Domain</label>
                     <input
-                      className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
                       placeholder="e.g., Healthcare"
                       title="e.g., Healthcare / PII Protected"
                       type="text"
@@ -620,10 +576,10 @@ const ProfileSetup = () => {
                     />
                   </div>
 
-                  <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Intended Users</label>
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-[11px] font-bold ">Intended Users</label>
                     <input
-                      className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
                       placeholder="e.g., Public Users"
                       title="e.g., Guest Users (Public)"
                       type="text"
@@ -632,11 +588,11 @@ const ProfileSetup = () => {
                     />
                   </div>
 
-                  <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">Communication Style</label>
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-[11px] font-bold ">Communication Style</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
+                        className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
                         value={communicationStyle}
                         onChange={(e) => setCommunicationStyle(e.target.value)}
                       >

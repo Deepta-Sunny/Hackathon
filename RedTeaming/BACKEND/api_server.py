@@ -7,9 +7,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import Optional, List
+from pydantic import BaseModel
 import asyncio
 import json
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -387,6 +389,58 @@ async def get_bucket_file(bucket_name: str, filename: str):
         
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+class FileMoveRequest(BaseModel):
+    filename: str
+    source_bucket: str
+    target_bucket: str
+
+@app.post("/api/buckets/move")
+async def move_bucket_file(request: FileMoveRequest):
+    """Move a file between buckets"""
+    uploads_dir = Path("uploads")
+    
+    # Resolve source path
+    source_path = uploads_dir / request.source_bucket / request.filename
+        
+    # Resolve target path
+    target_dir = uploads_dir / request.target_bucket
+    if not target_dir.exists():
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+    target_path = target_dir / request.filename
+    
+    if not source_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source file not found at {source_path}")
+        
+    if target_path.exists():
+        raise HTTPException(status_code=400, detail="File already exists in target bucket")
+        
+    try:
+        shutil.move(str(source_path), str(target_path))
+        return {"status": "success", "message": f"Moved {request.filename} to {request.target_bucket}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    """Perform startup tasks including file migration"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        uploads_dir.mkdir()
+        
+    # Ensure General bucket exists
+    general_dir = uploads_dir / "General"
+    general_dir.mkdir(exist_ok=True)
+    
+    # Move loose JSON files to General
+    for file_path in uploads_dir.glob("profile_*.json"):
+        if file_path.is_file():
+            print(f"Migrating {file_path.name} to General bucket...")
+            try:
+                shutil.move(str(file_path), str(general_dir / file_path.name))
+            except Exception as e:
+                print(f"Failed to migrate {file_path.name}: {e}")
 
 # === END BUCKET OPERATIONS ===
 

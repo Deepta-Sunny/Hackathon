@@ -82,7 +82,7 @@ const History: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-white font-['Inter']">
+    <div className="flex h-screen bg-white font-sans">
       {/* Sidebar - Consistent with ProfileSetup */}
       <aside className="w-56 bg-white border-r border-gray-300 flex flex-col pt-6 px-2 sticky top-0 h-screen">
         <div className="flex flex-col gap-6">
@@ -168,9 +168,9 @@ const History: React.FC = () => {
         </div>
 
         {/* Detail View (Right Panel) */}
-        <div className="flex-1 overflow-y-auto bg-white p-8">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
             {!selectedRun && (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                     <span className="material-symbols-outlined text-6xl mb-4">history_edu</span>
                     <p>Select a run to view details</p>
                 </div>
@@ -178,92 +178,92 @@ const History: React.FC = () => {
             
             {selectedRun && (
             <>
-            <header className="flex justify-between items-start mb-8 pb-6 border-b border-gray-100">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedRun.chatbot_name}</h1>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-md">
-                            <span className="material-symbols-outlined text-sm">event</span>
-                            {selectedRun.date}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-md">
-                             <span className="material-symbols-outlined text-sm">schedule</span>
-                            {selectedRun.duration}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex flex-col items-end">
-                     {/* No top-right total here, moved to stats grid */}
-                </div>
-            </header>
-
-            {/* Risk Score & Stats Grid */}
-            <div className="grid grid-cols-5 gap-4 mb-8">
-                {/* Vulnerability Score */}
-                <div className="p-4 rounded-xl bg-gray-900 text-white flex flex-col justify-between shadow-lg shadow-gray-200">
+            {/* Fixed Header & Stats */}
+            <div className="flex-none px-8 pt-8 pb-6 border-b border-gray-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] z-10 bg-white">
+                <header className="flex justify-between items-start mb-6">
                     <div>
-                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Vulnerability Score</p>
-                         <p className="text-[10px] text-gray-500">(C=3pts, H=2pts, M=1pt)</p>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedRun.chatbot_name}</h1>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
+                                <span className="material-symbols-outlined text-sm">event</span>
+                                {selectedRun.date}
+                            </span>
+                            <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
+                                <span className="material-symbols-outlined text-sm">schedule</span>
+                                {selectedRun.duration}
+                            </span>
+                        </div>
                     </div>
-                    <p className="text-3xl font-bold mt-2 text-[#17cf54]">
-                        {selectedRun.vulnerability_score !== undefined ? selectedRun.vulnerability_score.toFixed(1) : '0.0'}%
-                    </p>
+                </header>
+
+                {/* Risk Score & Stats Grid */}
+                <div className="grid grid-cols-5 gap-4 mb-6">
+                    {/* Vulnerability Score - Light Theme */}
+                    <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col justify-between shadow-sm">
+                        <div>
+                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Vulnerability Score</p>
+                             <p className="text-[10px] text-gray-400">(C=3pts, H=2pts, M=1pt)</p>
+                        </div>
+                        <p className="text-3xl font-bold mt-2 text-[#17cf54]">
+                            {selectedRun.vulnerability_score !== undefined ? selectedRun.vulnerability_score.toFixed(1) : '0.0'}%
+                        </p>
+                    </div>
+
+                    {/* Total Vulns */}
+                    <div className={`p-4 rounded-xl border flex flex-col justify-between shadow-sm ${selectedRun.total_vulnerabilities > 0 ? 'bg-red-50 border-red-100' : 'bg-[#f0fdf4] border-[#17cf54]/30'}`}>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Vulnerabilities</p>
+                        <p className={`text-3xl font-bold mt-2 ${selectedRun.total_vulnerabilities > 0 ? 'text-red-600' : 'text-[#17cf54]'}`}>
+                            {selectedRun.total_vulnerabilities}
+                        </p>
+                    </div>
+
+                    {/* Critical */}
+                    <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between shadow-sm">
+                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-red-700"></span> Critical
+                         </p>
+                         <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.critical_count || 0}</p>
+                    </div>
+
+                    {/* High */}
+                    <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between shadow-sm">
+                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-red-500"></span> High Risk
+                         </p>
+                         <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.high_risk_count || 0}</p>
+                    </div>
+
+                    {/* Medium */}
+                    <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between shadow-sm">
+                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-orange-400"></span> Medium Risk
+                         </p>
+                         <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.medium_risk_count || 0}</p>
+                    </div>
                 </div>
 
-                {/* Total Vulns */}
-                <div className={`p-4 rounded-xl border flex flex-col justify-between ${selectedRun.total_vulnerabilities > 0 ? 'bg-red-50 border-red-100' : 'bg-[#e6f4ea] border-[#17cf54]/30'}`}>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Vulnerabilities</p>
-                    <p className={`text-3xl font-bold mt-2 ${selectedRun.total_vulnerabilities > 0 ? 'text-red-600' : 'text-[#17cf54]'}`}>
-                        {selectedRun.total_vulnerabilities}
-                    </p>
-                </div>
-
-                {/* Critical */}
-                <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between">
-                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-700"></span> Critical
-                     </p>
-                     <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.critical_count || 0}</p>
-                </div>
-
-                {/* High */}
-                <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between">
-                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-500"></span> High Risk
-                     </p>
-                     <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.high_risk_count || 0}</p>
-                </div>
-
-                {/* Medium */}
-                <div className="p-4 rounded-xl border border-gray-100 bg-white flex flex-col justify-between">
-                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-orange-400"></span> Medium Risk
-                     </p>
-                     <p className="text-3xl font-bold mt-2 text-gray-800">{selectedRun.medium_risk_count || 0}</p>
+                {/* Category Breakdown */}
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Category Breakdown</h4>
+                <div className="grid grid-cols-4 gap-4">
+                    {Object.entries(selectedRun.categories).map(([category, count]) => (
+                        <div key={category} className={`p-3 rounded-xl border ${count > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                            <p className="text-[11px] font-bold text-gray-500 uppercase truncate mb-1" title={category}>{category}</p>
+                            <p className={`text-lg font-bold ${count > 0 ? 'text-red-600' : 'text-gray-700'}`}>{count}</p>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Category Breakdown */}
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Category Breakdown</h4>
-            <div className="grid grid-cols-4 gap-4 mb-8">
-                {Object.entries(selectedRun.categories).map(([category, count]) => (
-                    <div key={category} className={`p-4 rounded-xl border ${count > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                        <p className="text-xs font-bold text-gray-500 uppercase truncate mb-1" title={category}>{category}</p>
-                        <p className={`text-xl font-bold ${count > 0 ? 'text-red-600' : 'text-gray-700'}`}>{count}</p>
-                    </div>
-                ))}
-            </div>
-
-            {/* Conversation Logs */}
-            <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+            {/* Scrollable Logs */}
+            <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
+                <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 px-1">
                     <span className="material-symbols-outlined text-[#17cf54]">forum</span>
                     Attack Logs
                 </h3>
                 
                 <div className="space-y-4">
                     {selectedRun.logs.map((log, index) => (
-                        <div key={index} className={`rounded-xl border overflow-hidden ${log.vulnerability_detected ? 'border-red-200 shadow-sm' : 'border-gray-100'}`}>
+                        <div key={index} className={`rounded-xl border overflow-hidden bg-white ${log.vulnerability_detected ? 'border-red-200 shadow-sm' : 'border-gray-100'}`}>
 
                             {/* Header */}
                             <div className={`px-4 py-2 flex justify-between items-center text-xs font-medium border-b ${log.vulnerability_detected ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
@@ -281,15 +281,15 @@ const History: React.FC = () => {
                             </div>
 
                             {/* Conversation */}
-                            <div className="p-4 space-y-6 bg-white">
+                            <div className="p-4 space-y-6">
                                 {/* User Input - Aligned Right */}
                                 <div className="flex gap-4 flex-row-reverse">
                                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-1">
-                                         <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+                                         <span className="material-symbols-outlined text-[16px]">person</span>
                                     </div>
                                     <div className="flex-1 text-right">
                                         <p className="text-xs font-bold text-blue-600 mb-1">Attacker (User)</p>
-                                        <p className="text-sm text-gray-800 leading-relaxed bg-blue-50 p-3 rounded-2xl rounded-tr-none inline-block border border-blue-100 text-left">
+                                        <p className="text-sm text-gray-800 leading-relaxed bg-blue-50 p-3 rounded-2xl rounded-tr-none inline-block border border-blue-100 text-left shadow-sm">
                                             {log.user_request}
                                         </p>
                                     </div>
@@ -298,11 +298,11 @@ const History: React.FC = () => {
                                 {/* AI Response - Aligned Left */}
                                 <div className="flex gap-4">
                                      <div className="w-8 h-8 rounded-full bg-[#17cf54]/20 flex items-center justify-center text-[#17cf54] flex-shrink-0 mt-1">
-                                         <span className="material-symbols-outlined text-[16px]">robot_2</span>
+                                         <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-xs font-bold text-gray-400 mb-1">Target AI</p>
-                                        <div className={`text-sm leading-relaxed p-3 rounded-2xl rounded-tl-none inline-block text-left relative ${log.vulnerability_detected ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-[#e6f4ea] text-gray-800 border border-[#17cf54]/20'}`}>
+                                        <div className={`text-sm leading-relaxed p-3 rounded-2xl rounded-tl-none inline-block text-left relative shadow-sm ${log.vulnerability_detected ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-white text-gray-800 border border-gray-100'}`}>
                                             {log.llm_response}
                                             {log.vulnerability_detected && (
                                                 <div className="mt-2 pt-2 border-t border-red-200/50 text-xs text-red-600 font-medium flex items-center gap-1">
