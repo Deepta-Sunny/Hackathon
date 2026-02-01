@@ -17,7 +17,7 @@ const useStyles = createUseStyles({
     width: "100%",
     boxSizing: "border-box",
     boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-    border: "1px solid #20a100ff",
+    border: "1px solid #0f62fe",
     maxHeight: "80vh",
     overflowY: "auto",
   },
@@ -26,10 +26,10 @@ const useStyles = createUseStyles({
     padding: 15,
     background: "#f8f9fa",
     borderRadius: 8,
-    borderLeft: "4px solid #20a100ff",
+    borderLeft: "4px solid #0f62fe",
   },
   sectionTitle: {
-    color: "#20a100ff",
+    color: "#0f62fe",
     fontSize: "16px",
     fontWeight: 600,
     marginBottom: 12,
@@ -51,10 +51,10 @@ const useStyles = createUseStyles({
     fontFamily: "monospace",
     "& .MuiOutlinedInput-root": {
       "&:hover fieldset": {
-        borderColor: "#20a100ff",
+        borderColor: "#0f62fe",
       },
       "&.Mui-focused fieldset": {
-        borderColor: "#20a100ff",
+        borderColor: "#0f62fe",
       },
     },
   },
@@ -79,10 +79,10 @@ const useStyles = createUseStyles({
   startButton: {
     flex: 1,
     height: 48,
-    background: "#20a100ff",
+    background: "#0f62fe",
     fontFamily: "monospace",
     "&:hover": {
-      background: "#1e8f00ff",
+      background: "#0353e9",
     },
   },
   stopButton: {

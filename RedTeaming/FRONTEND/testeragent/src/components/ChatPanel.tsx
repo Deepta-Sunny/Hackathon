@@ -8,7 +8,7 @@ import { openAttackMonitor } from "../thunk/ApiThunk";
 
 const useStyles = createUseStyles({
   container: {
-    border: "1px solid #20a100ff",
+    border: "1px solid #0f62fe",
     display: "flex",
     flexDirection: "column",
     height: "100%",
@@ -20,8 +20,8 @@ const useStyles = createUseStyles({
   },
   header: {
     padding: "16px 20px",
-    backgroundColor: "#dbdbdbff",
-    color: "#20a100ff",
+    backgroundColor: "#edf5ff",
+    color: "#0f62fe",
     boxShadow: "0 10px 10px rgba(0, 0, 0, 0.1)",
     textAlign: "left",
     borderBottom: "1px solid #00000010",
@@ -57,8 +57,8 @@ const useStyles = createUseStyles({
   },
   agentMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#e6f4ea",
-    color: "#0f5132",
+    backgroundColor: "#edf5ff",
+    color: "#0f62fe",
   },
   aiMessage: {
     alignSelf: "flex-end",
@@ -291,10 +291,10 @@ const ChatPanel: React.FC = () => {
               textTransform: 'none',
             },
             '& .Mui-selected': {
-              color: '#20a100ff',
+              color: '#0f62fe',
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#20a100ff',
+              backgroundColor: '#0f62fe',
             },
           }}
         >
@@ -321,10 +321,10 @@ const ChatPanel: React.FC = () => {
                 minWidth: 80,
               },
               '& .Mui-selected': {
-                color: '#20a100ff',
+                color: '#0f62fe',
               },
               '& .MuiTabs-indicator': {
-                backgroundColor: '#20a100ff',
+                backgroundColor: '#0f62fe',
               },
             }}
           >

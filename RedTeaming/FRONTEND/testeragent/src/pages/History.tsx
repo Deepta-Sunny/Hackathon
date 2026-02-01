@@ -35,6 +35,7 @@ const History: React.FC = () => {
   const [selectedRun, setSelectedRun] = useState<HistoryItemDetail | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -84,35 +85,55 @@ const History: React.FC = () => {
   return (
     <div className="flex h-screen bg-white font-sans">
       {/* Sidebar - Consistent with ProfileSetup */}
-      <aside className="w-56 bg-white border-r border-gray-300 flex flex-col pt-6 px-2 sticky top-0 h-screen">
+      <aside className="w-56 bg-white border-r border-gray-300 flex flex-col pt-6 px-2 sticky top-0 h-screen justify-between pb-6">
         <div className="flex flex-col gap-6">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="bg-[#17cf54] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md">
+            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md">
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-black text-[14px] font-bold leading-tight">Red Teaming</h1>
-              <p className="text-gray-400 text-[9px] font-bold tracking-wider uppercase mt-0.5">Orchestrator v2.0</p>
+              <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
             </div>
           </div>
+        </div>
 
-          <div className="px-2">
-            <button 
-              onClick={() => navigate('/')}
-              className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
-            >
-              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-             Back to Setup
-            </button>
-            <button 
-                onClick={() => navigate('/dashboard')}
-                className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium mt-1"
-            >
-                <span className="material-symbols-outlined text-[20px]">dashboard</span>
-                Dashboard
-            </button>
-          </div>
+        {/* User Profile */}
+        <div 
+            className="mt-auto relative group"
+            onMouseEnter={() => setIsProfileMenuOpen(true)}
+            onMouseLeave={() => setIsProfileMenuOpen(false)}
+        >
+          <button 
+            className="w-full bg-[#f9fafb] rounded-2xl p-4 flex items-center gap-3 border border-gray-100/50 group-hover:bg-gray-50 group-hover:border-[#0f62fe]/30 transition-all cursor-pointer text-left"
+          >
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white">
+                <img src="https://ui-avatars.com/api/?name=Security+Analyst&background=e5e7eb&color=374151" alt="Profile" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#0f62fe] rounded-full ring-2 ring-white"></div>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <p className="text-xs font-bold text-gray-900 truncate">Security Analyst</p>
+              <p className="text-[10px] text-[#0f62fe] font-bold uppercase tracking-wide">Enterprise Node</p>
+            </div>
+             <span className="material-symbols-outlined ml-auto text-gray-400 text-lg group-hover:text-[#0f62fe] transition-colors">expand_less</span>
+          </button>
+          
+           {isProfileMenuOpen && (
+            <div className="absolute bottom-full left-0 w-64 mb-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 animate-in fade-in slide-in-from-bottom-2">
+              <div className="p-1">
+                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => navigate('/dashboard')}>
+                  <span className="material-symbols-outlined text-gray-400 text-[20px] group-hover/item:text-[#0f62fe]">dashboard</span>
+                  <span className="text-[14px] font-medium text-gray-700 group-hover/item:text-[#0f62fe]">Dashboard</span>
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => navigate('/history')}>
+                  <span className="material-symbols-outlined text-gray-400 text-[20px] group-hover/item:text-[#0f62fe]">history</span>
+                  <span className="text-[14px] font-medium text-gray-700 group-hover/item:text-[#0f62fe]">History</span>
+                </button>
+              </div>
+            </div>
+           )}
         </div>
       </aside>
 
@@ -127,7 +148,7 @@ const History: React.FC = () => {
               <input 
                 type="text" 
                 placeholder="Search runs..." 
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#17cf54] transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0f62fe] transition-colors"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -140,7 +161,7 @@ const History: React.FC = () => {
               <div 
                 key={run.id}
                 onClick={() => loadRun(run.filename)}
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#17cf54] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
+                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#0f62fe] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <h3 className={`text-sm font-bold ${selectedRun?.id === run.id ? 'text-gray-900' : 'text-gray-700'}`}>{run.chatbot_name}</h3>
@@ -204,15 +225,15 @@ const History: React.FC = () => {
                              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Vulnerability Score</p>
                              <p className="text-[10px] text-gray-400">(C=3pts, H=2pts, M=1pt)</p>
                         </div>
-                        <p className="text-3xl font-bold mt-2 text-[#17cf54]">
+                        <p className="text-3xl font-bold mt-2 text-[#0f62fe]">
                             {selectedRun.vulnerability_score !== undefined ? selectedRun.vulnerability_score.toFixed(1) : '0.0'}%
                         </p>
                     </div>
 
                     {/* Total Vulns */}
-                    <div className={`p-4 rounded-xl border flex flex-col justify-between shadow-sm ${selectedRun.total_vulnerabilities > 0 ? 'bg-red-50 border-red-100' : 'bg-[#f0fdf4] border-[#17cf54]/30'}`}>
+                    <div className={`p-4 rounded-xl border flex flex-col justify-between shadow-sm ${selectedRun.total_vulnerabilities > 0 ? 'bg-red-50 border-red-100' : 'bg-[#edf5ff] border-[#0f62fe]/30'}`}>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Vulnerabilities</p>
-                        <p className={`text-3xl font-bold mt-2 ${selectedRun.total_vulnerabilities > 0 ? 'text-red-600' : 'text-[#17cf54]'}`}>
+                        <p className={`text-3xl font-bold mt-2 ${selectedRun.total_vulnerabilities > 0 ? 'text-red-600' : 'text-[#0f62fe]'}`}>
                             {selectedRun.total_vulnerabilities}
                         </p>
                     </div>
@@ -254,13 +275,16 @@ const History: React.FC = () => {
                 </div>
             </div>
 
-            {/* Scrollable Logs */}
-            <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
-                <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 px-1">
-                    <span className="material-symbols-outlined text-[#17cf54]">forum</span>
+            {/* Fixed Scrollable Logs Header */}
+            <div className="px-8 pt-6 pb-2 bg-gray-50/30 flex-none">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 px-1">
+                    <span className="material-symbols-outlined text-[#0f62fe]">forum</span>
                     Attack Logs
                 </h3>
-                
+            </div>
+
+            {/* Scrollable Logs */}
+            <div className="flex-1 overflow-y-auto px-8 pb-8 bg-gray-50/30">
                 <div className="space-y-4">
                     {selectedRun.logs.map((log, index) => (
                         <div key={index} className={`rounded-xl border overflow-hidden bg-white ${log.vulnerability_detected ? 'border-red-200 shadow-sm' : 'border-gray-100'}`}>
@@ -297,7 +321,7 @@ const History: React.FC = () => {
 
                                 {/* AI Response - Aligned Left */}
                                 <div className="flex gap-4">
-                                     <div className="w-8 h-8 rounded-full bg-[#17cf54]/20 flex items-center justify-center text-[#17cf54] flex-shrink-0 mt-1">
+                                     <div className="w-8 h-8 rounded-full bg-[#0f62fe]/20 flex items-center justify-center text-[#0f62fe] flex-shrink-0 mt-1">
                                          <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                                     </div>
                                     <div className="flex-1">
@@ -327,3 +351,4 @@ const History: React.FC = () => {
 };
 
 export default History;
+

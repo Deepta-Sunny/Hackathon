@@ -146,15 +146,15 @@ const useStyles = createUseStyles({
     transition: "all 0.2s",
     flexShrink: 0,
     "&:hover": {
-      borderColor: "#20a100ff",
-      boxShadow: "0 2px 8px rgba(32, 161, 0, 0.1)",
+      borderColor: "#0f62fe",
+      boxShadow: "0 2px 8px rgba(15, 98, 254, 0.1)",
     },
   },
   categoryId: {
     fontSize: "10px",
     fontWeight: 600,
-    color: "#20a100ff",
-    backgroundColor: "#e8f5e9",
+    color: "#0f62fe",
+    backgroundColor: "#edf5ff",
     padding: "2px 6px",
     borderRadius: "3px",
     textAlign: "center",
@@ -323,7 +323,7 @@ const OwaspComplianceReport: React.FC = () => {
   if (loading) {
     return (
       <Box className={classes.loadingContainer}>
-        <CircularProgress style={{ color: "#20a100ff" }} />
+        <CircularProgress style={{ color: "#0f62fe" }} />
         <Typography style={{ color: "#666" }}>
           Loading OWASP Compliance Report...
         </Typography>
@@ -348,7 +348,7 @@ const OwaspComplianceReport: React.FC = () => {
           }}
           style={{
             padding: "8px 24px",
-            backgroundColor: "#20a100ff",
+            backgroundColor: "#0f62fe",
             color: "#fff",
             border: "none",
             borderRadius: "4px",

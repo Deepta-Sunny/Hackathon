@@ -19,7 +19,7 @@ const useStyles = createUseStyles({
     background: "#fff",
     color: "#2c3e50",
     borderRadius: 12,
-    borderTop: "4px solid #20a100",
+    borderTop: "4px solid #0f62fe",
     boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
   },
   profileHeader: {
@@ -34,7 +34,7 @@ const useStyles = createUseStyles({
     fontSize: 24,
     fontWeight: 700,
     fontFamily: "monospace",
-    color: "#20a100",
+    color: "#0f62fe",
     display: "flex",
     alignItems: "center",
     gap: 12,
@@ -51,7 +51,7 @@ const useStyles = createUseStyles({
     border: "1px solid #eee",
     transition: "all 0.12s",
     "&:hover": {
-      borderColor: "#20a100",
+      borderColor: "#0f62fe",
       transform: "translateY(-1px)",
       boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
     },
@@ -71,7 +71,7 @@ const useStyles = createUseStyles({
     color: "#333",
   },
   startButton: {
-    background: "#20a100 !important",
+    background: "#0f62fe !important",
     color: "white !important",
     fontFamily: "monospace !important",
     fontWeight: "700 !important",
@@ -83,9 +83,9 @@ const useStyles = createUseStyles({
     transition: "all 0.2s !important",
     border: "none !important",
     "&:hover": {
-      background: "#1a8f00 !important",
+      background: "#0353e9 !important",
       transform: "translateY(-1px)",
-      boxShadow: "0 4px 12px rgba(32, 161, 0, 0.3)",
+      boxShadow: "0 4px 12px rgba(15, 98, 254, 0.3)",
     },
   },
   editButton: {
@@ -224,7 +224,7 @@ function Home() {
                 <Chip 
                   label={`${profile.capabilities.length} defined`} 
                   size="small" 
-                  style={{ color: "#20a100", background: "rgba(32, 161, 0, 0.1)", fontWeight: 600 }}
+                  style={{ color: "#0f62fe", background: "#edf5ff", fontWeight: 600 }}
                 />
               </div>
             </div>

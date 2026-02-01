@@ -12,7 +12,7 @@ import OwaspComplianceReport from "./OwaspComplianceReport";
 
 const useStyles = createUseStyles({
   container: {
-    border: '1px solid #20a100ff',
+    border: '1px solid #0f62fe',
     display: "flex",
     flexDirection: "column",
     height: "100%",
@@ -24,8 +24,8 @@ const useStyles = createUseStyles({
   },
   header: {
     padding: "16px 20px",
-    backgroundColor: "#dbdbdbff",
-    color: "#20a100ff",
+    backgroundColor: "#edf5ff",
+    color: "#0f62fe",
     boxShadow: "0 10px 10px rgba(0, 0, 0, 0.1)",
     textAlign: "left",
     borderBottom: '1px solid #00000010',
@@ -64,7 +64,7 @@ const useStyles = createUseStyles({
   statValue: {
     fontSize: "16px",
     fontWeight: "bold",
-    color: "#20a100ff",
+    color: "#0f62fe",
     marginBottom: "2px",
   },
   statLabel: {
@@ -348,15 +348,15 @@ const ReportsPanel: React.FC = () => {
           </Typography>
           
           {/* Toggle Button */}
-          <Box style={{ display: 'flex', gap: '8px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '4px', border: '1px solid #20a100ff' }}>
+          <Box style={{ display: 'flex', gap: '8px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '4px', border: '1px solid #0f62fe' }}>
             <button
               onClick={() => setActiveView('overall')}
               style={{
                 padding: '6px 12px',
                 border: 'none',
                 borderRadius: '6px',
-                backgroundColor: activeView === 'overall' ? '#20a100ff' : 'transparent',
-                color: activeView === 'overall' ? '#ffffff' : '#20a100ff',
+                backgroundColor: activeView === 'overall' ? '#0f62fe' : 'transparent',
+                color: activeView === 'overall' ? '#ffffff' : '#0f62fe',
                 fontWeight: 600,
                 fontSize: '11px',
                 cursor: 'pointer',
@@ -372,8 +372,8 @@ const ReportsPanel: React.FC = () => {
                 padding: '6px 12px',
                 border: 'none',
                 borderRadius: '6px',
-                backgroundColor: activeView === 'owasp' ? '#20a100ff' : 'transparent',
-                color: activeView === 'owasp' ? '#ffffff' : '#20a100ff',
+                backgroundColor: activeView === 'owasp' ? '#0f62fe' : 'transparent',
+                color: activeView === 'owasp' ? '#ffffff' : '#0f62fe',
                 fontWeight: 600,
                 fontSize: '11px',
                 cursor: 'pointer',
@@ -500,7 +500,7 @@ const ReportsPanel: React.FC = () => {
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#fff', 
-                  border: '1px solid #20a100ff',
+                  border: '1px solid #0f62fe',
                   borderRadius: '4px',
                   fontFamily: 'inherit'
                 }}

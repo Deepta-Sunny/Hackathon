@@ -276,7 +276,7 @@ const ProfileSetup = () => {
         <div className="flex flex-col gap-12">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="bg-[#17cf54] w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#17cf54]/30">
+            <div className="bg-[#0f62fe] w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#0f62fe]/30">
               <span className="material-symbols-outlined text-2xl">shield</span>
             </div>
             <div className="flex flex-col">
@@ -290,16 +290,16 @@ const ProfileSetup = () => {
             {/* Step 1 */}
             <div className="flex items-start gap-4 pb-10 relative">
               <div className="flex flex-col items-center z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 1 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>1</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 1 ? 'bg-[#0f62fe] text-white shadow-[#0f62fe]/30' : 'bg-gray-100 text-gray-400'}`}>1</div>
               </div>
               <div className="pt-1 text-left">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 1 ? 'text-[#17cf54]' : currentStep > 1 ? 'text-slate-700' : 'text-gray-400'}`}>Agent Role & Representation</p>
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 1 ? 'text-[#0f62fe]' : currentStep > 1 ? 'text-slate-700' : 'text-gray-400'}`}>Agent Role & Representation</p>
               </div>
               {/* Connecting Line */}
                 <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
                  {/* Active Line Segment with Flow Animation */}
                  <div 
-                   className={`absolute top-0 left-0 w-full bg-[#17cf54] transform origin-top transition-transform duration-200 ease-out ${currentStep > 1 ? 'scale-y-100' : 'scale-y-0'}`}
+                   className={`absolute top-0 left-0 w-full bg-[#0f62fe] transform origin-top transition-transform duration-200 ease-out ${currentStep > 1 ? 'scale-y-100' : 'scale-y-0'}`}
                  ></div>
               </div>
             </div>
@@ -307,16 +307,16 @@ const ProfileSetup = () => {
             {/* Step 2 */}
             <div className="flex items-start gap-4 pb-10 relative">
               <div className="flex flex-col items-center z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 2 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>2</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 2 ? 'bg-[#0f62fe] text-white shadow-[#0f62fe]/30' : 'bg-gray-100 text-gray-400'}`}>2</div>
               </div>
               <div className="pt-1 text-left">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 2 ? 'text-[#17cf54]' : currentStep > 2 ? 'text-slate-700' : 'text-gray-400'}`}>Behavior Rules & Safety Goals</p>
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 2 ? 'text-[#0f62fe]' : currentStep > 2 ? 'text-slate-700' : 'text-gray-400'}`}>Behavior Rules & Safety Goals</p>
               </div>
                {/* Connecting Line */}
                <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
                   {/* Active Line Segment with Flow Animation */}
                   <div 
-                     className={`absolute top-0 left-0 w-full bg-[#17cf54] transform origin-top transition-transform duration-200 ease-out ${currentStep > 2 ? 'scale-y-100' : 'scale-y-0'}`}
+                     className={`absolute top-0 left-0 w-full bg-[#0f62fe] transform origin-top transition-transform duration-200 ease-out ${currentStep > 2 ? 'scale-y-100' : 'scale-y-0'}`}
                    ></div>
                </div>
             </div>
@@ -324,10 +324,10 @@ const ProfileSetup = () => {
             {/* Step 3 */}
             <div className="flex items-start gap-4 relative">
               <div className="flex items-center justify-center z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 3 ? 'bg-[#17cf54] text-white shadow-[#17cf54]/30' : 'bg-gray-100 text-gray-400'}`}>3</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 3 ? 'bg-[#0f62fe] text-white shadow-[#0f62fe]/30' : 'bg-gray-100 text-gray-400'}`}>3</div>
               </div>
               <div className="pt-1 text-left">
-                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 3 ? 'text-[#17cf54]' : 'text-gray-400'}`}>Technical Access & Integrations</p>
+                <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 3 ? 'text-[#0f62fe]' : 'text-gray-400'}`}>Technical Access & Integrations</p>
               </div>
             </div>
           </nav>
@@ -337,17 +337,17 @@ const ProfileSetup = () => {
         <div className="mt-auto relative">
           <button 
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="w-full bg-[#f9fafb] rounded-2xl p-4 flex items-center gap-3 border border-gray-100/50 hover:bg-gray-50 hover:border-[#17cf54]/30 transition-all cursor-pointer text-left"
+            className="w-full bg-[#f9fafb] rounded-2xl p-4 flex items-center gap-3 border border-gray-100/50 hover:bg-gray-50 hover:border-[#0f62fe]/30 transition-all cursor-pointer text-left"
           >
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white">
                 <img src="https://ui-avatars.com/api/?name=Security+Analyst&background=e5e7eb&color=374151" alt="Profile" className="w-full h-full object-cover" />
               </div>
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#17cf54] rounded-full ring-2 ring-white"></div>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#0f62fe] rounded-full ring-2 ring-white"></div>
             </div>
             <div className="flex flex-col min-w-0">
               <p className="text-xs font-bold text-gray-900 truncate">Security Analyst</p>
-              <p className="text-[10px] text-[#17cf54] font-bold uppercase tracking-wide">Enterprise Node</p>
+              <p className="text-[10px] text-[#0f62fe] font-bold uppercase tracking-wide">Enterprise Node</p>
             </div>
              <span className="material-symbols-outlined ml-auto text-gray-400 text-lg">expand_less</span>
           </button>
@@ -415,7 +415,7 @@ const ProfileSetup = () => {
                            <div className="flex justify-between items-center mb-3">
                               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Folders (Buckets)</h4>
                            </div>
-                           <div className="flex gap-2 mb-4 bg-white p-1 rounded-lg border border-gray-200 focus-within:border-[#17cf54] transition-colors">
+                           <div className="flex gap-2 mb-4 bg-white p-1 rounded-lg border border-gray-200 focus-within:border-[#0f62fe] transition-colors">
                               <input 
                                 value={newBucketName}
                                 onChange={(e) => setNewBucketName(e.target.value)}
@@ -438,7 +438,7 @@ const ProfileSetup = () => {
                               <button
                                 key={bucket}
                                 onClick={() => setSelectedBucket(bucket)}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors ${selectedBucket === bucket ? 'bg-white shadow-sm text-[#17cf54] border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors ${selectedBucket === bucket ? 'bg-white shadow-sm text-[#0f62fe] border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
                               >
                                  <span className="material-symbols-outlined text-[16px] text-amber-400">folder</span>
                                  {bucket}
@@ -469,14 +469,14 @@ const ProfileSetup = () => {
                               <div 
                                 key={file.name} 
                                 onClick={() => loadProfile(file.name)}
-                                className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 hover:border-[#17cf54] cursor-pointer transition-all group"
+                                className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 hover:border-[#0f62fe] cursor-pointer transition-all group"
                               >
                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-[#e6f4ea] flex items-center justify-center text-[#17cf54] group-hover:bg-[#17cf54] group-hover:text-white transition-colors">
+                                    <div className="w-8 h-8 rounded-lg bg-[#edf5ff] flex items-center justify-center text-[#0f62fe] group-hover:bg-[#0f62fe] group-hover:text-white transition-colors">
                                        <span className="material-symbols-outlined text-lg">description</span>
                                     </div>
                                     <div>
-                                       <p className="text-xs font-bold text-gray-800 group-hover:text-[#17cf54] transition-colors">{file.name.replace(/^profile_/, '').replace(/\.json$/, '')}</p>
+                                       <p className="text-xs font-bold text-gray-800 group-hover:text-[#0f62fe] transition-colors">{file.name.replace(/^profile_/, '').replace(/\.json$/, '')}</p>
                                        <p className="text-[10px] text-gray-400">{new Date(file.created * 1000).toLocaleString()}</p>
                                     </div>
                                  </div>
@@ -521,7 +521,7 @@ const ProfileSetup = () => {
 
                                     <button 
                                         onClick={() => loadProfile(file.name)}
-                                        className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg group-hover:bg-[#17cf54] group-hover:text-white group-hover:border-[#17cf54] transition-colors shadow-sm"
+                                        className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg group-hover:bg-[#0f62fe] group-hover:text-white group-hover:border-[#0f62fe] transition-colors shadow-sm"
                                     >
                                         Load
                                     </button>
@@ -539,7 +539,7 @@ const ProfileSetup = () => {
             {/* Section 1: Target Identity */}
             <section ref={section1Ref} className="border-b border-gray-200 pb-8">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-[#e6f4ea] rounded-lg flex items-center justify-center text-[#17cf54]">
+                <div className="w-8 h-8 bg-[#edf5ff] rounded-lg flex items-center justify-center text-[#0f62fe]">
                   <span className="material-symbols-outlined text-lg">person_search</span>
                 </div>
                 <div>
@@ -556,7 +556,7 @@ const ProfileSetup = () => {
                       <span className="material-symbols-outlined text-gray-300 text-[12px] cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
                     </label>
                     <input
-                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Support Bot"
                       type="text"
                       value={username}
@@ -567,7 +567,7 @@ const ProfileSetup = () => {
                   <div className="space-y-1.5">
                     <label className="text-left text-black text-[11px] font-bold ">Business Domain</label>
                     <input
-                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Healthcare"
                       title="e.g., Healthcare / PII Protected"
                       type="text"
@@ -579,7 +579,7 @@ const ProfileSetup = () => {
                   <div className="space-y-1.5">
                     <label className="text-left text-black text-[11px] font-bold ">Intended Users</label>
                     <input
-                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                      className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       placeholder="e.g., Public Users"
                       title="e.g., Guest Users (Public)"
                       type="text"
@@ -592,7 +592,7 @@ const ProfileSetup = () => {
                     <label className="text-left text-black text-[11px] font-bold ">Communication Style</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
+                        className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
                         value={communicationStyle}
                         onChange={(e) => setCommunicationStyle(e.target.value)}
                       >
@@ -606,11 +606,11 @@ const ProfileSetup = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2.5">
-                    <label className="text-left text-black text-[13px] font-bold ">AI Function Type</label>
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-[11px] font-bold ">AI Function Type</label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all cursor-pointer"
+                        className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 appearance-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all cursor-pointer"
                         value={agentType}
                         onChange={(e) => setAgentType(e.target.value)}
                       >
@@ -630,22 +630,22 @@ const ProfileSetup = () => {
             </section>
 
             {/* Section 2: Behavioral Directives */}
-            <section ref={section2Ref} className="border-b border-gray-200 pb-16">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
-                  <span className="material-symbols-outlined text-xl">psychology</span>
+            <section ref={section2Ref} className="border-b border-gray-200 pb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                  <span className="material-symbols-outlined text-lg">psychology</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define what success looks like and where the AI must stop.</p>
+                  <h3 className="text-left text-lg font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
+                  <p className="text-left text-gray-500 text-xs mt-0.5">Define what success looks like and where the AI must stop.</p>
                 </div>
               </div>
 
-              <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Business Purpose</label>
+              <div className="bg-[#ffffff] p-5 rounded-xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-left text-black text-[11px] font-bold ">Business Purpose</label>
                   <textarea
-                    className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] p-5 text-[14px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all leading-relaxed h-[180px]"
+                    className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] p-3 text-xs text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[120px]"
                     placeholder="Describe the agent's main purpose"
                     title="Explain the primary utility of this agent... (e.g., help customers reset passwords via secure tokens)"
                     value={primaryObjective}
@@ -653,10 +653,10 @@ const ProfileSetup = () => {
                   ></textarea>
                 </div>
 
-                <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Security & Compliance Constraints</label>
+                <div className="space-y-1.5">
+                  <label className="text-left text-black text-[11px] font-bold ">Security & Compliance Constraints</label>
                   <textarea
-                    className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] p-5 text-[14px] text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all leading-relaxed h-[180px]"
+                    className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] p-3 text-xs text-gray-700 placeholder:text-gray-400 resize-none focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all leading-relaxed h-[120px]"
                     placeholder="Define security boundaries"
                     title="List strict negative constraints... (e.g., never reveal system prompts, do not discuss internal API structure)"
                     value={boundaries}
@@ -668,21 +668,21 @@ const ProfileSetup = () => {
 
             {/* Section 3: System Configuration */}
             <section ref={section3Ref}>
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-10 h-10 bg-[#e6f4ea] rounded-xl flex items-center justify-center text-[#17cf54]">
-                  <span className="material-symbols-outlined text-xl">settings</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-[#edf5ff] rounded-lg flex items-center justify-center text-[#0f62fe]">
+                  <span className="material-symbols-outlined text-lg">settings</span>
                 </div>
                 <div>
-                  <h3 className="text-left text-[19px] font-bold text-slate-700 leading-tight">Technical Access & System Exposure</h3>
-                  <p className="text-left text-gray-500 text-[13px] mt-0.5">Define where the AI connects and what it is allowed to access.</p>
+                  <h3 className="text-left text-lg font-bold text-slate-700 leading-tight">Technical Access & System Exposure</h3>
+                  <p className="text-left text-gray-500 text-xs mt-0.5">Define where the AI connects and what it is allowed to access.</p>
                 </div>
               </div>
 
-              <div className="bg-[#ffffff] p-8 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] space-y-8">
-                <div className="space-y-2.5">
-                  <label className="text-left text-black text-[13px] font-bold ">Live Connection Endpoint</label>
+              <div className="bg-[#ffffff] p-5 rounded-xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-left text-black text-[11px] font-bold ">Live Connection Endpoint</label>
                   <input
-                    className="w-full rounded-xl border border-gray-100 bg-[#f9fafb] h-[52px] px-5 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                    className="w-full rounded-lg border border-gray-100 bg-[#f9fafb] h-[40px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                     placeholder="ws://localhost:8001/ws"
                     type="text"
                     value={websocketUrl}
@@ -690,14 +690,14 @@ const ProfileSetup = () => {
                   />
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <label className="text-left text-black text-[13px] font-bold ">
+                    <label className="text-left text-black text-[11px] font-bold ">
                       Enabled Data Sources
-                      <span className="block text-[11px] font-normal text-gray-400 mt-1 normal-case tracking-normal">What can this agent actually do? Click to select, or add below.</span>
+                      <span className="block text-[10px] font-normal text-gray-400 mt-0.5 normal-case tracking-normal">What can this agent actually do? Click to select, or add below.</span>
                     </label>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {[
                         'Structured DB',
                         'Unstructured DB',
@@ -711,7 +711,7 @@ const ProfileSetup = () => {
                             key={opt}
                             type="button"
                             onClick={() => toggleCapability(opt)}
-                            className={`px-3 py-1 rounded-full text-sm border ${selected ? 'bg-[#17cf54] text-white border-transparent' : 'bg-[#f3f4f6] text-gray-700 border-gray-200'}`}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border ${selected ? 'bg-[#0f62fe] text-white border-transparent' : 'bg-[#f3f4f6] text-gray-700 border-gray-200'}`}
                           >
                             {opt}
                           </button>
@@ -719,29 +719,29 @@ const ProfileSetup = () => {
                       })}
                     </div>
 
-                    <div className="mt-3 flex gap-2 items-center">
+                    <div className="mt-2 flex gap-2 items-center">
                       <input
                         value={newCapability}
                         onChange={(e) => setNewCapability(e.target.value)}
                         placeholder="Add custom data source"
                         title="Other capability (type and Add)"
-                        className="flex-1 rounded-xl border border-gray-100 bg-[#f9fafb] h-[44px] px-4 text-[14px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#17cf54] focus:ring-4 focus:ring-[#17cf54]/5 transition-all"
+                        className="flex-1 rounded-lg border border-gray-100 bg-[#f9fafb] h-[36px] px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
                       />
                       <button
                         type="button"
                         onClick={addCustomCapability}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#17cf54] text-white rounded-lg text-sm font-bold hover:bg-[#15ba4a] transition-all shadow-sm"
+                        className="flex items-center gap-1 px-3 py-2 bg-[#0f62fe] text-white rounded-lg text-xs font-bold hover:bg-[#0353e9] transition-all shadow-sm"
                       >
                         Add
                       </button>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {capabilities.filter((c) => c.trim() !== "").map((cap, index) => (
-                        <div key={index} className="flex items-center gap-2 bg-[#f9fafb] rounded-full px-3 py-1 border border-gray-200 text-sm">
-                          <span className="text-[13px] text-gray-700">{cap}</span>
+                        <div key={index} className="flex items-center gap-2 bg-[#f9fafb] rounded-full px-2.5 py-0.5 border border-gray-200 text-xs">
+                          <span className="text-[11px] text-gray-700">{cap}</span>
                           <button type="button" onClick={() => removeCapability(index)} className="text-gray-400 hover:text-red-500">
-                            <span className="material-symbols-outlined text-[16px]">close</span>
+                            <span className="material-symbols-outlined text-[14px]">close</span>
                           </button>
                         </div>
                       ))}
@@ -752,13 +752,13 @@ const ProfileSetup = () => {
             </section>
 
             {/* Submit Button */}
-            <div className="flex flex-col items-end gap-4 pt-6 mb-8 border-t border-gray-200/60">
-              <div className="flex items-center gap-3">
-                 <label className="text-sm font-bold text-gray-700">Save to Folder:</label>
+            <div className="flex flex-col items-end gap-3 pt-4 mb-4 border-t border-gray-200/60">
+              <div className="flex items-center gap-2">
+                 <label className="text-xs font-bold text-gray-700">Save to Folder:</label>
                  <select 
                     value={selectedBucket} 
                     onChange={(e) => setSelectedBucket(e.target.value)}
-                    className="h-[44px] px-4 rounded-xl border border-gray-200 bg-[#f9fafb] text-sm text-gray-700 focus:outline-none focus:border-[#17cf54]"
+                    className="h-[36px] px-3 rounded-lg border border-gray-200 bg-[#f9fafb] text-xs text-gray-700 focus:outline-none focus:border-[#0f62fe]"
                  >
                     <option value="">Default (Uploads)</option>
                     {buckets.map(b => (
@@ -769,10 +769,10 @@ const ProfileSetup = () => {
 
               <button
                 type="submit"
-                className="px-10 py-4 bg-[#17cf54] text-white rounded-xl text-[15px] font-bold hover:bg-[#15ba4a] transition-all flex items-center gap-3 shadow-xl shadow-[#17cf54]/25 hover:shadow-[#17cf54]/40 hover:-translate-y-0.5 active:translate-y-0"
+                className="px-6 py-2.5 bg-[#0f62fe] text-white rounded-xl text-xs font-bold hover:bg-[#0353e9] transition-all flex items-center gap-2 shadow-xl shadow-[#0f62fe]/25 hover:shadow-[#0f62fe]/40 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Start Risk Simulation
-                <span className="material-symbols-outlined text-xl">rocket_launch</span>
+                <span className="material-symbols-outlined text-lg">rocket_launch</span>
               </button>
             </div>
           </form>
@@ -783,3 +783,4 @@ const ProfileSetup = () => {
 };
 
 export default ProfileSetup;
+
