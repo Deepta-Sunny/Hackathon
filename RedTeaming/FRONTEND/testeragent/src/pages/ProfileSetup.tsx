@@ -295,11 +295,9 @@ const ProfileSetup = () => {
                 <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 1 ? 'text-[#0f62fe]' : currentStep > 1 ? 'text-slate-700' : 'text-gray-600'}`}>Agent Role & Representation</p>
               </div>
               {/* Connecting Line */}
-                <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
-                 {/* Active Line Segment with Flow Animation */}
-                 <div 
-                   className={`absolute top-0 left-0 w-full bg-[#0f62fe] transform origin-top transition-transform duration-200 ease-out ${currentStep > 1 ? 'scale-y-100' : 'scale-y-0'}`}
-                 ></div>
+              <div className="absolute left-[15px] top-8 bottom-0 w-[3px] overflow-hidden z-0">
+                <div className="w-full bg-gray-200 h-full absolute top-0 left-0"></div>
+                <div className={`w-full bg-[#0f62fe] absolute top-0 left-0 transition-all duration-700 ease-out ${currentStep >= 2 ? 'h-full' : 'h-0'}`}></div>
               </div>
             </div>
 
@@ -311,13 +309,11 @@ const ProfileSetup = () => {
               <div className="pt-1 text-left">
                 <p className={`text-[13px] font-bold transition-colors duration-500 ${currentStep === 2 ? 'text-[#0f62fe]' : currentStep > 2 ? 'text-slate-700' : 'text-gray-600'}`}>Behavior Rules & Safety Goals</p>
               </div>
-               {/* Connecting Line */}
-               <div className="absolute left-4 top-8 bottom-0 w-[2px] bg-gray-100 -z-0">
-                  {/* Active Line Segment with Flow Animation */}
-                  <div 
-                     className={`absolute top-0 left-0 w-full bg-[#0f62fe] transform origin-top transition-transform duration-200 ease-out ${currentStep > 2 ? 'scale-y-100' : 'scale-y-0'}`}
-                   ></div>
-               </div>
+              {/* Connecting Line */}
+              <div className="absolute left-[15px] top-8 bottom-0 w-[3px] overflow-hidden z-0">
+                <div className="w-full bg-gray-200 h-full absolute top-0 left-0"></div>
+                <div className={`w-full bg-[#0f62fe] absolute top-0 left-0 transition-all duration-700 ease-out ${currentStep >= 3 ? 'h-full' : 'h-0'}`}></div>
+              </div>
             </div>
 
             {/* Step 3 */}
