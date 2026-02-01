@@ -275,9 +275,9 @@ const ProfileSetup = () => {
       <aside className="w-56 bg-white border-r border-gray-300 flex flex-col justify-between pt-4 pb-6 px-2 sticky top-0 h-screen overflow-visible">
         <div className="flex flex-col gap-12">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="bg-[#0f62fe] w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#0f62fe]/30">
-              <span className="material-symbols-outlined text-2xl">shield</span>
+          <div className="flex items-center gap-3 px-2 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md">
+              <span className="material-symbols-outlined text-xl">shield</span>
             </div>
             <div className="flex flex-col">
               <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
