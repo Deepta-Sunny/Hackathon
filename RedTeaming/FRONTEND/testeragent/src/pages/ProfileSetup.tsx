@@ -330,12 +330,11 @@ const ProfileSetup = () => {
 
         {/* User Profile */}
         <div 
-            className="mt-auto relative group mb-6"
-            onMouseEnter={() => setIsProfileMenuOpen(true)}
-            onMouseLeave={() => setIsProfileMenuOpen(false)}
+            className="mt-auto relative mb-6"
         >
-          <div 
-            className="w-full bg-[#f9fafb] rounded-xl p-4 flex items-center gap-3 border border-gray-100/50 group-hover:bg-white group-hover:border-[#0f62fe]/20 transition-all cursor-default text-left"
+          <button 
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className="w-full bg-[#f9fafb] rounded-xl p-4 flex items-center gap-3 border border-gray-100/50 hover:bg-white hover:border-[#0f62fe]/20 transition-all cursor-pointer text-left"
           >
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white">
@@ -347,17 +346,17 @@ const ProfileSetup = () => {
               <p className="text-xs font-bold text-gray-900 truncate">User Profile</p>
               <p className="text-[10px] text-gray-500 font-medium">Settings</p>
             </div>
-             <span className="material-symbols-outlined ml-auto text-gray-400 text-lg group-hover:text-[#0f62fe] transition-colors">expand_less</span>
-          </div>
+             <span className={`material-symbols-outlined ml-auto text-gray-400 text-lg transition-all ${isProfileMenuOpen ? 'rotate-180 text-[#0f62fe]' : ''}`}>expand_less</span>
+          </button>
           
            {isProfileMenuOpen && (
-            <div className="absolute bottom-full left-0 w-64 mb-4 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 ml-2">
+            <div className="absolute bottom-full left-0 w-64 mb-4 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] ml-2">
               <div className="p-1">
-                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => navigate('/dashboard')}>
+                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => { navigate('/dashboard'); setIsProfileMenuOpen(false); }}>
                   <span className="material-symbols-outlined text-gray-400 text-xl group-hover/item:text-[#0f62fe]">dashboard</span>
                   <span className="text-sm font-medium text-gray-700 group-hover/item:text-[#0f62fe]">Dashboard</span>
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => navigate('/history')}>
+                <button className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#edf5ff] rounded-lg text-left transition-colors group/item" onClick={() => { navigate('/history'); setIsProfileMenuOpen(false); }}>
                   <span className="material-symbols-outlined text-gray-400 text-xl group-hover/item:text-[#0f62fe]">history</span>
                   <span className="text-sm font-medium text-gray-700 group-hover/item:text-[#0f62fe]">History</span>
                 </button>
