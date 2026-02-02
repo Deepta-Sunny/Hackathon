@@ -75,3 +75,14 @@ export type ApiSliceState = {
   monitorOpen: boolean;
   monitorError: string | null;
 };
+
+export interface ChatMessage {
+  id: string;
+  sender: "agent" | "ai";
+  content: string;
+  category?: string;
+  run?: number;
+  turn?: number;
+  riskDisplay?: string;
+  timestamp?: string;
+}
