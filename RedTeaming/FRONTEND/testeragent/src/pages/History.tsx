@@ -20,6 +20,18 @@ interface HistoryItemSummary {
     duration: string;
 }
 
+interface Project {
+    id: string;
+    name: string;
+    runs: HistoryItemSummary[];
+}
+
+interface Bucket {
+    id: string;
+    name: string;
+    projects: Project[];
+}
+
 interface HistoryItemDetail extends HistoryItemSummary {
   vulnerability_score?: number;
   critical_count?: number;
@@ -31,56 +43,223 @@ interface HistoryItemDetail extends HistoryItemSummary {
 
 const History: React.FC = () => {
   const navigate = useNavigate();
-  const [historyList, setHistoryList] = useState<HistoryItemSummary[]>([]);
+  const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [selectedRun, setSelectedRun] = useState<HistoryItemDetail | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [expandedBuckets, setExpandedBuckets] = useState<Set<string>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-  // Fetch list of history items
+  // Mock data for buckets and projects (matching profile library structure)
+  const mockBuckets: Bucket[] = [
+    {
+      id: "bucket-1",
+      name: "General",
+      projects: [
+        {
+          id: "project-1",
+          name: "E-Commerce Shopping Assistant",
+          runs: [
+            {
+              id: "run-1",
+              filename: "E-Commerce_Shopping_Assistant_20260128_143000.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-28",
+              date: "2026-01-28",
+              total_vulnerabilities: 3,
+              duration: "4m 12s"
+            },
+            {
+              id: "run-2", 
+              filename: "E-Commerce_Shopping_Assistant_20260129_091500.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-29",
+              date: "2026-01-29",
+              total_vulnerabilities: 1,
+              duration: "3m 45s"
+            },
+            {
+              id: "run-3",
+              filename: "E-Commerce_Shopping_Assistant_20260130_123549.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-30",
+              date: "2026-01-30",
+              total_vulnerabilities: 0,
+              duration: "3m 05s"
+            }
+          ]
+        },
+        {
+          id: "project-2",
+          name: "Ecommerce chat assistant",
+          runs: [
+            {
+              id: "run-5",
+              filename: "Ecommerce_chat_assistant_20260130_100000.json",
+              chatbot_name: "Ecommerce chat assistant",
+              date: "2026-01-30",
+              total_vulnerabilities: 0,
+              duration: "2m 45s"
+            }
+          ]
+        },
+        {
+          id: "project-3",
+          name: "Ecommerce Chatbot",
+          runs: [
+            {
+              id: "run-6",
+              filename: "Ecommerce_Chatbot_20260131_150000.json",
+              chatbot_name: "Ecommerce Chatbot",
+              date: "2026-01-31",
+              total_vulnerabilities: 1,
+              duration: "3m 20s"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "bucket-2", 
+      name: "FIS",
+      projects: [
+        {
+          id: "project-4",
+          name: "E-Commerce Shopping Assistant",
+          runs: [
+            {
+              id: "run-7",
+              filename: "FIS_E-Commerce_Shopping_Assistant_20260201_100000.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-02-01",
+              date: "2026-02-01",
+              total_vulnerabilities: 2,
+              duration: "4m 05s"
+            },
+            {
+              id: "run-8",
+              filename: "FIS_E-Commerce_Shopping_Assistant_20260131_153000.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-31",
+              date: "2026-01-31",
+              total_vulnerabilities: 0,
+              duration: "3m 22s"
+            },
+            {
+              id: "run-9",
+              filename: "FIS_E-Commerce_Shopping_Assistant_20260130_140000.json",
+              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-30",
+              date: "2026-01-30",
+              total_vulnerabilities: 1,
+              duration: "4m 10s"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "bucket-3", 
+      name: "Downer",
+      projects: [
+        {
+          id: "project-5",
+          name: "Customer Support Bot",
+          runs: [
+            {
+              id: "run-8",
+              filename: "Downer_Support_Bot_20260202_090000.json",
+              chatbot_name: "Customer Support Bot",
+              date: "2026-02-02",
+              total_vulnerabilities: 0,
+              duration: "2m 30s"
+            }
+          ]
+        }
+      ]
+    }
+  ];
+
+  // Load mock data
   useEffect(() => {
-      const fetchHistory = async () => {
-          try {
-              const res = await fetch(`${API_BASE_URL}/api/history`);
-              if (res.ok) {
-                  const data = await res.json();
-                  setHistoryList(data.history || []);
-              }
-          } catch (error) {
-              console.error("Failed to fetch history list", error);
-          } finally {
-              setLoadingList(false);
-          }
-      };
-      fetchHistory();
+    // Simulate API loading
+    setTimeout(() => {
+      setBuckets(mockBuckets);
+      setLoadingList(false);
+      // Expand first bucket by default
+      if (mockBuckets.length > 0) {
+        setExpandedBuckets(new Set([mockBuckets[0].id]));
+      }
+    }, 500);
   }, []);
 
-  // Fetch details when selection changes (or default to first one)
+  // Fetch details when selection changes
   useEffect(() => {
-    if (historyList.length > 0 && !selectedRun) {
-        // Default to first
-        loadRun(historyList[0].filename);
+    if (buckets.length > 0 && !selectedRun) {
+      // Default to first run in first project of first bucket
+      const firstBucket = buckets[0];
+      if (firstBucket.projects.length > 0 && firstBucket.projects[0].runs.length > 0) {
+        loadRun(firstBucket.projects[0].runs[0].filename);
+      }
     }
-  }, [historyList]);
+  }, [buckets]);
 
   const loadRun = async (filename: string) => {
       try {
           const res = await fetch(`${API_BASE_URL}/api/history/${filename}`);
           if (res.ok) {
               const data = await res.json();
-              setSelectedRun(data);
+              // Ensure filename is preserved for context lookup
+              setSelectedRun({ ...data, filename });
           }
       } catch (error) {
           console.error("Failed to fetch history detail", error);
       }
   };
 
-  const filteredHistory = historyList.filter(h => 
-    h.chatbot_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    h.date.includes(searchTerm)
+  const filteredBuckets = buckets.filter(bucket => 
+    bucket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bucket.projects.some(project => 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.runs.some(run => 
+        run.chatbot_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        run.date.includes(searchTerm)
+      )
+    )
   );
+
+  const toggleBucket = (bucketId: string) => {
+    const newExpanded = new Set(expandedBuckets);
+    if (newExpanded.has(bucketId)) {
+      newExpanded.delete(bucketId);
+    } else {
+      newExpanded.add(bucketId);
+    }
+    setExpandedBuckets(newExpanded);
+  };
+
+  const toggleProject = (projectId: string) => {
+    const newExpanded = new Set(expandedProjects);
+    if (newExpanded.has(projectId)) {
+      newExpanded.delete(projectId);
+    } else {
+      newExpanded.add(projectId);
+    }
+    setExpandedProjects(newExpanded);
+  };
+
+  // Helper to find context for selected run
+  const getRunContext = () => {
+    if (!selectedRun) return { bucketName: '', projectName: '' };
+    
+    for (const bucket of buckets) {
+      for (const project of bucket.projects) {
+        if (project.runs.some(r => r.filename === selectedRun.filename)) {
+          return { bucketName: bucket.name, projectName: project.name };
+        }
+      }
+    }
+    return { bucketName: '', projectName: '' };
+  };
+  
+  const { bucketName, projectName } = getRunContext();
 
   return (
     <div className="flex h-screen bg-white font-sans">
@@ -88,11 +267,18 @@ const History: React.FC = () => {
       <aside className="w-56 bg-white border-r border-gray-300 flex flex-col pt-6 px-2 sticky top-0 h-screen justify-between pb-6">
         <div className="flex flex-col gap-6">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-2 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md">
+          <div className="flex items-center gap-3 px-2">
+            <button 
+              onClick={() => navigate('/profile-setup')}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+              title="Back to Onboarding"
+            >
+              <span className="material-symbols-outlined text-xl">arrow_back</span>
+            </button>
+            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md cursor-pointer" onClick={() => navigate('/')}>
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col cursor-pointer" onClick={() => navigate('/')}>
               <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
             </div>
           </div>
@@ -142,7 +328,7 @@ const History: React.FC = () => {
         {/* History List (Left Panel) */}
         <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col z-10">
           <div className="p-5 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Attack History</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Project History</h2>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
               <input 
@@ -157,32 +343,71 @@ const History: React.FC = () => {
           
           <div className="flex-1 overflow-y-auto">
              {loadingList && <p className="p-4 text-sm text-gray-500">Loading history...</p>}
-            {filteredHistory.map(run => (
-              <div 
-                key={run.id}
-                onClick={() => loadRun(run.filename)}
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#0f62fe] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className={`text-sm font-bold ${selectedRun?.id === run.id ? 'text-gray-900' : 'text-gray-700'}`}>{run.chatbot_name}</h3>
-                  {run.total_vulnerabilities > 0 ? (
-                    <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
-                      {run.total_vulnerabilities} Vulns
+            {filteredBuckets.map(bucket => (
+              <div key={bucket.id} className="border-b border-gray-100">
+                {/* Bucket Header */}
+                <div 
+                  onClick={() => toggleBucket(bucket.id)}
+                  className="p-4 bg-gray-50 border-l-4 border-l-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`material-symbols-outlined text-lg transition-transform ${expandedBuckets.has(bucket.id) ? 'rotate-90' : ''}`}>chevron_right</span>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-gray-500">folder</span>
+                      <h3 className="text-sm font-bold text-gray-800">{bucket.name}</h3>
+                    </div>
+                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                      {bucket.projects.length} projects
                     </span>
-                  ) : (
-                     <span className="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">
-                      Safe
-                    </span>
-                  )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                  <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                  {run.date}
-                </div>
-                 <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                  <span className="material-symbols-outlined text-[14px]">timer</span>
-                  {run.duration}
-                </div>
+
+                {/* Projects */}
+                {expandedBuckets.has(bucket.id) && bucket.projects.map(project => (
+                  <div key={project.id} className="ml-4 border-l border-gray-200">
+                    {/* Project Header */}
+                    <div 
+                      onClick={() => toggleProject(project.id)}
+                      className="p-3 bg-gray-25 border-l-4 border-l-blue-300 cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`material-symbols-outlined text-base transition-transform ${expandedProjects.has(project.id) ? 'rotate-90' : ''}`}>chevron_right</span>
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-blue-500">inventory_2</span>
+                          <h4 className="text-sm font-semibold text-gray-700">{project.name}</h4>
+                        </div>
+                        <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">
+                          {project.runs.length} runs
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Runs */}
+                    {expandedProjects.has(project.id) && project.runs.map(run => (
+                      <div 
+                        key={run.id}
+                        onClick={() => loadRun(run.filename)}
+                        className={`p-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ml-8 ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#0f62fe] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                            <span className="font-semibold">{run.date}</span>
+                          </div>
+                          {run.total_vulnerabilities > 0 ? (
+                            <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
+                              {run.total_vulnerabilities} Vulns
+                            </span>
+                          ) : (
+                             <span className="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">
+                              Safe
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -203,15 +428,20 @@ const History: React.FC = () => {
             <div className="flex-none px-8 pt-8 pb-6 border-b border-gray-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] z-10 bg-white">
                 <header className="flex justify-between items-start mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedRun.chatbot_name}</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                          {(bucketName && projectName) ? (
+                            <>
+                              <span className="text-gray-400 font-medium text-lg">{bucketName} <span className="text-gray-300 mx-1">/</span> </span>
+                              {projectName}
+                            </>
+                          ) : (
+                            selectedRun.chatbot_name
+                          )}
+                        </h1>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
                                 <span className="material-symbols-outlined text-sm">event</span>
                                 {selectedRun.date}
-                            </span>
-                            <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
-                                <span className="material-symbols-outlined text-sm">schedule</span>
-                                {selectedRun.duration}
                             </span>
                         </div>
                     </div>
@@ -223,7 +453,6 @@ const History: React.FC = () => {
                     <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col justify-between shadow-sm">
                         <div>
                              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Vulnerability Score</p>
-                             <p className="text-[10px] text-gray-400">(C=3pts, H=2pts, M=1pt)</p>
                         </div>
                         <p className="text-3xl font-bold mt-2 text-[#0f62fe]">
                             {selectedRun.vulnerability_score !== undefined ? selectedRun.vulnerability_score.toFixed(1) : '0.0'}%
@@ -263,16 +492,7 @@ const History: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Category Breakdown */}
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Category Breakdown</h4>
-                <div className="grid grid-cols-4 gap-4">
-                    {Object.entries(selectedRun.categories).map(([category, count]) => (
-                        <div key={category} className={`p-3 rounded-xl border ${count > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                            <p className="text-[11px] font-bold text-gray-500 uppercase truncate mb-1" title={category}>{category}</p>
-                            <p className={`text-lg font-bold ${count > 0 ? 'text-red-600' : 'text-gray-700'}`}>{count}</p>
-                        </div>
-                    ))}
-                </div>
+
             </div>
 
             {/* Fixed Scrollable Logs Header */}
@@ -292,8 +512,6 @@ const History: React.FC = () => {
                             {/* Header */}
                             <div className={`px-4 py-2 flex justify-between items-center text-xs font-medium border-b ${log.vulnerability_detected ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
                                 <div className="flex items-center gap-3">
-                                    <span>{log.timestamp}</span>
-                                    <span className="w-px h-3 bg-gray-300/50"></span>
                                     <span>{log.category}</span>
                                 </div>
                                 {log.vulnerability_detected && (
@@ -304,29 +522,27 @@ const History: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Conversation */}
-                            <div className="p-4 space-y-6">
-                                {/* User Input - Aligned Right */}
-                                <div className="flex gap-4 flex-row-reverse">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-1">
-                                         <span className="material-symbols-outlined text-[16px]">person</span>
-                                    </div>
-                                    <div className="flex-1 text-right">
-                                        <p className="text-xs font-bold text-blue-600 mb-1">Attacker (User)</p>
-                                        <p className="text-sm text-gray-800 leading-relaxed bg-blue-50 p-3 rounded-2xl rounded-tr-none inline-block border border-blue-100 text-left shadow-sm">
+                            {/* Conversation - User First, Then Chatbot */}
+                            <div className="p-4 space-y-4">
+                                {/* User Input - Right Side */}
+                                <div className="flex gap-3 justify-end">
+                                    <div className="flex-1 max-w-[70%] flex justify-end">
+                                        <p className="text-sm text-gray-800 leading-relaxed bg-blue-50 p-3 rounded-2xl rounded-tr-none border border-blue-100 shadow-sm">
                                             {log.user_request}
                                         </p>
                                     </div>
+                                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                                         <span className="material-symbols-outlined text-[16px]">person</span>
+                                    </div>
                                 </div>
 
-                                {/* AI Response - Aligned Left */}
-                                <div className="flex gap-4">
-                                     <div className="w-8 h-8 rounded-full bg-[#0f62fe]/20 flex items-center justify-center text-[#0f62fe] flex-shrink-0 mt-1">
+                                {/* AI Response - Left Side */}
+                                <div className="flex gap-3">
+                                     <div className="w-8 h-8 rounded-full bg-[#0f62fe] flex items-center justify-center text-white flex-shrink-0">
                                          <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-xs font-bold text-gray-400 mb-1">Target AI</p>
-                                        <div className={`text-sm leading-relaxed p-3 rounded-2xl rounded-tl-none inline-block text-left relative shadow-sm ${log.vulnerability_detected ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-white text-gray-800 border border-gray-100'}`}>
+                                    <div className="flex-1 max-w-[70%]">
+                                        <div className={`text-sm leading-relaxed p-3 rounded-2xl rounded-tl-none text-left relative shadow-sm ${log.vulnerability_detected ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-white text-gray-800 border border-gray-100'}`}>
                                             {log.llm_response}
                                             {log.vulnerability_detected && (
                                                 <div className="mt-2 pt-2 border-t border-red-200/50 text-xs text-red-600 font-medium flex items-center gap-1">
