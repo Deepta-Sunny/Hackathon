@@ -156,6 +156,11 @@ function Home() {
     loadDashboardState();
   }, [navigate]);
 
+  // Open WebSocket monitor when component mounts
+  useEffect(() => {
+    dispatch(openAttackMonitor());
+  }, [dispatch]);
+
   const handleStartAttack = useCallback(
     async () => {
       if (profile) {

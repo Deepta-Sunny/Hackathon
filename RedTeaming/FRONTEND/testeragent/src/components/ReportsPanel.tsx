@@ -243,6 +243,7 @@ const ReportsPanel: React.FC = () => {
               const runStats = { ...updated[categoryKey][runKey] };
               
               // Increment the appropriate risk level
+              // Backend risk categories: 1=SAFE, 2=MEDIUM, 3=HIGH, 4=CRITICAL
               if (riskCategory === 4) {
                 runStats.critical += 1;
               } else if (riskCategory === 3) {
@@ -289,11 +290,14 @@ const ReportsPanel: React.FC = () => {
     };
   }, [monitorSocket]);  // FIXED: Removed vulnerabilityStats to prevent duplicate listeners
 
-  // Calculate vulnerability score (Critical=3, High=2, Medium=1, Low=0, Safe=0)
+  // Calculate vulnerability score (Critical=3, High=2, Medium=1, Safe=0)
+  // Only count actual vulnerabilities (risk >= 2) in the score
+  const totalVulnerabilities = totalRiskDistribution.critical + totalRiskDistribution.high + totalRiskDistribution.medium;
   const vulnerabilityPoints = (totalRiskDistribution.critical * 3) + 
                               (totalRiskDistribution.high * 2) + 
                               (totalRiskDistribution.medium * 1);
-  const maxPossiblePoints = totalTurns * 3; // Each turn could be critical (3 points)
+  // Max possible points should only be based on vulnerabilities, not all turns
+  const maxPossiblePoints = totalVulnerabilities * 3; // Each vulnerability could be critical (3 points)
   const vulnerabilityScore = maxPossiblePoints > 0 ? ((vulnerabilityPoints / maxPossiblePoints) * 100).toFixed(1) : '0.0';
 
   // Flatten chart data to show 3 bars per category (one for each run)
@@ -333,11 +337,10 @@ const ReportsPanel: React.FC = () => {
     });
   });
 
-  // Calculate totals from risk distribution
+  // Calculate totals from risk distribution (already calculated above in vulnerabilityScore section)
   const totalCritical = totalRiskDistribution.critical;
   const totalHigh = totalRiskDistribution.high;
   const totalMedium = totalRiskDistribution.medium;
-  const totalVulnerabilities = totalCritical + totalHigh + totalMedium;
 
   return (
     <Paper className={classes.container} elevation={2}>

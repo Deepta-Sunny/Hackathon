@@ -189,6 +189,40 @@ const ProfileSetup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!username.trim()) {
+      alert("Please enter an AI Agent Name");
+      return;
+    }
+    if (!domain.trim()) {
+      alert("Please enter a Business Domain");
+      return;
+    }
+    if (!intendedAudience.trim()) {
+      alert("Please enter Intended Users");
+      return;
+    }
+    if (!communicationStyle) {
+      alert("Please select a Communication Style");
+      return;
+    }
+    if (!agentType) {
+      alert("Please select an AI Function Type");
+      return;
+    }
+    if (!primaryObjective.trim()) {
+      alert("Please enter a Business Purpose");
+      return;
+    }
+    if (!boundaries.trim()) {
+      alert("Please enter Security & Compliance Constraints");
+      return;
+    }
+    if (!websocketUrl.trim()) {
+      alert("Please enter a Live Connection Endpoint");
+      return;
+    }
+
     const profile: ChatbotProfile = {
       username,
       websocket_url: websocketUrl,
@@ -207,31 +241,23 @@ const ProfileSetup = () => {
     // Save profile to sessionStorage for dashboard
     sessionStorage.setItem("chatbotProfile", JSON.stringify(profile));
     
-    // Send profile to backend and start orchestration
+    // Save to backend dashboard state (but don't start attack yet)
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-      const response = await fetch(`${API_BASE_URL}/api/attack/start-with-profile`, {
+      await fetch(`${API_BASE_URL}/api/dashboard/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(profile),
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log("✅ Profile sent to backend:", data);
-        // Navigate to dashboard to monitor orchestration
-        navigate("/dashboard");
-      } else {
-        const error = await response.json();
-        console.error("❌ Failed to start orchestration:", error);
-        alert(`Failed to start orchestration: ${error.detail || 'Unknown error'}`);
-      }
+      console.log("✅ Profile saved to backend");
     } catch (error) {
-      console.error("❌ Error sending profile to backend:", error);
-      alert(`Error connecting to backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.log("Could not save to backend:", error);
     }
+    
+    // Navigate to dashboard (attack will start when user clicks Start button)
+    navigate("/dashboard");
   };
 
   const handleScroll = () => {
