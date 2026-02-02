@@ -6,6 +6,7 @@ import {
   Chip,
   Paper,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import { createUseStyles } from "react-jss";
 
@@ -54,77 +55,70 @@ const useStyles = createUseStyles({
     height: "100%",
   },
   heroCard: {
-    display: "grid",
-    gridTemplateColumns: "140px 1fr 1fr 1fr",
-    gap: "12px",
-    padding: "12px 16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    padding: "10px 14px",
     backgroundColor: "#f8f9fa",
-    borderRadius: "8px",
+    borderRadius: "6px",
     border: "1px solid #e0e0e0",
     minHeight: "fit-content",
   },
   scoreCircle: {
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
+    gap: "10px",
   },
   scoreCircleOuter: {
-    width: "100px",
-    height: "100px",
+    width: "60px",
+    height: "60px",
     borderRadius: "50%",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    flexShrink: 0,
   },
   scoreCircleInner: {
-    width: "76px",
-    height: "76px",
+    width: "48px",
+    height: "48px",
     borderRadius: "50%",
     backgroundColor: "#fff",
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "inset 0 2px 8px rgba(0,0,0,0.1)",
+    boxShadow: "inset 0 1px 4px rgba(0,0,0,0.1)",
   },
   scoreValue: {
-    fontSize: "16px",
-    fontWeight: "bold",
+    fontSize: "14px",
+    fontWeight: 700,
     lineHeight: 1,
   },
   scoreLabel: {
-    fontSize: "8px",
+    fontSize: "10px",
     color: "#666",
-    marginTop: "2px",
+    fontWeight: 500,
   },
   metricCard: {
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
-    padding: "8px 12px",
+    gap: "8px",
+    padding: "6px 10px",
     backgroundColor: "#fff",
-    borderRadius: "6px",
+    borderRadius: "4px",
     border: "1px solid #e0e0e0",
-    transition: "box-shadow 0.2s",
-    "&:hover": {
-      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-    },
+    flexShrink: 0,
   },
   metricValue: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    marginBottom: "2px",
+    fontSize: "16px",
+    fontWeight: 700,
+    lineHeight: 1,
   },
   metricLabel: {
-    fontSize: "9px",
+    fontSize: "10px",
     color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    textAlign: "center",
+    fontWeight: 500,
+    whiteSpace: "nowrap",
   },
   categoryList: {
     flex: 1,
@@ -193,6 +187,57 @@ const useStyles = createUseStyles({
     fontWeight: 600,
     fontSize: "9px",
   },
+  tooltip: {
+    backgroundColor: "#fff !important",
+    border: "1px solid #0f62fe",
+    borderRadius: "4px",
+    fontSize: "11px",
+    padding: "10px 12px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    maxWidth: "280px",
+  },
+  tooltipArrow: {
+    color: "#fff !important",
+    "&::before": {
+      border: "1px solid #0f62fe",
+    },
+  },
+  tooltipContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  tooltipHeader: {
+    fontSize: "12px",
+    fontWeight: 700,
+    color: "#0f62fe",
+    marginBottom: "4px",
+    borderBottom: "1px solid #e0e0e0",
+    paddingBottom: "4px",
+  },
+  tooltipRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "16px",
+    fontSize: "11px",
+  },
+  tooltipLabel: {
+    color: "#666",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  tooltipValue: {
+    fontWeight: 700,
+    fontSize: "12px",
+  },
+  tooltipDot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    display: "inline-block",
+  },
   loadingContainer: {
     display: "flex",
     flexDirection: "column",
@@ -221,14 +266,27 @@ const useStyles = createUseStyles({
   issuesBadges: {
     display: "flex",
     gap: "4px",
-    marginTop: "2px",
+    alignItems: "center",
     flexWrap: "wrap",
   },
   issueBadge: {
     fontSize: "9px",
-    padding: "1px 5px",
+    padding: "2px 6px",
     borderRadius: "3px",
-    fontWeight: 500,
+    fontWeight: 600,
+    lineHeight: 1.2,
+  },
+  divider: {
+    width: "1px",
+    height: "40px",
+    backgroundColor: "#e0e0e0",
+    flexShrink: 0,
+  },
+  metricsGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flex: 1,
   },
 });
 
@@ -382,106 +440,6 @@ const OwaspComplianceReport: React.FC = () => {
 
   return (
     <Box className={classes.container}>
-      {/* Hero Card with Overall Score */}
-      <Paper className={classes.heroCard} elevation={0}>
-        {/* Circular Score */}
-        <Box className={classes.scoreCircle}>
-          <Box
-            className={classes.scoreCircleOuter}
-            style={{ background: getScoreGradient(summary.overall_compliance) }}
-          >
-            <Box className={classes.scoreCircleInner}>
-              <Typography
-                className={classes.scoreValue}
-                style={{ color: getScoreColor(summary.overall_compliance) }}
-              >
-                {summary.overall_compliance.toFixed(1)}%
-              </Typography>
-              <Typography className={classes.scoreLabel}>
-                Compliance
-              </Typography>
-            </Box>
-          </Box>
-          <Chip
-            label={summary.risk_level}
-            size="small"
-            style={{
-              marginTop: "8px",
-              backgroundColor: getRiskColor(summary.risk_level),
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: "10px",
-              height: "20px",
-            }}
-          />
-        </Box>
-
-        {/* Tests Passed */}
-        <Box className={classes.metricCard}>
-          <Typography
-            className={classes.metricValue}
-            style={{ color: "#4caf50" }}
-          >
-            {summary.tests_passed}
-          </Typography>
-          <Typography className={classes.metricLabel}>
-            Tests Passed
-          </Typography>
-        </Box>
-
-        {/* Tests Failed */}
-        <Box className={classes.metricCard}>
-          <Typography
-            className={classes.metricValue}
-            style={{ color: "#d32f2f" }}
-          >
-            {summary.tests_failed}
-          </Typography>
-          <Typography className={classes.metricLabel}>
-            Tests Failed
-          </Typography>
-        </Box>
-
-        {/* Issues Breakdown */}
-        <Box className={classes.metricCard}>
-          <Typography
-            className={classes.metricValue}
-            style={{ color: "#333" }}
-          >
-            {summary.total_tests}
-          </Typography>
-          <Typography className={classes.metricLabel}>
-            Total Tests
-          </Typography>
-          <Box className={classes.issuesBadges}>
-            {summary.critical_issues > 0 && (
-              <span
-                className={classes.issueBadge}
-                style={{ backgroundColor: "#ffebee", color: "#c62828" }}
-              >
-                {summary.critical_issues} Critical
-              </span>
-            )}
-            {summary.high_issues > 0 && (
-              <span
-                className={classes.issueBadge}
-                style={{ backgroundColor: "#fff3e0", color: "#e65100" }}
-              >
-                {summary.high_issues} High
-              </span>
-            )}
-            {summary.medium_issues > 0 && (
-              <span
-                className={classes.issueBadge}
-                style={{ backgroundColor: "#fffde7", color: "#f9a825" }}
-              >
-                {summary.medium_issues} Medium
-              </span>
-            )}
-          </Box>
-        </Box>
-      </Paper>
-
       {/* Category Title */}
       <Typography
         style={{
@@ -497,15 +455,70 @@ const OwaspComplianceReport: React.FC = () => {
       {/* Category List */}
       <Box className={classes.categoryList}>
         {categories.map((category) => (
-          <Paper
+          <Tooltip
             key={category.id}
-            className={classes.categoryCard}
-            elevation={0}
+            title={
+              <Box className={classes.tooltipContent}>
+                <Typography className={classes.tooltipHeader}>
+                  {category.id} - Test Results
+                </Typography>
+                <Box className={classes.tooltipRow}>
+                  <span className={classes.tooltipLabel}>
+                    <span className={classes.tooltipDot} style={{ backgroundColor: "#66bb6a" }}></span>
+                    Safe
+                  </span>
+                  <span className={classes.tooltipValue} style={{ color: "#66bb6a" }}>
+                    {category.safe_count}
+                  </span>
+                </Box>
+                <Box className={classes.tooltipRow}>
+                  <span className={classes.tooltipLabel}>
+                    <span className={classes.tooltipDot} style={{ backgroundColor: "#fbc02d" }}></span>
+                    Medium
+                  </span>
+                  <span className={classes.tooltipValue} style={{ color: "#fbc02d" }}>
+                    {category.medium_count}
+                  </span>
+                </Box>
+                <Box className={classes.tooltipRow}>
+                  <span className={classes.tooltipLabel}>
+                    <span className={classes.tooltipDot} style={{ backgroundColor: "#f57c00" }}></span>
+                    High
+                  </span>
+                  <span className={classes.tooltipValue} style={{ color: "#f57c00" }}>
+                    {category.high_count}
+                  </span>
+                </Box>
+                <Box className={classes.tooltipRow}>
+                  <span className={classes.tooltipLabel}>
+                    <span className={classes.tooltipDot} style={{ backgroundColor: "#d32f2f" }}></span>
+                    Critical
+                  </span>
+                  <span className={classes.tooltipValue} style={{ color: "#d32f2f" }}>
+                    {category.critical_count}
+                  </span>
+                </Box>
+              </Box>
+            }
+            arrow
+            placement="left"
+            componentsProps={{
+              tooltip: {
+                className: classes.tooltip,
+              },
+              arrow: {
+                className: classes.tooltipArrow,
+              },
+            }}
           >
-            {/* Category ID Badge */}
-            <Typography className={classes.categoryId}>
-              {category.id}
-            </Typography>
+            <Paper
+              className={classes.categoryCard}
+              elevation={0}
+            >
+              {/* Category ID Badge */}
+              <Typography className={classes.categoryId}>
+                {category.id}
+              </Typography>
 
             {/* Category Info */}
             <Box className={classes.categoryInfo}>
@@ -538,6 +551,7 @@ const OwaspComplianceReport: React.FC = () => {
               className={classes.statusChip}
             />
           </Paper>
+          </Tooltip>
         ))}
       </Box>
 
