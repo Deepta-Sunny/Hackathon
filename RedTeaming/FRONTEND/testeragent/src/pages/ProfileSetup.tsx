@@ -190,36 +190,76 @@ const ProfileSetup = () => {
     e.preventDefault();
 
     // Validate required fields
+
+    // Username (AI Agent Name): 3-32 chars
     if (!username.trim()) {
       alert("Please enter an AI Agent Name");
       return;
     }
+    if (username.length < 3 || username.length > 32) {
+      alert("AI Agent Name must be between 3 and 32 characters.");
+      return;
+    }
+
+    // Domain: 3-40 chars
     if (!domain.trim()) {
       alert("Please enter a Business Domain");
       return;
     }
+    if (domain.length < 3 || domain.length > 40) {
+      alert("Business Domain must be between 3 and 40 characters.");
+      return;
+    }
+
+    // Intended Audience: 3-40 chars
     if (!intendedAudience.trim()) {
       alert("Please enter Intended Users");
       return;
     }
+    if (intendedAudience.length < 3 || intendedAudience.length > 40) {
+      alert("Intended Users must be between 3 and 40 characters.");
+      return;
+    }
+
+    // Communication Style: required
     if (!communicationStyle) {
       alert("Please select a Communication Style");
       return;
     }
+
+    // Agent Type: required
     if (!agentType) {
       alert("Please select an AI Function Type");
       return;
     }
+
+    // Primary Objective: 10-200 chars
     if (!primaryObjective.trim()) {
       alert("Please enter a Business Purpose");
       return;
     }
+    if (primaryObjective.length < 10 || primaryObjective.length > 200) {
+      alert("Business Purpose must be between 10 and 200 characters.");
+      return;
+    }
+
+    // Boundaries: 10-200 chars
     if (!boundaries.trim()) {
       alert("Please enter Security & Compliance Constraints");
       return;
     }
+    if (boundaries.length < 10 || boundaries.length > 200) {
+      alert("Security & Compliance Constraints must be between 10 and 200 characters.");
+      return;
+    }
+
+    // Websocket URL: 10-100 chars
     if (!websocketUrl.trim()) {
       alert("Please enter a Live Connection Endpoint");
+      return;
+    }
+    if (websocketUrl.length < 10 || websocketUrl.length > 100) {
+      alert("Live Connection Endpoint must be between 10 and 100 characters.");
       return;
     }
 
@@ -574,8 +614,7 @@ const ProfileSetup = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
                   <div className="space-y-1.5">
                     <label className="text-left text-black text-base font-semibold flex items-center gap-1.5 ">
-                      AI Agent Name
-                      <span className="material-symbols-outlined text-gray-300 text-base cursor-help hover:text-gray-500 transition-colors" title="Public facing name of the bot">help</span>
+                       AI Agent Name
                     </label>
                     <input
                       className="w-full rounded-lg border border-gray-300 bg-white h-[42px] px-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0f62fe] focus:ring-4 focus:ring-[#0f62fe]/5 transition-all"
@@ -659,7 +698,7 @@ const ProfileSetup = () => {
                 </div>
                 <div>
                   <h3 className="text-left text-2xl font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
-                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Specify clear criteria for successful operation and boundaries for safe AI behavior.</p>
+                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Specify clear criteria for expected behavior and boundaries for safe AI behavior.</p>
                 </div>
               </div>
               <div className="bg-[#ffffff] p-4 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-4">

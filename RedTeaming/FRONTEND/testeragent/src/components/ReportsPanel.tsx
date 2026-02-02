@@ -120,49 +120,6 @@ interface VulnerabilityData {
   total: number;
 }
 
-
-const calculateInitialStatsFromMock = () => {
-    const stats: any = {
-        crescendo: { run1: { critical: 0, high: 0, medium: 0, safe: 0 }, run2: { critical: 0, high: 0, medium: 0, safe: 0 }, run3: { critical: 0, high: 0, medium: 0, safe: 0 } },
-        skeleton_key: { run1: { critical: 0, high: 0, medium: 0, safe: 0 }, run2: { critical: 0, high: 0, medium: 0, safe: 0 }, run3: { critical: 0, high: 0, medium: 0, safe: 0 } },
-        obfuscation: { run1: { critical: 0, high: 0, medium: 0, safe: 0 }, run2: { critical: 0, high: 0, medium: 0, safe: 0 }, run3: { critical: 0, high: 0, medium: 0, safe: 0 } },
-        standard: { run1: { critical: 0, high: 0, medium: 0, safe: 0 }, run2: { critical: 0, high: 0, medium: 0, safe: 0 }, run3: { critical: 0, high: 0, medium: 0, safe: 0 } }
-    };
-
-    mockMessages.forEach(msg => {
-        if (msg.sender === 'ai' && msg.category && msg.run) {
-            const cat = msg.category.toLowerCase();
-            const runKey = `run${msg.run}`;
-            let riskKey = 'safe';
-            if (msg.riskDisplay?.includes('CRITICAL')) riskKey = 'critical';
-            else if (msg.riskDisplay?.includes('HIGH')) riskKey = 'high';
-            else if (msg.riskDisplay?.includes('MEDIUM')) riskKey = 'medium';
-            
-            if (stats[cat] && stats[cat][runKey]) {
-                stats[cat][runKey][riskKey]++;
-            }
-        }
-    });
-    return stats;
-};
-
-const calculateInitialTotalRisk = () => {
-    const risk = { critical: 0, high: 0, medium: 0, safe: 0 };
-    mockMessages.forEach(msg => {
-        if (msg.sender === 'ai') {
-            if (msg.riskDisplay?.includes('CRITICAL')) risk.critical++;
-            else if (msg.riskDisplay?.includes('HIGH')) risk.high++;
-            else if (msg.riskDisplay?.includes('MEDIUM')) risk.medium++;
-            else risk.safe++;
-        }
-    });
-    return risk;
-};
-
-const calculateInitialTurns = () => {
-    return mockMessages.filter(m => m.sender === 'ai').length;
-};
-
 const ReportsPanel: React.FC = () => {
   const classes = useStyles();
   const { monitorSocket } = useSelector((state: RootState) => state.api);
@@ -215,10 +172,15 @@ const ReportsPanel: React.FC = () => {
   });
   
   // Track total risk distribution across all categories
-  const [totalRiskDistribution, setTotalRiskDistribution] = useState(calculateInitialTotalRisk());
+  const [totalRiskDistribution, setTotalRiskDistribution] = useState({
+    critical: 0,
+    high: 0,
+    medium: 0,
+    safe: 0
+  });
 
   // Track total number of turns for score calculation
-  const [totalTurns, setTotalTurns] = useState(calculateInitialTurns());
+  const [totalTurns, setTotalTurns] = useState(0);
 
   useEffect(() => {
     if (!monitorSocket) {

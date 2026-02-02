@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/Store";
 import { clearMonitor, setMonitorOpen } from "../store/Slice";
 import { openAttackMonitor } from "../thunk/ApiThunk";
-import { ChatMessage } from "../types/Types";
+import type { ChatMessage } from "../types/Types";
 import { mockMessages } from "../mockData";
 
 const useStyles = createUseStyles({
@@ -82,8 +82,12 @@ const useStyles = createUseStyles({
     textAlign: "left",
   },
   messageMeta: {
-    fontSize: "12px",
+    fontSize: "8px",
     opacity: 0.7,
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   emptyState: {
     marginTop: "auto",
@@ -235,21 +239,58 @@ const ChatPanel: React.FC = () => {
   // }, [dispatch, monitorSocket]);
 
   const formatMeta = (message: ChatMessage) => {
-    const metaParts: string[] = [];
+    const metaParts: (string | React.ReactNode)[] = [];
     if (message.category) {
-      metaParts.push(message.category.replace(/_/g, " ").toUpperCase());
+      metaParts.push(
+        <span style={{ fontSize: '12px' }}>{message.category.replace(/_/g, " ").toUpperCase()}</span>
+      );
     }
     if (typeof message.turn === "number" && !Number.isNaN(message.turn)) {
-      metaParts.push(`Turn ${message.turn}`);
+      metaParts.push(
+        <span style={{ fontSize: '12px' }}>{`Turn ${message.turn}`}</span>
+      );
     }
     if (message.sender === "ai" && message.riskDisplay) {
-      metaParts.push(message.riskDisplay);
+      // Custom color for riskDisplay
+      let riskText = message.riskDisplay;
+      let color = undefined;
+      if (riskText.includes('SAFE')) {
+        riskText = 'SAFE';
+        color = '#1db954'; // green
+      } else if (riskText.includes('MEDIUM')) {
+        riskText = 'MEDIUM';
+        color = '#ffd600'; // yellow
+      } else if (riskText.includes('CRITICAL')) {
+        riskText = 'CRITICAL';
+        color = '#e53935'; // red
+      }
+      if (color) {
+        metaParts.push(
+          <span style={{ color, fontWeight: 700, fontSize: '12px', letterSpacing: 0.5 }}>{riskText}</span>
+        );
+      } else {
+        metaParts.push(
+          <span style={{ fontSize: '12px' }}>{message.riskDisplay}</span>
+        );
+      }
     }
     if (message.timestamp) {
       const timeString = new Date(message.timestamp).toLocaleTimeString();
-      metaParts.push(timeString);
+      metaParts.push(
+        <span style={{ fontSize: '12px' }}>{timeString}</span>
+      );
     }
-    return metaParts.join(" • ");
+    // Use • as separator, but render JSX
+    return (
+      <>
+        {metaParts.map((part, idx) => (
+          <React.Fragment key={idx}>
+            {idx > 0 && <span style={{ opacity: 0.5, margin: '0 4px' }}>•</span>}
+            {part}
+          </React.Fragment>
+        ))}
+      </>
+    );
   };
 
   const showIdle = !monitorConnecting && !monitorError && messages.length === 0;

@@ -520,7 +520,7 @@ const History: React.FC = () => {
             <div className="px-8 pt-6 pb-2 bg-gray-50/30 flex-none">
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 px-1">
                     <span className="material-symbols-outlined text-[#0f62fe]">forum</span>
-                    Attack Logs
+                    Conversation Logs
                 </h3>
             </div>
 
