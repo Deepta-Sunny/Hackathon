@@ -389,6 +389,7 @@ const History: React.FC = () => {
                         key={run.id}
                         onClick={() => loadRun(run.filename)}
                         className={`p-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ml-8 ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#0f62fe] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
+                        style={{paddingBottom: '4px'}}
                       >
                         <div className="flex justify-between items-center mb-2">
                           <div className="flex items-center gap-2 text-sm text-gray-500">

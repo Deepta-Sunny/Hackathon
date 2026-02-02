@@ -437,9 +437,6 @@ const ReportsPanel: React.FC = () => {
             <Typography className={classes.scoreLabel}>
               Vulnerability Score
             </Typography>
-            <Typography className={classes.scoreSubtext}>
-              (C=3pts, H=2pts, M=1pt)
-            </Typography>
           </Box>
 
           {/* Column 2, Row 1 - Total Vulnerabilities */}
