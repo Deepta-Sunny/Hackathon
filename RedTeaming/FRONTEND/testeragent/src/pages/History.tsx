@@ -329,7 +329,7 @@ const History: React.FC = () => {
         {/* History List (Left Panel) */}
         <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col z-10">
           <div className="p-5 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Project History</h2>
+            <h2 className="text-2xl font-bold text-slate-700 mb-4 tracking-tight">Project History</h2>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
               <input 
@@ -355,7 +355,7 @@ const History: React.FC = () => {
                     <span className={`material-symbols-outlined text-lg transition-transform ${expandedBuckets.has(bucket.id) ? 'rotate-90' : ''}`}>chevron_right</span>
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-gray-500">folder</span>
-                      <h3 className="text-sm font-bold text-gray-800">{bucket.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-700">{bucket.name}</h3>
                     </div>
                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
                       {bucket.projects.length} projects
@@ -375,7 +375,7 @@ const History: React.FC = () => {
                         <span className={`material-symbols-outlined text-base transition-transform ${expandedProjects.has(project.id) ? 'rotate-90' : ''}`}>chevron_right</span>
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-blue-500">inventory_2</span>
-                          <h4 className="text-sm font-semibold text-gray-700">{project.name}</h4>
+                          <h4 className="text-sm font-semibold text-slate-700 text-left" style={{fontSize: '13px'}}>{project.name}</h4>
                         </div>
                         <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">
                           {project.runs.length} runs
@@ -391,9 +391,28 @@ const History: React.FC = () => {
                         className={`p-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-white ml-8 ${selectedRun?.id === run.id ? 'bg-white border-l-4 border-l-[#0f62fe] shadow-sm' : 'border-l-4 border-l-transparent text-gray-600'}`}
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
                             <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                            <span className="font-semibold">{run.date}</span>
+                            {(() => {
+                              const match = run.filename.match(/.*_(\d{8})_(\d{6})\.json$/);
+                              if (match) {
+                                const d = match[1], t = match[2];
+                                const year = d.slice(0,4);
+                                const month = d.slice(4,6);
+                                const day = d.slice(6,8);
+                                const hour = t.slice(0,2);
+                                const min = t.slice(2,4);
+                                const sec = t.slice(4,6);
+                                return (
+                                  <>
+                                    <span className="font-semibold text-slate-700" style={{fontFamily: 'Inter, Arial, sans-serif', fontSize: '11px'}}>{`${year}-${month}-${day}`}</span>
+                                    <span className="mx-1 text-gray-400" style={{fontSize: '11px'}}>|</span>
+                                    <span className="font-semibold text-blue-700" style={{fontFamily: 'Inter, Arial, sans-serif', fontSize: '11px'}}>{`${hour}:${min}:${sec}`}</span>
+                                  </>
+                                );
+                              }
+                              return <span className="font-semibold" style={{fontSize: '11px'}}>{run.date}</span>;
+                            })()}
                           </div>
                           {run.total_vulnerabilities > 0 ? (
                             <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
@@ -429,7 +448,7 @@ const History: React.FC = () => {
             <div className="flex-none px-8 pt-8 pb-6 border-b border-gray-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] z-10 bg-white">
                 <header className="flex justify-between items-start mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                        <h1 className="text-[28px] font-bold text-slate-700 mb-2 tracking-tight">
                           {(bucketName && projectName) ? (
                             <>
                               <span className="text-gray-400 font-medium text-lg">{bucketName} <span className="text-gray-300 mx-1">/</span> </span>
@@ -439,9 +458,9 @@ const History: React.FC = () => {
                             selectedRun.chatbot_name
                           )}
                         </h1>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-4 text-base text-gray-500">
                             <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
-                                <span className="material-symbols-outlined text-sm">event</span>
+                                <span className="material-symbols-outlined text-base">event</span>
                                 {selectedRun.date}
                             </span>
                         </div>

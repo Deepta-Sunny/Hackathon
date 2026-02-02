@@ -659,7 +659,7 @@ const ProfileSetup = () => {
                 </div>
                 <div>
                   <h3 className="text-left text-2xl font-bold text-slate-700 leading-tight">Behavior Rules & Safety Objectives</h3>
-                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Define what success looks like and where the AI must stop.</p>
+                  <p className="text-left text-gray-500 text-base mt-1 font-medium">Specify clear criteria for successful operation and boundaries for safe AI behavior.</p>
                 </div>
               </div>
               <div className="bg-[#ffffff] p-4 rounded-2xl border border-gray-200/60 shadow-[0_2px_20px_rgba(0,0,0,0.02)] grid grid-cols-1 md:grid-cols-2 gap-4">
