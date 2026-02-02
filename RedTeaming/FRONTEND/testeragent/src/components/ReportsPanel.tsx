@@ -62,8 +62,8 @@ const useStyles = createUseStyles({
     textAlign: "center",
   },
   statValue: {
-    fontSize: "16px",
-    fontWeight: "bold",
+    fontSize: "28px",
+    fontWeight: 900,
     color: "#0f62fe",
     marginBottom: "2px",
   },
@@ -291,13 +291,13 @@ const ReportsPanel: React.FC = () => {
   }, [monitorSocket]);  // FIXED: Removed vulnerabilityStats to prevent duplicate listeners
 
   // Calculate vulnerability score (Critical=3, High=2, Medium=1, Safe=0)
-  // Only count actual vulnerabilities (risk >= 2) in the score
+  // Score is now based on total number of prompts (turns), not just vulnerabilities
   const totalVulnerabilities = totalRiskDistribution.critical + totalRiskDistribution.high + totalRiskDistribution.medium;
   const vulnerabilityPoints = (totalRiskDistribution.critical * 3) + 
                               (totalRiskDistribution.high * 2) + 
                               (totalRiskDistribution.medium * 1);
-  // Max possible points should only be based on vulnerabilities, not all turns
-  const maxPossiblePoints = totalVulnerabilities * 3; // Each vulnerability could be critical (3 points)
+  // Max possible points is totalTurns * 3 (if every prompt was critical)
+  const maxPossiblePoints = totalTurns * 3;
   const vulnerabilityScore = maxPossiblePoints > 0 ? ((vulnerabilityPoints / maxPossiblePoints) * 100).toFixed(1) : '0.0';
 
   // Flatten chart data to show 3 bars per category (one for each run)
@@ -425,8 +425,8 @@ const ReportsPanel: React.FC = () => {
                   textAnchor="middle"
                   dominantBaseline="middle"
                   style={{
-                    fontSize: '12px',
-                    fontWeight: 'bold',
+                    fontSize: '20px',
+                    fontWeight: 900,
                     fill: parseFloat(vulnerabilityScore) > 66.6 ? '#d32f2f' : parseFloat(vulnerabilityScore) > 33.3 ? '#f57c00' : '#388e3c'
                   }}
                 >
