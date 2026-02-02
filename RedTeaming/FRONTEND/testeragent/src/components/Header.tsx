@@ -23,7 +23,7 @@ export default function Header() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant='h6' color={'#0f62fe'} component='header' fontFamily='inherit' fontWeight={700}>
-            Red Teaming Orchestrator
+            Response Analysis Orchestrator
           </Typography>
         </Toolbar>
       </AppBar>

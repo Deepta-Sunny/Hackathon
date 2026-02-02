@@ -9,7 +9,6 @@ import ReportsPanel from "../components/ReportsPanel";
 import type { AppDispatch } from "../store/Store";
 import { initiateAttack, openAttackMonitor, haltAttack } from "../thunk/ApiThunk";
 import Button from "@mui/joy/Button";
-import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import EditIcon from "@mui/icons-material/Edit";
 
 const useStyles = createUseStyles({
@@ -125,6 +124,7 @@ function Home() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ChatbotProfile | null>(null);
   const [attackStarted, setAttackStarted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     // Try to load saved dashboard state first
@@ -164,8 +164,9 @@ function Home() {
   const handleStartAttack = useCallback(
     async () => {
       if (profile) {
-        // Save dashboard state before starting
+        setIsStarting(true);
         try {
+          // Save dashboard state before starting
           await fetch('http://localhost:8080/api/dashboard/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -182,6 +183,7 @@ function Home() {
         dispatch(initiateAttack(profile));
         setAttackStarted(true);
       }
+      setIsStarting(false);
     },
     [dispatch, profile]
   );
@@ -249,8 +251,9 @@ function Home() {
                   <Button
                     variant="solid"
                     className={classes.startButton}
-                    startDecorator={<RocketLaunchIcon />}
                     onClick={handleStartAttack}
+                    loading={isStarting}
+                    style={isStarting ? { background: "#ff9800" } : {}}
                   >
                     Start
                   </Button>
@@ -259,7 +262,6 @@ function Home() {
                     variant="solid"
                     color="neutral"
                     className={classes.startButton}
-                    startDecorator={<RocketLaunchIcon />}
                     onClick={handleStopAttack}
                     style={{ background: "#c62828" }}
                   >
