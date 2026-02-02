@@ -783,10 +783,9 @@ const ProfileSetup = () => {
               </div>
               <button
                 type="submit"
-                className="px-6 py-3 bg-[#0f62fe] text-white rounded-xl text-base font-bold hover:bg-[#0353e9] transition-all flex items-center gap-2 shadow-xl shadow-[#0f62fe]/25 hover:shadow-[#0f62fe]/40 hover:-translate-y-0.5 active:translate-y-0"
+                className="px-6 py-3 bg-[#0f62fe] text-white rounded-xl text-base font-bold hover:bg-[#0353e9] transition-all shadow-xl shadow-[#0f62fe]/25 hover:shadow-[#0f62fe]/40 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Start Risk Simulation
-                <span className="material-symbols-outlined text-base">rocket_launch</span>
               </button>
             </div>
           </form>

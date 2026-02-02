@@ -266,22 +266,23 @@ const History: React.FC = () => {
       {/* Sidebar - Consistent with ProfileSetup */}
       <aside className="w-56 bg-white border-r border-gray-300 flex flex-col pt-6 px-2 sticky top-0 h-screen justify-between pb-6">
         <div className="flex flex-col gap-6">
-          {/* Logo */}
+          {/* Logo and Title */}
           <div className="flex items-center gap-3 px-2">
-            <button 
-              onClick={() => navigate('/profile-setup')}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
-              title="Back to Onboarding"
-            >
-              <span className="material-symbols-outlined text-xl">arrow_back</span>
-            </button>
-            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md cursor-pointer" onClick={() => navigate('/')}>
+            <div className="bg-[#0f62fe] w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md cursor-pointer" onClick={() => navigate('/')}> 
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
-            <div className="flex flex-col cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex flex-col cursor-pointer" onClick={() => navigate('/')}> 
               <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
             </div>
           </div>
+          {/* Back to Onboarding Button */}
+          <button 
+            onClick={() => navigate('/profile-setup')}
+            className="flex items-center gap-2 px-3 py-2 mt-2 mx-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm font-medium transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">arrow_back</span>
+            <span>Back to Onboarding</span>
+          </button>
         </div>
 
         {/* User Profile */}
