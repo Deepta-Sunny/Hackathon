@@ -6,7 +6,7 @@ import type { AppDispatch, RootState } from "../store/Store";
 import { clearMonitor, setMonitorOpen } from "../store/Slice";
 import { openAttackMonitor } from "../thunk/ApiThunk";
 import type { ChatMessage } from "../types/Types";
-import { mockMessages } from "../mockData";
+import { chatLogMessages } from "../chatLogData";
 
 const useStyles = createUseStyles({
   container: {
@@ -113,13 +113,12 @@ const ChatPanel: React.FC = () => {
   const { monitorSocket, monitorConnecting, monitorError } = useSelector(
     (state: RootState) => state.api
   );
-  const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(chatLogMessages);
   const [categoryTab, setCategoryTab] = useState("all");
   const [runFilter, setRunFilter] = useState<number | "all">("all");
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // Get unique categories and runs from messages
-  const categories = ["all", ...Array.from(new Set(messages.map(m => m.category).filter(Boolean)))];
   const runs = Array.from(new Set(messages.filter(m => categoryTab === "all" || m.category === categoryTab).map(m => m.run).filter((r): r is number => typeof r === "number")));
   runs.sort((a, b) => a - b);
 

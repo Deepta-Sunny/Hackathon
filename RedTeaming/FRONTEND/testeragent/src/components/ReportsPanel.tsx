@@ -9,8 +9,6 @@ import { useSelector } from "react-redux";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import type { RootState } from "../store/Store";
 import OwaspComplianceReport from "./OwaspComplianceReport";
-import { mockMessages } from "../mockData";
-import { ChatMessage } from "../types/Types";
 
 const useStyles = createUseStyles({
   container: {
@@ -109,16 +107,6 @@ const useStyles = createUseStyles({
     marginTop: "4px",
   },
 });
-
-interface VulnerabilityData {
-  category: string;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-  safe: number;
-  total: number;
-}
 
 const ReportsPanel: React.FC = () => {
   const classes = useStyles();
