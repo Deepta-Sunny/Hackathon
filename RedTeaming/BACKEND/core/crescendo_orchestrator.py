@@ -688,6 +688,7 @@ class CrescendoAttackOrchestrator:
                     "run": run_number,
                     "turn": turn,
                     "technique": current_prompt.attack_technique,
+                    "prompt": current_prompt.prompt,
                     "response": chatbot_response,
                     "risk_category": risk_category,
                     "risk_display": risk_display,

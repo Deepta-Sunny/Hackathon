@@ -1,5 +1,6 @@
-import { Box, Paper, Typography, Tabs, Tab } from "@mui/material";
+import { Box, Paper, Typography, Tabs, Tab, Button } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
+import type { JSX } from "react";
 import { createUseStyles } from "react-jss";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/Store";
@@ -94,7 +95,9 @@ const useStyles = createUseStyles({
     textTransform: "none",
     fontFamily: "inherit",
     fontWeight: 500,
-    minHeight: "48px",
+    minHeight: "32px",
+    fontSize: "12px",
+    padding: "2px 8px",
   },
 });
 
@@ -121,7 +124,6 @@ const ChatPanel: React.FC = () => {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // Get unique categories and runs from messages
-  const categories = ["all", ...Array.from(new Set(messages.map(m => m.category).filter(Boolean)))];
   const runs = Array.from(new Set(messages.filter(m => categoryTab === "all" || m.category === categoryTab).map(m => m.run).filter((r): r is number => typeof r === "number")));
   runs.sort((a, b) => a - b);
 
@@ -241,24 +243,94 @@ const ChatPanel: React.FC = () => {
   // }, [dispatch, monitorSocket]);
 
   const formatMeta = (message: ChatMessage) => {
-    const metaParts: string[] = [];
+    const metaParts: (string | JSX.Element)[] = [];
     if (message.category) {
-      metaParts.push(message.category.replace(/_/g, " ").toUpperCase());
+      metaParts.push(
+        <span style={{ fontWeight: 700, fontSize: '11px' }}>
+          {message.category.replace(/_/g, " ").toUpperCase()}
+        </span>
+      );
     }
     if (typeof message.turn === "number" && !Number.isNaN(message.turn)) {
-      metaParts.push(`Turn ${message.turn}`);
+      metaParts.push(
+        <span style={{ fontSize: '11px' }}>{`Turn ${message.turn}`}</span>
+      );
     }
     if (message.sender === "ai" && message.riskDisplay) {
-      metaParts.push(message.riskDisplay);
+      let color = '#66bb6a';
+      let text = message.riskDisplay;
+      if (text.toUpperCase().includes('CRITICAL')) {
+        color = '#d32f2f';
+        text = 'CRITICAL';
+      } else if (text.toUpperCase().includes('MEDIUM')) {
+        color = '#fbc02d';
+        text = 'MEDIUM';
+      } else if (text.toUpperCase().includes('SAFE')) {
+        color = '#388e3c';
+        text = 'SAFE';
+      }
+      metaParts.push(
+        <span style={{ fontWeight: 700, color, fontSize: '11px' }}>{text}</span>
+      );
     }
     if (message.timestamp) {
       const timeString = new Date(message.timestamp).toLocaleTimeString();
-      metaParts.push(timeString);
+      metaParts.push(
+        <span style={{ fontSize: '11px' }}>{timeString}</span>
+      );
     }
-    return metaParts.join(" • ");
+    // Add separator between meta parts
+    return metaParts.reduce((prev, curr, idx) =>
+      idx === 0 ? [curr] : [...prev, <span key={idx} style={{ margin: '0 4px', color: '#888' }}>•</span>, curr],
+      [] as (string | JSX.Element)[]
+    );
   };
 
   const showIdle = !monitorConnecting && !monitorError && messages.length === 0;
+
+  // Function to export chat data as JSON
+  const exportChatData = () => {
+    const chatData: any[] = [];
+    const messageMap = new Map<string, { agent?: ChatMessage; ai?: ChatMessage }>();
+
+    // Group messages by category-run-turn
+    messages.forEach(msg => {
+      const key = `${msg.category}-${msg.run}-${msg.turn}`;
+      if (!messageMap.has(key)) {
+        messageMap.set(key, {});
+      }
+      const group = messageMap.get(key)!;
+      if (msg.sender === "agent") {
+        group.agent = msg;
+      } else if (msg.sender === "ai") {
+        group.ai = msg;
+      }
+    });
+
+    // Create JSON objects
+    messageMap.forEach((group) => {
+      if (group.agent && group.ai) {
+        chatData.push({
+          request: group.agent.content,
+          response: group.ai.content,
+          attack_type: group.agent.category,
+          risk_category: group.ai.riskDisplay || "",
+          attack_category: group.agent.category,
+          run: group.agent.run,
+          turn: group.agent.turn
+        });
+      }
+    });
+
+    // Download as JSON
+    const dataStr = JSON.stringify(chatData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `chat_data_${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
 
   // Filter messages by selected category and run
   const filteredMessages = messages.filter(msg => {
@@ -270,9 +342,20 @@ const ChatPanel: React.FC = () => {
   return (
     <Paper className={classes.container} elevation={2}>
       <Box className={classes.header}>
-        <Typography fontFamily="inherit" className={classes.headerTitle}>
-          Chat Monitor
-        </Typography>
+        <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography fontFamily="inherit" className={classes.headerTitle}>
+            Chat Monitor
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={exportChatData}
+            disabled={messages.length === 0}
+            sx={{ fontFamily: 'inherit', fontSize: '12px' }}
+          >
+            Export JSON
+          </Button>
+        </Box>
       </Box>
       
       {/* Category Tabs */}
