@@ -2995,7 +2995,7 @@ const rawChatLog = [
 ];
 
 // Transform raw data into ChatMessage format
-export const chatLogMessages: ChatMessage[] = rawChatLog.flatMap((entry, index) => {
+export const chatLogMessages: ChatMessage[] = rawChatLog.flatMap((entry) => {
   const baseId = `${entry.attack_type}-${entry.run}-${entry.turn}`;
   return [
     {
@@ -3019,3 +3019,122 @@ export const chatLogMessages: ChatMessage[] = rawChatLog.flatMap((entry, index) 
     }
   ];
 });
+
+// Mock vulnerability statistics calculated from chatLogData
+export const mockVulnerabilityStats = {
+  crescendo: {
+    run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+  },
+  skeleton_key: {
+    run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+  },
+  obfuscation: {
+    run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+  },
+  standard: {
+    run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+    run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+  }
+};
+
+// Calculate vulnerability stats from raw chat log
+rawChatLog.forEach((entry) => {
+  const category = entry.attack_type;
+  const run = entry.run;
+  const riskCategory = entry.risk_category;
+
+  if (category in mockVulnerabilityStats && run >= 1 && run <= 3) {
+    const categoryKey = category as keyof typeof mockVulnerabilityStats;
+    const runKey = `run${run}` as 'run1' | 'run2' | 'run3';
+
+    // Map emoji risk categories to numeric values
+    let riskLevel: 'critical' | 'high' | 'medium' | 'safe';
+    if (riskCategory.includes('CRITICAL')) {
+      riskLevel = 'critical';
+    } else if (riskCategory.includes('HIGH')) {
+      riskLevel = 'high';
+    } else if (riskCategory.includes('MEDIUM')) {
+      riskLevel = 'medium';
+    } else {
+      riskLevel = 'safe';
+    }
+
+    mockVulnerabilityStats[categoryKey][runKey][riskLevel] += 1;
+  }
+});
+
+// Mock total risk distribution
+export const mockTotalRiskDistribution = {
+  critical: 0,
+  high: 0,
+  medium: 0,
+  safe: 0
+};
+
+// Calculate total risk distribution
+rawChatLog.forEach((entry) => {
+  const riskCategory = entry.risk_category;
+
+  if (riskCategory.includes('CRITICAL')) {
+    mockTotalRiskDistribution.critical += 1;
+  } else if (riskCategory.includes('HIGH')) {
+    mockTotalRiskDistribution.high += 1;
+  } else if (riskCategory.includes('MEDIUM')) {
+    mockTotalRiskDistribution.medium += 1;
+  } else {
+    mockTotalRiskDistribution.safe += 1;
+  }
+});
+
+// Mock total turns
+export const mockTotalTurns = rawChatLog.length;
+
+// Mock chart data for the bar chart
+export const mockChartData: any[] = [];
+const categoryOrder = ['standard', 'crescendo', 'skeleton_key', 'obfuscation'];
+
+categoryOrder.forEach((categoryKey) => {
+  const runs = mockVulnerabilityStats[categoryKey as keyof typeof mockVulnerabilityStats];
+  const categoryName = categoryKey.replace('_', ' ').toUpperCase();
+
+  // Add Run 1 bar
+  mockChartData.push({
+    category: `${categoryName} - Run 1`,
+    critical: runs.run1.critical,
+    high: runs.run1.high,
+    medium: runs.run1.medium,
+    safe: runs.run1.safe
+  });
+
+  // Add Run 2 bar
+  mockChartData.push({
+    category: `${categoryName} - Run 2`,
+    critical: runs.run2.critical,
+    high: runs.run2.high,
+    medium: runs.run2.medium,
+    safe: runs.run2.safe
+  });
+
+  // Add Run 3 bar
+  mockChartData.push({
+    category: `${categoryName} - Run 3`,
+    critical: runs.run3.critical,
+    high: runs.run3.high,
+    medium: runs.run3.medium,
+    safe: runs.run3.safe
+  });
+});
+
+// Mock vulnerability score calculation
+const mockVulnerabilityPoints = (mockTotalRiskDistribution.critical * 3) +
+                                (mockTotalRiskDistribution.high * 2) +
+                                (mockTotalRiskDistribution.medium * 1);
+const mockMaxPossiblePoints = mockTotalTurns * 3;
+export const mockVulnerabilityScore = mockMaxPossiblePoints > 0 ? ((mockVulnerabilityPoints / mockMaxPossiblePoints) * 100).toFixed(1) : '0.0';

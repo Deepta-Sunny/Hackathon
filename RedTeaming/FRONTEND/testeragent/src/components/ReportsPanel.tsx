@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import type { RootState } from "../store/Store";
 import OwaspComplianceReport from "./OwaspComplianceReport";
+import { mockVulnerabilityStats, mockTotalRiskDistribution, mockTotalTurns } from '../chatLogData';
 
 const useStyles = createUseStyles({
   container: {
@@ -137,38 +138,13 @@ const ReportsPanel: React.FC = () => {
       run2: { critical: number; high: number; medium: number; safe: number };
       run3: { critical: number; high: number; medium: number; safe: number };
     };
-  }>({crescendo: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    skeleton_key: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    obfuscation: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    standard: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    }
-  });
+  }>(mockVulnerabilityStats);
   
   // Track total risk distribution across all categories
-  const [totalRiskDistribution, setTotalRiskDistribution] = useState({
-    critical: 0,
-    high: 0,
-    medium: 0,
-    safe: 0
-  });
+  const [totalRiskDistribution, setTotalRiskDistribution] = useState(mockTotalRiskDistribution);
 
   // Track total number of turns for score calculation
-  const [totalTurns, setTotalTurns] = useState(0);
+  const [totalTurns, setTotalTurns] = useState(mockTotalTurns);
 
   useEffect(() => {
     if (!monitorSocket) {

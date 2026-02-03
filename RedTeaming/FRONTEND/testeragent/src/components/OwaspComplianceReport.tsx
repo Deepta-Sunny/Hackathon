@@ -304,42 +304,6 @@ const getStatusColor = (status: string): "success" | "warning" | "error" => {
   }
 };
 
-// Helper function to get risk level color
-const getRiskColor = (risk: string): string => {
-  switch (risk) {
-    case "LOW RISK":
-      return "#4caf50";
-    case "MODERATE RISK":
-      return "#ff9800";
-    case "HIGH RISK":
-      return "#d32f2f";
-    default:
-      return "#666";
-  }
-};
-
-// Helper function to get score circle gradient
-const getScoreGradient = (score: number): string => {
-  if (score >= 85) {
-    return "linear-gradient(135deg, #4caf50, #81c784)";
-  } else if (score >= 60) {
-    return "linear-gradient(135deg, #ff9800, #ffb74d)";
-  } else {
-    return "linear-gradient(135deg, #d32f2f, #ef5350)";
-  }
-};
-
-// Helper function to get score text color
-const getScoreColor = (score: number): string => {
-  if (score >= 85) {
-    return "#2e7d32";
-  } else if (score >= 60) {
-    return "#e65100";
-  } else {
-    return "#c62828";
-  }
-};
-
 // Helper to get progress bar color
 const getProgressColor = (percentage: number): "success" | "warning" | "error" => {
   if (percentage >= 85) return "success";

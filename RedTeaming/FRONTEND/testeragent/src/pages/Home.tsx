@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Chip } from "@mui/material";
+import { Box, Paper, Chip } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
