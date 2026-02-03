@@ -421,7 +421,7 @@ const ReportsPanel: React.FC = () => {
               <Typography className={classes.statValue} style={{ color: '#d32f2f' }}>
                 {totalCritical}
               </Typography>
-              <Typography className={classes.statLabel}>
+              <Typography className={classes.statLabel} style={{ textAlign: 'center' }}>
                 Critical
               </Typography>
             </Box>
@@ -430,8 +430,8 @@ const ReportsPanel: React.FC = () => {
               <Typography className={classes.statValue} style={{ color: '#f57c00' }}>
                 {totalHigh}
               </Typography>
-              <Typography className={classes.statLabel}>
-                High Risk
+              <Typography className={classes.statLabel} style={{ color: '#ff6b6b', textAlign: 'center' }}>
+                HIGH
               </Typography>
             </Box>
             
@@ -439,7 +439,7 @@ const ReportsPanel: React.FC = () => {
               <Typography className={classes.statValue} style={{ color: '#fbc02d' }}>
                 {totalMedium}
               </Typography>
-              <Typography className={classes.statLabel}>
+              <Typography className={classes.statLabel} style={{ textAlign: 'center' }}>
                 Medium Risk
               </Typography>
             </Box>
