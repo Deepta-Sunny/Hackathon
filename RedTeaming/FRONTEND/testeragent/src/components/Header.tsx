@@ -23,7 +23,7 @@ export default function Header() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant='h6' color={'#0f62fe'} component='header' fontFamily='inherit' fontWeight={700}>
-            Response Analysis Orchestrator
+            Response Analysis Dashbaord
           </Typography>
         </Toolbar>
       </AppBar>

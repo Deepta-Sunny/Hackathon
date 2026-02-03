@@ -30,7 +30,7 @@ const useStyles = createUseStyles({
     borderBottom: "1px solid #00000010",
   },
   headerTitle: {
-    fontWeight: 600,
+    fontWeight: 800,
     fontSize: "18px",
   },
   status: {
@@ -402,7 +402,7 @@ const ChatPanel: React.FC = () => {
             }`}
           >
             <Typography className={classes.messageTitle}>
-              {message.sender === "agent" ? "Botman" : "AI Response"}
+              {message.sender === "agent" ? "Evaluation Agent" : "System Response"}
             </Typography>
             <Typography className={classes.messageText}>
               {message.content}

@@ -444,7 +444,7 @@ const ProfileSetup = () => {
           <header className="mb-10 border-b border-gray-200 pb-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
-                <h2 className="text-left text-slate-700 text-[36px] font-bold leading-tight tracking-tight">AI Agent Risk & Role Definition</h2>
+                <h2 className="text-left text-slate-700 text-[36px] font-bold leading-tight tracking-tight">AI Agent Profile Description</h2>
                 <p className="text-left text-gray-500 text-base font-medium max-w-3xl leading-relaxed">
                   Define what this AI represents, what it can access, and how it behaves under risk scenarios.
                 </p>
