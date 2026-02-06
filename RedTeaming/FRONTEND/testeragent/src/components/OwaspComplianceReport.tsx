@@ -130,12 +130,12 @@ const useStyles = createUseStyles({
   },
   categoryCard: {
     display: "grid",
-    gridTemplateColumns: "55px 1fr 100px 70px",
+    gridTemplateColumns: "70px 1fr 130px 90px",
     alignItems: "center",
-    gap: "10px",
-    padding: "8px 12px",
+    gap: "14px",
+    padding: "12px 16px",
     backgroundColor: "#fff",
-    borderRadius: "5px",
+    borderRadius: "6px",
     border: "1px solid #e0e0e0",
     transition: "all 0.2s",
     flexShrink: 0,
@@ -145,12 +145,12 @@ const useStyles = createUseStyles({
     },
   },
   categoryId: {
-    fontSize: "10px",
+    fontSize: "12px",
     fontWeight: 600,
     color: "#0f62fe",
     backgroundColor: "#edf5ff",
-    padding: "2px 6px",
-    borderRadius: "3px",
+    padding: "4px 8px",
+    borderRadius: "4px",
     textAlign: "center",
   },
   categoryInfo: {
@@ -159,14 +159,14 @@ const useStyles = createUseStyles({
     gap: "1px",
   },
   categoryName: {
-    fontSize: "11px",
+    fontSize: "14px",
     fontWeight: 600,
     color: "#333",
   },
   categoryDescription: {
-    fontSize: "9px",
+    fontSize: "11px",
     color: "#666",
-    lineHeight: 1.2,
+    lineHeight: 1.3,
   },
   categoryProgress: {
     display: "flex",
@@ -179,13 +179,13 @@ const useStyles = createUseStyles({
     backgroundColor: "#e0e0e0",
   },
   progressText: {
-    fontSize: "8px",
+    fontSize: "12px",
     color: "#666",
     textAlign: "right",
   },
   statusChip: {
     fontWeight: 600,
-    fontSize: "9px",
+    fontSize: "12px",
   },
   tooltip: {
     backgroundColor: "#fff !important",

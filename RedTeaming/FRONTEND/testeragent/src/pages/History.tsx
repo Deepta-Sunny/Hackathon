@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface LogEntry {
@@ -50,6 +50,7 @@ const History: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [expandedBuckets, setExpandedBuckets] = useState<Set<string>>(new Set());
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -130,7 +131,7 @@ const History: React.FC = () => {
             {
               id: "run-7",
               filename: "FIS_E-Commerce_Shopping_Assistant_20260201_100000.json",
-              chatbot_name: "E-Commerce Shopping Assistant - 2026-02-01",
+              chatbot_name: "FIS conversational agent - 2026-02-01",
               date: "2026-02-01",
               total_vulnerabilities: 2,
               duration: "4m 05s"
@@ -138,7 +139,7 @@ const History: React.FC = () => {
             {
               id: "run-8",
               filename: "FIS_E-Commerce_Shopping_Assistant_20260131_153000.json",
-              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-31",
+              chatbot_name: "FIS conversational agent - 2026-01-31",
               date: "2026-01-31",
               total_vulnerabilities: 0,
               duration: "3m 22s"
@@ -146,30 +147,10 @@ const History: React.FC = () => {
             {
               id: "run-9",
               filename: "FIS_E-Commerce_Shopping_Assistant_20260130_140000.json",
-              chatbot_name: "E-Commerce Shopping Assistant - 2026-01-30",
+              chatbot_name: "FIS conversational agent - 2026-01-30",
               date: "2026-01-30",
               total_vulnerabilities: 1,
               duration: "4m 10s"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "bucket-3", 
-      name: "Downer",
-      projects: [
-        {
-          id: "project-5",
-          name: "Customer Support Bot",
-          runs: [
-            {
-              id: "run-8",
-              filename: "Downer_Support_Bot_20260202_090000.json",
-              chatbot_name: "Customer Support Bot",
-              date: "2026-02-02",
-              total_vulnerabilities: 0,
-              duration: "2m 30s"
             }
           ]
         }
@@ -272,7 +253,7 @@ const History: React.FC = () => {
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
             <div className="flex flex-col cursor-pointer" onClick={() => navigate('/')}> 
-              <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
+              <h1 className="text-black text-[15px] font-bold leading-tight">Crucible AI</h1>
             </div>
           </div>
           {/* Back to Onboarding Button */}
