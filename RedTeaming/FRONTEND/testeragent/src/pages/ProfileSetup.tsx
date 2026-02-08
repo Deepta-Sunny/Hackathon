@@ -233,23 +233,23 @@ const ProfileSetup = () => {
       return;
     }
 
-    // Primary Objective: 10-200 chars
+    // Primary Objective: 10-500 chars
     if (!primaryObjective.trim()) {
       alert("Please enter a Business Purpose");
       return;
     }
-    if (primaryObjective.length < 10 || primaryObjective.length > 200) {
-      alert("Business Purpose must be between 10 and 200 characters.");
+    if (primaryObjective.length < 10 || primaryObjective.length > 500) {
+      alert("Business Purpose must be between 10 and 500 characters.");
       return;
     }
 
-    // Boundaries: 10-200 chars
+    // Boundaries: 10-500 chars
     if (!boundaries.trim()) {
       alert("Please enter Security & Compliance Constraints");
       return;
     }
-    if (boundaries.length < 10 || boundaries.length > 200) {
-      alert("Security & Compliance Constraints must be between 10 and 200 characters.");
+    if (boundaries.length < 10 || boundaries.length > 500) {
+      alert("Security & Compliance Constraints must be between 10 and 500 characters.");
       return;
     }
 
