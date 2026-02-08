@@ -15,53 +15,43 @@ from datetime import datetime
 OWASP_CATEGORIES = {
     "LLM01": {
         "id": "LLM01",
-        "name": "Prompt Injection",
-        "description": "Manipulating LLMs via crafted inputs to cause unintended actions"
+        "name": "Prompt Injection"
     },
     "LLM02": {
         "id": "LLM02",
-        "name": "Insecure Output Handling",
-        "description": "Neglecting to validate LLM outputs, exposing backend systems"
+        "name": "Insecure Output Handling"
     },
     "LLM03": {
         "id": "LLM03",
-        "name": "Training Data Poisoning",
-        "description": "Tampered training data introduces vulnerabilities or biases"
+        "name": "Training Data Poisoning"
     },
     "LLM04": {
         "id": "LLM04",
-        "name": "Model Denial of Service",
-        "description": "Overloading LLMs with resource-heavy operations"
+        "name": "Model Denial of Service"
     },
     "LLM05": {
         "id": "LLM05",
-        "name": "Supply Chain Vulnerabilities",
-        "description": "Compromised components, services, or datasets in the LLM supply chain"
+        "name": "Supply Chain Vulnerabilities"
     },
     "LLM06": {
         "id": "LLM06",
-        "name": "Sensitive Information Disclosure",
-        "description": "LLMs inadvertently revealing confidential data"
+        "name": "Sensitive Information Disclosure"
     },
     "LLM07": {
         "id": "LLM07",
-        "name": "Insecure Plugin Design",
-        "description": "LLM plugins with insecure inputs and insufficient access control"
+        "name": "Insecure Plugin Design"
     },
     "LLM08": {
         "id": "LLM08",
-        "name": "Excessive Agency",
-        "description": "LLM systems taking impactful actions without oversight"
+        "name": "Excessive Agency"
     },
     "LLM09": {
         "id": "LLM09",
-        "name": "Overreliance",
-        "description": "Failing to critically assess LLM outputs leads to misinformation"
+        "name": "Overreliance"
     },
     "LLM10": {
         "id": "LLM10",
-        "name": "Model Theft",
-        "description": "Unauthorized access, copying, or exfiltration of proprietary LLMs"
+        "name": "Model Theft"
     }
 }
 
@@ -79,7 +69,6 @@ class CategoryStats:
     """Statistics for a single OWASP category."""
     category_id: str
     name: str
-    description: str
     total_tests: int = 0
     critical_count: int = 0
     high_count: int = 0
@@ -219,8 +208,7 @@ def calculate_owasp_scores(attack_results: List[Dict[str, Any]]) -> OwaspSummary
     for cat_id, cat_info in OWASP_CATEGORIES.items():
         categories[cat_id] = CategoryStats(
             category_id=cat_id,
-            name=cat_info["name"],
-            description=cat_info["description"]
+            name=cat_info["name"]
         )
     
     # Process all turns from all attack results
@@ -331,7 +319,6 @@ def get_owasp_report(attack_results_dir: Path = None) -> Dict[str, Any]:
         categories_list.append({
             "id": cat.category_id,
             "name": cat.name,
-            "description": cat.description,
             "total_tests": cat.total_tests,
             "critical_count": cat.critical_count,
             "high_count": cat.high_count,
@@ -374,8 +361,7 @@ class OwaspLiveState:
         for cat_id, cat_info in OWASP_CATEGORIES.items():
             self.categories[cat_id] = CategoryStats(
                 category_id=cat_id,
-                name=cat_info["name"],
-                description=cat_info["description"]
+                name=cat_info["name"]
             )
     
     def update_from_turn(self, turn: Dict[str, Any]):
@@ -442,7 +428,6 @@ class OwaspLiveState:
             categories_list.append({
                 "id": cat.category_id,
                 "name": cat.name,
-                "description": cat.description,
                 "total_tests": cat.total_tests,
                 "critical_count": cat.critical_count,
                 "high_count": cat.high_count,

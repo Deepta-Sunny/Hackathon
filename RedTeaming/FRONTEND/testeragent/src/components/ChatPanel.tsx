@@ -34,9 +34,9 @@ const useStyles = createUseStyles({
     fontSize: "18px",
   },
   status: {
-    padding: "12px 16px",
+    padding: 0,
     borderBottom: "1px solid #00000010",
-    minHeight: "40px" /* Fixed: was height: 10px, causing cut-off */,
+    minHeight: 0,
     display: "flex",
     alignItems: "center",
   },

@@ -146,7 +146,7 @@ function Home() {
           sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
           return;
         }
-      } catch (error) {
+      } catch {
         console.log("No saved dashboard state found, checking sessionStorage");
       }
       
@@ -242,9 +242,8 @@ function Home() {
                 />
               </div>
             </div>
-            <div className={classes.infoItem}>
-              <div className={classes.infoLabel} style={{visibility: 'hidden'}}>actions</div>
-              <div style={{display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between'}}>
+            <div className={classes.infoItem} style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+              <div style={{display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center'}}>
                 <Button
                   variant="solid"
                   className={classes.editButton}

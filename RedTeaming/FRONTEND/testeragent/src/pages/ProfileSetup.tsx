@@ -346,7 +346,7 @@ const ProfileSetup = () => {
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
+              <h1 className="text-black text-[15px] font-bold leading-tight">Crucible AI</h1>
             </div>
           </div>
 
@@ -384,7 +384,7 @@ const ProfileSetup = () => {
 
             {/* Step 3 */}
             <div className="flex items-start gap-4 relative">
-              <div className="flex items-center justify-center z-10">
+              <div className="flex flex-col items-center z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-500 ${currentStep >= 3 ? 'bg-[#0f62fe] text-white shadow-[#0f62fe]/30' : 'bg-gray-200 text-gray-600'}`}>3</div>
               </div>
               <div className="pt-1 text-left">
@@ -444,7 +444,7 @@ const ProfileSetup = () => {
           <header className="mb-10 border-b border-gray-200 pb-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
-                <h2 className="text-left text-slate-700 text-[36px] font-bold leading-tight tracking-tight">AI Agent Profile Description</h2>
+                <h2 className="text-left text-slate-700 text-[36px] font-bold leading-tight tracking-tight">Agentic Project Onboarding</h2>
                 <p className="text-left text-gray-500 text-base font-medium max-w-3xl leading-relaxed">
                   Define what this AI represents, what it can access, and how it behaves under risk scenarios.
                 </p>
@@ -455,7 +455,7 @@ const ProfileSetup = () => {
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition-colors flex items-center gap-2"
                  >
                    <span className="material-symbols-outlined text-lg">folder_open</span>
-                   Load Profile
+                   Client Profiles
                  </button>
               </div>
             </div>
@@ -465,7 +465,7 @@ const ProfileSetup = () => {
               <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
                 <div className="bg-white rounded-xl shadow-2xl w-[900px] h-[700px] flex flex-col overflow-hidden">
                   <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                     <h3 className="text-lg font-bold text-gray-800">Profile Library</h3>
+                     <h3 className="text-lg font-bold text-gray-800">Client Onboarding Page</h3>
                      <button onClick={() => setShowLibrary(false)} className="text-gray-400 hover:text-gray-600">
                         <span className="material-symbols-outlined">close</span>
                      </button>
@@ -475,14 +475,11 @@ const ProfileSetup = () => {
                      {/* Buckets List */}
                      <div className="w-1/3 border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col">
                         <div className="mb-4">
-                           <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Folders (Buckets)</h4>
-                           </div>
                            <div className="flex gap-2 mb-4 bg-white p-1 rounded-lg border border-gray-200 focus-within:border-[#0f62fe] transition-colors">
                               <input 
                                 value={newBucketName}
                                 onChange={(e) => setNewBucketName(e.target.value)}
-                                placeholder="Create new bucket..."
+                                placeholder="Create new client folder..."
                                 className="flex-1 px-2 py-1.5 text-xs focus:outline-none bg-transparent text-[#0f62fe] placeholder-gray-400 font-medium"
                               />
                                <button 
@@ -492,6 +489,9 @@ const ProfileSetup = () => {
                               >
                                  <span className="material-symbols-outlined text-xs">add</span>
                               </button>
+                           </div>
+                           <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Client Folders</h4>
                            </div>
                         </div>
                         
@@ -808,13 +808,13 @@ const ProfileSetup = () => {
             {/* Submit Button */}
             <div className="flex flex-col items-end gap-4 pt-6 pb-8 mb-24 border-t border-gray-200/60">
               <div className="flex items-center gap-2">
-                <label className="text-base font-semibold text-gray-700">Save to Folder:</label>
+                <label className="text-base font-semibold text-gray-700">Save to client:</label>
                 <select 
                   value={selectedBucket} 
                   onChange={(e) => setSelectedBucket(e.target.value)}
                   className="h-[42px] px-3 rounded-xl border border-gray-300 bg-white text-base text-gray-700 focus:outline-none focus:border-[#0f62fe]"
                 >
-                  <option value="">Default (Uploads)</option>
+                  <option value="">Select</option>
                   {buckets.map(b => (
                     <option key={b} value={b}>{b}</option>
                   ))}
