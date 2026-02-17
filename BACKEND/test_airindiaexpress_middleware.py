@@ -1,6 +1,6 @@
 """
-Test script for Web Chatbot Middleware
-Simulates api_server.py connecting to the middleware
+Test script for AirIndiaExpress Middleware
+Simulates api_server.py connecting to the AirIndiaExpress middleware
 """
 
 import asyncio
@@ -10,10 +10,10 @@ from datetime import datetime
 
 
 async def test_middleware_connection():
-    """Test the middleware WebSocket connection"""
+    """Test the AirIndiaExpress middleware WebSocket connection"""
     
     print("="*80)
-    print("🧪 TESTING WEB CHATBOT MIDDLEWARE")
+    print("🧪 TESTING AIRINDIAEXPRESS MIDDLEWARE")
     print("="*80)
     print(f"Connecting to: ws://localhost:8001/chat")
     print("="*80 + "\n")
@@ -21,9 +21,9 @@ async def test_middleware_connection():
     uri = "ws://localhost:8001/chat"
     
     try:
-        print("🔗 Connecting to middleware...")
+        print("🔗 Connecting to AirIndiaExpress middleware...")
         async with websockets.connect(uri, ping_timeout=None) as websocket:
-            print("✅ Connected to middleware\n")
+            print("✅ Connected to AirIndiaExpress middleware\n")
             
             # Wait for connection confirmation
             response = await websocket.recv()
@@ -78,8 +78,8 @@ async def test_middleware_connection():
             print("="*80)
             
     except websockets.exceptions.ConnectionClosed:
-        print("❌ Connection closed. Is the middleware server running correctly?")
-        print("\nStart the middleware server with:")
+        print("❌ Connection closed. Is the AirIndiaExpress middleware server running correctly?")
+        print("\nStart the AirIndiaExpress middleware server with:")
         print("   python web_chatbot_middleware.py --url https://www.airindiaexpress.com/")
     except Exception as e:
         print(f"❌ Test failed: {e}")
@@ -113,8 +113,8 @@ async def test_ping():
 
 
 if __name__ == "__main__":
-    print("\n🚀 Starting Middleware Tests...")
-    print("⚠️  Make sure the middleware server is running first!\n")
+    print("\n🚀 Starting AirIndiaExpress Middleware Tests...")
+    print("⚠️  Make sure the AirIndiaExpress middleware server is running first!\n")
     
     # Run tests
     asyncio.run(test_middleware_connection())

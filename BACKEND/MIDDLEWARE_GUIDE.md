@@ -51,7 +51,7 @@ The Web Chatbot Middleware bridges the gap between `api_server.py` (which expect
 
 ```powershell
 cd BACKEND
-.\start_middleware.ps1
+.\start_airindiaexpress_middleware.ps1
 ```
 
 **Option B: Manual Command**
@@ -158,10 +158,10 @@ report = await orchestrator.execute_full_assessment()
 
 ```powershell
 # Terminal 1: Start middleware
-.\start_middleware.ps1
+.\start_airindiaexpress_middleware.ps1
 
 # Terminal 2: Run test
-python test_middleware.py
+python test_airindiaexpress_middleware.py
 ```
 
 The test script will:
@@ -226,7 +226,7 @@ Here's the complete workflow:
 ```powershell
 # Step 1: Start Middleware (keeps Tia chatbot open)
 cd BACKEND
-.\start_middleware.ps1
+.\start_airindiaexpress_middleware.ps1
 
 # Step 2: In another terminal, start attacker
 cd BACKEND
@@ -289,15 +289,15 @@ asyncio.run(execute_attack_campaign(
 ## Files Created
 
 - `BACKEND/web_chatbot_middleware.py` - Main middleware server
-- `BACKEND/start_middleware.ps1` - Startup script
-- `BACKEND/test_middleware.py` - Test client
+- `BACKEND/start_airindiaexpress_middleware.ps1` - Startup script
+- `BACKEND/test_airindiaexpress_middleware.py` - Test client
 - `BACKEND/MIDDLEWARE_GUIDE.md` - This documentation
 - `BACKEND/core/web_screen_target.py` - Web automation (already existed, enhanced)
 
 ## Next Steps
 
 1. Start middleware server
-2. Test with `test_middleware.py`
+2. Test with `test_airindiaexpress_middleware.py`
 3. Run standard attack through api_server.py
 4. Monitor both terminals for progress
 5. Retrieve attack reports from `attack_results/` folder

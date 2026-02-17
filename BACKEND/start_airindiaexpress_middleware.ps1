@@ -1,8 +1,8 @@
-# Start Web Chatbot Middleware Server
+# Start AirIndiaExpress Middleware Server
 # This server bridges api_server.py with web-based chatbots
 
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "  Web Chatbot Middleware Server Launcher" -ForegroundColor Cyan
+Write-Host "  AirIndiaExpress Middleware Server Launcher" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -40,7 +40,7 @@ Write-Host "  WebSocket: ws://${SERVER_HOST}:${PORT}/chat" -ForegroundColor Whit
 Write-Host "  Headless: $HEADLESS" -ForegroundColor White
 Write-Host ""
 
-Write-Host "Starting middleware server..." -ForegroundColor Yellow
+Write-Host "Starting AirIndiaExpress middleware server..." -ForegroundColor Yellow
 Write-Host "This will:" -ForegroundColor White
 Write-Host "  1. Open the Air India Express website" -ForegroundColor White
 Write-Host "  2. Click the Tia chatbot button" -ForegroundColor White
