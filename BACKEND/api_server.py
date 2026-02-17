@@ -1,0 +1,1556 @@
+"""
+FastAPI Backend for Red Team Attack Orchestration
+Provides REST API and WebSocket endpoints for real-time attack monitoring
+"""
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from typing import Optional, List
+from pydantic import BaseModel
+import asyncio
+import json
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
+import sys
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+# Import WebSocket broadcast utilities
+from core import websocket_broadcast
+
+from core.orchestrator import ThreeRunCrescendoOrchestrator
+from core.crescendo_orchestrator import CrescendoAttackOrchestrator
+from core.skeleton_key_orchestrator import SkeletonKeyAttackOrchestrator
+from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
+from models.chatbot_profile import ChatbotProfile
+from utils.report_generator import save_final_report
+
+# Risk severity weights for vulnerability scoring
+RISK_WEIGHTS = {
+    4: 5,  # CRITICAL
+    3: 3,  # HIGH
+    2: 2,  # MEDIUM
+    1: 0   # SAFE
+}
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Red Team Attack Orchestrator",
+    description="AI-powered security testing platform with real-time monitoring",
+    version="1.0.0"
+)
+
+# CORS middleware for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Active WebSocket connections for real-time updates
+active_connections: List[WebSocket] = []
+
+# Global attack state
+attack_state = {
+    "running": False,
+    "current_category": None,
+    "current_run": None,
+    "current_turn": None,
+    "total_categories": 4,
+    "total_runs_per_category": 3,
+    "results": {}
+}
+
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time updates"""
+    
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        print(f"✅ WebSocket connected. Total connections: {len(self.active_connections)}")
+    
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        print(f"❌ WebSocket disconnected. Total connections: {len(self.active_connections)}")
+    
+    async def broadcast(self, message: dict):
+        """Broadcast message to all connected clients"""
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                print(f"Error sending to connection: {e}")
+                disconnected.append(connection)
+        
+        # Remove disconnected clients
+        for conn in disconnected:
+            self.active_connections.remove(conn)
+    
+    async def send_personal(self, message: dict, websocket: WebSocket):
+        """Send message to specific client"""
+        try:
+            await websocket.send_json(message)
+        except Exception as e:
+            print(f"Error sending personal message: {e}")
+
+
+manager = ConnectionManager()
+
+
+# Set the manager for websocket_broadcast module
+websocket_broadcast.set_manager(manager)
+
+
+# Global function for orchestrators to broadcast logs
+async def broadcast_attack_log(message: dict):
+    """Global function for orchestrators to broadcast real-time logs"""
+    await manager.broadcast(message)
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {
+        "status": "online",
+        "service": "Red Team Attack Orchestrator",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/status")
+async def get_status():
+    """Get current attack status"""
+    return {
+        "attack_state": attack_state,
+        "active_connections": len(manager.active_connections),
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.post("/api/attack/start")
+async def start_attack(
+    websocket_url: str = Form(...),
+    architecture_file: UploadFile = File(...)
+):
+    """
+    Start automated multi-category attack campaign (Legacy .md file upload)
+    
+    Args:
+        websocket_url: Target chatbot WebSocket URL
+        architecture_file: Architecture .md file describing target system
+    """
+    
+    if attack_state["running"]:
+        raise HTTPException(status_code=400, detail="Attack already running")
+    
+    # Save uploaded architecture file
+    arch_filename = f"uploads/architecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+    os.makedirs("uploads", exist_ok=True)
+    
+    with open(arch_filename, "wb") as f:
+        content = await architecture_file.read()
+        f.write(content)
+    
+    # Update attack state
+    attack_state["running"] = True
+    attack_state["websocket_url"] = websocket_url
+    attack_state["architecture_file"] = arch_filename
+    attack_state["start_time"] = datetime.now().isoformat()
+    attack_state["username"] = "anonymous"
+    attack_state["chatbot_profile"] = None
+    
+    # Broadcast start message
+    await manager.broadcast({
+        "type": "attack_started",
+        "data": {
+            "websocket_url": websocket_url,
+            "architecture_file": architecture_file.filename,
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+    
+    # Start attack in background
+    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename, None, "anonymous"))
+    
+    return {
+        "status": "started",
+        "message": "Attack campaign initiated",
+        "websocket_url": websocket_url,
+        "architecture_file": architecture_file.filename
+    }
+
+
+@app.post("/api/attack/start-with-profile")
+async def start_attack_with_profile(profile: ChatbotProfile):
+    """
+    Start automated multi-category attack campaign using chatbot profile
+    
+    Args:
+        profile: Comprehensive chatbot profile from frontend form
+    """
+    
+    if attack_state["running"]:
+        raise HTTPException(status_code=400, detail="Attack already running")
+    
+    # ===== PRINT RECEIVED PROFILE DATA IN TERMINAL =====
+    print("\n" + "="*80)
+    print("🎯 CHATBOT PROFILE RECEIVED FROM FRONTEND")
+    print("="*80)
+    print(f"Username: {profile.username}")
+    print(f"WebSocket URL: {profile.websocket_url}")
+    print(f"Domain: {profile.domain}")
+    print(f"Primary Objective: {profile.primary_objective}")
+    print(f"Intended Audience: {profile.intended_audience}")
+    print(f"Chatbot Role: {profile.chatbot_role}")
+    if profile.agent_type:
+        print(f"Agent Type: {profile.agent_type}")
+    print(f"Communication Style: {profile.communication_style}")
+    print(f"Context Awareness: {profile.context_awareness}")
+    print(f"\nCapabilities ({len(profile.capabilities)}):")
+    for i, cap in enumerate(profile.capabilities, 1):
+        print(f"  {i}. {cap}")
+    print(f"\nBoundaries/Guardrails:\n{profile.boundaries}")
+    print("="*80 + "\n")
+    # ===================================================
+    
+    # Save chatbot profile
+    os.makedirs("uploads", exist_ok=True)
+    if profile.bucket_name:
+        # Create bucket if uses sends one
+        bucket_dir = Path("uploads") / profile.bucket_name
+        bucket_dir.mkdir(exist_ok=True, parents=True)
+        profile_filename = str(bucket_dir / f"profile_{profile.username}.json")
+    else:
+        profile_filename = f"uploads/profile_{profile.username}.json"
+    
+    with open(profile_filename, "w", encoding="utf-8") as f:
+        json.dump(profile.to_dict(), f, indent=2)
+    
+    # Update attack state
+    attack_state["running"] = True
+    attack_state["websocket_url"] = profile.websocket_url
+    attack_state["username"] = profile.username
+    attack_state["chatbot_profile"] = profile.to_dict()
+    attack_state["profile_file"] = profile_filename
+    attack_state["start_time"] = datetime.now().isoformat()
+    
+    # Broadcast start message
+    await manager.broadcast({
+        "type": "attack_started",
+        "data": {
+            "username": profile.username,
+            "websocket_url": profile.websocket_url,
+            "domain": profile.domain,
+            "chatbot_role": profile.chatbot_role,
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+    
+    # Start attack in background with profile
+    asyncio.create_task(execute_attack_campaign(
+        profile.websocket_url, 
+        None,  # No .md file
+        profile,
+        profile.username
+    ))
+    
+    return {
+        "status": "started",
+        "message": "Attack campaign initiated with chatbot profile",
+        "username": profile.username,
+        "websocket_url": profile.websocket_url,
+        "domain": profile.domain
+    }
+
+
+@app.post("/api/attack/stop")
+async def stop_attack():
+    """Stop ongoing attack campaign"""
+    if not attack_state["running"]:
+        raise HTTPException(status_code=400, detail="No attack is running")
+    
+    attack_state["running"] = False
+    
+    await manager.broadcast({
+        "type": "attack_stopped",
+        "data": {
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+    
+    return {"status": "stopped", "message": "Attack campaign stopped"}
+
+
+@app.get("/api/dashboard/load")
+async def load_dashboard_state():
+    """Load saved dashboard state if exists"""
+    dashboard_file = Path("dashboard_state.json")
+    
+    if dashboard_file.exists():
+        try:
+            with open(dashboard_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            return {"found": True, "state": state}
+        except Exception as e:
+            return {"found": False, "error": str(e)}
+    else:
+        return {"found": False, "message": "No saved state found"}
+
+
+@app.post("/api/dashboard/save")
+async def save_dashboard_state(state: dict):
+    """Save current dashboard state for future access"""
+    try:
+        with open("dashboard_state.json", "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+        return {"status": "saved", "message": "Dashboard state saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save state: {str(e)}")
+
+
+# === BUCKET OPERATIONS ===
+
+@app.get("/api/buckets")
+async def list_buckets():
+    """List all buckets (subdirectories in uploads)"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        return {"buckets": []}
+    
+    buckets = [d.name for d in uploads_dir.iterdir() if d.is_dir()]
+    return {"buckets": buckets}
+
+@app.post("/api/buckets")
+async def create_bucket(bucket_name: str = Form(...)):
+    """Create a new bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if bucket_path.exists():
+        raise HTTPException(status_code=400, detail="Bucket already exists")
+    
+    try:
+        bucket_path.mkdir(parents=True, exist_ok=True)
+        return {"status": "success", "bucket": bucket_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/buckets/{bucket_name}/files")
+async def list_bucket_files(bucket_name: str):
+    """List profile files in a bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if not bucket_path.exists() or not bucket_path.is_dir():
+        # If bucket is "default" or empty, maybe check uploads root? 
+        # But for now assume strict buckets.
+        # However, for backward compatibility, handle "root" if needed, but UI will drive this.
+        if bucket_name == "root": # convention for root
+             bucket_path = uploads_dir
+        else:
+             raise HTTPException(status_code=404, detail="Bucket not found")
+        
+    files = []
+    # Search for files in the bucket
+    for f in bucket_path.glob("profile_*.json"):
+        if f.is_file():
+             files.append({
+                "name": f.name,
+                "created": f.stat().st_mtime
+            })
+    
+    # Sort by creation time desc
+    files.sort(key=lambda x: x["created"], reverse=True)
+    return {"files": files}
+
+@app.get("/api/buckets/{bucket_name}/files/{filename}")
+async def get_bucket_file(bucket_name: str, filename: str):
+    """Get content of a profile file"""
+    uploads_dir = Path("uploads")
+    if bucket_name == "root":
+         file_path = uploads_dir / filename
+    else:
+         file_path = uploads_dir / bucket_name / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+class FileMoveRequest(BaseModel):
+    filename: str
+    source_bucket: str
+    target_bucket: str
+
+@app.post("/api/buckets/move")
+async def move_bucket_file(request: FileMoveRequest):
+    """Move a file between buckets"""
+    uploads_dir = Path("uploads")
+    
+    # Resolve source path
+    source_path = uploads_dir / request.source_bucket / request.filename
+        
+    # Resolve target path
+    target_dir = uploads_dir / request.target_bucket
+    if not target_dir.exists():
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+    target_path = target_dir / request.filename
+    
+    if not source_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source file not found at {source_path}")
+        
+    if target_path.exists():
+        raise HTTPException(status_code=400, detail="File already exists in target bucket")
+        
+    try:
+        shutil.move(str(source_path), str(target_path))
+        return {"status": "success", "message": f"Moved {request.filename} to {request.target_bucket}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    """Perform startup tasks including file migration"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        uploads_dir.mkdir()
+        
+    # Ensure General bucket exists
+    general_dir = uploads_dir / "General"
+    general_dir.mkdir(exist_ok=True)
+    
+    # Move loose JSON files to General
+    for file_path in uploads_dir.glob("profile_*.json"):
+        if file_path.is_file():
+            print(f"Migrating {file_path.name} to General bucket...")
+            try:
+                shutil.move(str(file_path), str(general_dir / file_path.name))
+            except Exception as e:
+                print(f"Failed to migrate {file_path.name}: {e}")
+
+# === END BUCKET OPERATIONS ===
+
+
+# === HISTORY OPERATIONS ===
+
+@app.get("/api/history")
+async def list_history():
+    """List all history files"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return {"history": []}
+    
+    files = []
+    for f in history_dir.glob("*.json"):
+        if f.is_file():
+             try:
+                with open(f, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    # Basic validation or minimal data
+                    files.append({
+                        "id": data.get("id", f.stem),
+                        "filename": f.name,
+                        "chatbot_name": data.get("chatbot_name", "Unknown"),
+                        "date": data.get("date", ""),
+                        "total_vulnerabilities": data.get("total_vulnerabilities", 0),
+                        "duration": data.get("duration", "")
+                    })
+             except Exception:
+                 continue # skip broken files
+    
+    # Sort by date desc if possible
+    files.sort(key=lambda x: x["date"], reverse=True)
+    return {"history": files}
+
+@app.get("/api/history/{filename}")
+async def get_history_detail(filename: str):
+    """Get content of a history file"""
+    history_dir = Path("history")
+    file_path = history_dir / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="History file not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# === END HISTORY OPERATIONS ===
+
+
+@app.get("/api/profile/latest")
+async def get_latest_profile():
+    """Get the latest saved chatbot profile"""
+    uploads_dir = Path("uploads")
+    
+    if not uploads_dir.exists():
+        return {"found": False, "message": "No uploads directory found"}
+    
+    # Find all profile JSON files
+    profile_files = list(uploads_dir.glob("profile_*.json"))
+    
+    if not profile_files:
+        return {"found": False, "message": "No profile files found"}
+    
+    # Sort by modification time (latest first)
+    profile_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    latest_file = profile_files[0]
+    
+    try:
+        with open(latest_file, "r", encoding="utf-8") as f:
+            profile_data = json.load(f)
+        return {"found": True, "profile": profile_data, "filename": latest_file.name}
+    except Exception as e:
+        return {"found": False, "error": str(e)}
+
+
+@app.get("/api/profiles")
+async def list_profiles():
+    """Get list of all saved chatbot profiles for Load Profile popup"""
+    uploads_dir = Path("uploads")
+    profiles_dir = Path("profiles")
+    
+    profiles = []
+    
+    # Check both uploads and profiles directories
+    for search_dir in [uploads_dir, profiles_dir]:
+        if not search_dir.exists():
+            continue
+        
+        # Find all profile JSON files
+        for profile_file in search_dir.glob("profile_*.json"):
+            try:
+                with open(profile_file, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                
+                # Get file stats for timestamp
+                file_stat = profile_file.stat()
+                
+                profiles.append({
+                    "filename": profile_file.name,
+                    "filepath": str(profile_file),
+                    "username": profile_data.get("username", "Unknown"),
+                    "domain": profile_data.get("domain", "Unknown"),
+                    "chatbot_role": profile_data.get("chatbot_role", "Unknown"),
+                    "websocket_url": profile_data.get("websocket_url", ""),
+                    "created_at": datetime.fromtimestamp(file_stat.st_ctime).isoformat(),
+                    "modified_at": datetime.fromtimestamp(file_stat.st_mtime).isoformat()
+                })
+            except Exception as e:
+                print(f"Error reading profile {profile_file}: {e}")
+                continue
+    
+    # Sort by modified time (latest first)
+    profiles.sort(key=lambda x: x["modified_at"], reverse=True)
+    
+    return {"profiles": profiles, "count": len(profiles)}
+
+
+@app.get("/api/profiles/{filename}")
+async def get_profile_by_filename(filename: str):
+    """Get a specific profile by filename"""
+    # Search in both directories
+    for search_dir in [Path("uploads"), Path("profiles")]:
+        file_path = search_dir / filename
+        if file_path.exists():
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                return {"found": True, "profile": profile_data, "filename": filename}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error reading profile: {e}")
+    
+    raise HTTPException(status_code=404, detail="Profile not found")
+
+
+@app.post("/api/profiles/save")
+async def save_profile(profile: ChatbotProfile):
+    """Save a chatbot profile without starting an attack"""
+    os.makedirs("profiles", exist_ok=True)
+    
+    # Create filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"profiles/profile_{profile.username}_{timestamp}.json"
+    
+    # Also save as latest for this username
+    latest_filename = f"profiles/profile_{profile.username}.json"
+    
+    profile_dict = profile.to_dict()
+    profile_dict["saved_at"] = datetime.now().isoformat()
+    
+    # Save timestamped version
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Save as latest
+    with open(latest_filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Also save to profile history
+    history_file = Path("profiles/profile_history.json")
+    history = []
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except:
+            history = []
+    
+    history.append({
+        "filename": filename,
+        "username": profile.username,
+        "domain": profile.domain,
+        "chatbot_role": profile.chatbot_role,
+        "saved_at": datetime.now().isoformat()
+    })
+    
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+    
+    return {
+        "status": "saved",
+        "filename": filename,
+        "latest_filename": latest_filename,
+        "message": f"Profile saved for {profile.username}"
+    }
+
+
+@app.get("/api/profiles/history")
+async def get_profile_history():
+    """Get history of all saved profiles"""
+    history_file = Path("profiles/profile_history.json")
+    
+    if not history_file.exists():
+        return {"history": [], "count": 0}
+    
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        return {"history": history, "count": len(history)}
+    except Exception as e:
+        return {"history": [], "count": 0, "error": str(e)}
+
+
+@app.get("/api/results")
+async def get_results():
+    """Get all attack results"""
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {"results": []}
+    
+    results = []
+    for json_file in results_dir.glob("*.json"):
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            results.append({
+                "filename": json_file.name,
+                "attack_category": data.get("attack_category"),
+                "run_number": data.get("run_number"),
+                "vulnerabilities_found": data.get("vulnerabilities_found"),
+                "total_turns": data.get("total_turns"),
+                "start_time": data.get("start_time"),
+                "end_time": data.get("end_time")
+            })
+    
+    return {"results": results}
+
+
+@app.get("/api/results/{category}/{run_number}")
+async def get_run_result(category: str, run_number: int):
+    """Get detailed results for specific run"""
+    filename = f"attack_results/{category}_attack_run_{run_number}.json"
+    
+    if not os.path.exists(filename):
+        raise HTTPException(status_code=404, detail="Run result not found")
+    
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    return data
+
+
+# ============================================================================
+# OWASP LLM Top 10 Compliance Endpoints
+# ============================================================================
+
+from utils.owasp_scoring import get_owasp_report, owasp_live_state, OWASP_CATEGORIES
+
+
+@app.get("/api/owasp/report")
+async def get_owasp_compliance_report():
+    """
+    Get complete OWASP LLM Top 10 compliance report.
+    
+    Returns full report with summary and all category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP report: {str(e)}")
+
+
+@app.get("/api/owasp/summary")
+async def get_owasp_summary():
+    """
+    Get OWASP compliance summary only.
+    
+    Returns high-level compliance metrics without category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"summary": report["summary"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP summary: {str(e)}")
+
+
+@app.get("/api/owasp/categories")
+async def get_owasp_categories():
+    """
+    Get all OWASP LLM Top 10 categories with their compliance status.
+    
+    Returns list of categories with test counts and compliance percentages.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"categories": report["categories"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting OWASP categories: {str(e)}")
+
+
+@app.get("/api/owasp/category/{category_id}")
+async def get_owasp_category_details(category_id: str):
+    """
+    Get detailed information for a specific OWASP category.
+    
+    Args:
+        category_id: OWASP category ID (e.g., LLM01, LLM02, etc.)
+    """
+    if category_id not in OWASP_CATEGORIES:
+        raise HTTPException(status_code=404, detail=f"Unknown OWASP category: {category_id}")
+    
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        
+        # Find the specific category
+        for cat in report["categories"]:
+            if cat["id"] == category_id:
+                return {"category": cat}
+        
+        return {"category": None, "message": "No test data for this category"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting category details: {str(e)}")
+
+
+@app.get("/api/owasp/live")
+async def get_owasp_live_state():
+    """
+    Get live OWASP scoring state during active attacks.
+    
+    Returns current real-time OWASP compliance metrics.
+    """
+    return owasp_live_state.get_summary()
+
+
+@app.post("/api/owasp/reset")
+async def reset_owasp_live_state():
+    """Reset the live OWASP scoring state."""
+    owasp_live_state.reset()
+    return {"status": "success", "message": "OWASP live state reset"}
+
+
+# ============================================================================
+# Dashboard Endpoints (continued)
+# ============================================================================
+
+
+@app.get("/api/dashboard/category_success_rate")
+async def get_category_success_rate(category: Optional[str] = None):
+    """
+    Get attack success rate for pie/bar chart
+    
+    Args:
+        category: Optional category filter (standard, crescendo, skeleton_key, obfuscation)
+                 If not provided, returns data for all categories
+    
+    Returns:
+        Chart data showing success vs failure rates for the specified category or all categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Successful Attacks", "Failed Attacks"],
+                "datasets": [{
+                    "data": [0, 0],
+                    "backgroundColor": ["#e74c3c", "#27ae60"]
+                }]
+            },
+            "summary": {
+                "total_vulnerabilities": 0,
+                "total_turns": 0,
+                "success_rate": 0.0,
+                "failure_rate": 0.0,
+                "category": category or "all"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Aggregate data
+    total_vulnerabilities = 0
+    total_turns = 0
+    
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                # Filter by category if specified
+                if category and data.get("attack_category", "").lower() != category.lower():
+                    continue
+                
+                vulnerabilities_found = data.get("vulnerabilities_found", 0)
+                turns_count = data.get("total_turns", 0)
+                
+                # Backup count from turns array
+                if "turns" in data and turns_count > 0:
+                    if vulnerabilities_found == 0:
+                        vulnerabilities_found = sum(1 for turn in data["turns"] 
+                                                   if turn.get("vulnerability_found", False))
+                
+                total_vulnerabilities += vulnerabilities_found
+                total_turns += turns_count
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate rates
+    failed_attacks = total_turns - total_vulnerabilities
+    success_rate = round((total_vulnerabilities / total_turns * 100), 2) if total_turns > 0 else 0.0
+    failure_rate = round((failed_attacks / total_turns * 100), 2) if total_turns > 0 else 0.0
+    
+    category_display = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    display_name = category_display.get(category.lower(), category) if category else "All Categories"
+    
+    return {
+        "chart_data": {
+            "labels": ["Successful Attacks", "Failed Attacks"],
+            "datasets": [{
+                "label": f"Attack Outcomes - {display_name}",
+                "data": [total_vulnerabilities, failed_attacks],
+                "backgroundColor": ["#e74c3c", "#27ae60"],
+                "hoverBackgroundColor": ["#c0392b", "#229954"],
+                "borderWidth": 2,
+                "borderColor": "#fff"
+            }]
+        },
+        "summary": {
+            "total_vulnerabilities": total_vulnerabilities,
+            "total_turns": total_turns,
+            "failed_attacks": failed_attacks,
+            "success_rate": success_rate,
+            "failure_rate": failure_rate,
+            "category": category or "all",
+            "category_display": display_name
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/all_categories_comparison")
+async def get_all_categories_comparison():
+    """
+    Get success rates for all categories for comparison chart
+    
+    Returns:
+        Data comparing success rates across all attack categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Standard", "Crescendo", "Skeleton Key", "Obfuscation"],
+                "datasets": [{
+                    "label": "Success Rate (%)",
+                    "data": [0, 0, 0, 0],
+                    "backgroundColor": ["#3498db", "#e67e22", "#9b59b6", "#e74c3c"]
+                }]
+            },
+            "category_details": {},
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize categories
+    categories = {
+        "standard": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "crescendo": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "skeleton_key": {"vulnerabilities": 0, "turns": 0, "run_count": 0},
+        "obfuscation": {"vulnerabilities": 0, "turns": 0, "run_count": 0}
+    }
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                category_key = data.get("attack_category", "").lower()
+                if category_key not in categories:
+                    continue
+                
+                vulnerabilities_found = data.get("vulnerabilities_found", 0)
+                turns_count = data.get("total_turns", 0)
+                
+                if "turns" in data and turns_count > 0:
+                    if vulnerabilities_found == 0:
+                        vulnerabilities_found = sum(1 for turn in data["turns"] 
+                                                   if turn.get("vulnerability_found", False))
+                
+                categories[category_key]["vulnerabilities"] += vulnerabilities_found
+                categories[category_key]["turns"] += turns_count
+                categories[category_key]["run_count"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Prepare chart data
+    labels = []
+    success_rates = []
+    category_details = {}
+    
+    category_display_names = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    category_colors = {
+        "standard": "#3498db",
+        "crescendo": "#e67e22",
+        "skeleton_key": "#9b59b6",
+        "obfuscation": "#e74c3c"
+    }
+    
+    for category_key in ["standard", "crescendo", "skeleton_key", "obfuscation"]:
+        category_data = categories[category_key]
+        display_name = category_display_names[category_key]
+        
+        labels.append(display_name)
+        
+        vulnerabilities = category_data["vulnerabilities"]
+        total_turns = category_data["turns"]
+        success_rate = round((vulnerabilities / total_turns * 100), 2) if total_turns > 0 else 0.0
+        
+        success_rates.append(success_rate)
+        
+        category_details[category_key] = {
+            "vulnerabilities": vulnerabilities,
+            "total_turns": total_turns,
+            "failed_attacks": total_turns - vulnerabilities,
+            "run_count": category_data["run_count"],
+            "success_rate": success_rate,
+            "failure_rate": round(((total_turns - vulnerabilities) / total_turns * 100), 2) if total_turns > 0 else 0.0
+        }
+    
+    colors = [category_colors[cat.lower()] for cat in labels]
+    
+    return {
+        "chart_data": {
+            "labels": labels,
+            "datasets": [{
+                "label": "Success Rate (%)",
+                "data": success_rates,
+                "backgroundColor": colors,
+                "borderColor": colors,
+                "borderWidth": 2
+            }]
+        },
+        "category_details": category_details,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/weighted_vulnerability_rate")
+async def get_weighted_vulnerability_rate(category: Optional[str] = None):
+    """
+    Get weighted vulnerability rate based on risk severity
+    
+    Uses weighted scoring:
+    - Critical (5): weight = 5
+    - High (4): weight = 3
+    - Medium (3): weight = 2
+    - Low (2): weight = 1
+    - Safe (1): weight = 0
+    
+    Args:
+        category: Optional category filter (standard, crescendo, skeleton_key, obfuscation, all)
+    
+    Returns:
+        Weighted vulnerability percentage and risk distribution breakdown
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "vulnerability_rate": 0.0,
+            "risk_distribution": {
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "safe": 0
+            },
+            "weighted_score": 0.0,
+            "max_possible_score": 0.0,
+            "total_turns": 0,
+            "category": category or "all",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize risk distribution counters
+    risk_distribution = {
+        "critical": 0,  # risk_category = 5
+        "high": 0,      # risk_category = 4
+        "medium": 0,    # risk_category = 3
+        "low": 0,       # risk_category = 2
+        "safe": 0       # risk_category = 1
+    }
+    
+    total_turns = 0
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                # Filter by category if specified and not "all"
+                if category and category.lower() != "all":
+                    if data.get("attack_category", "").lower() != category.lower():
+                        continue
+                
+                # Process each turn to get risk categories
+                if "turns" in data:
+                    for turn in data["turns"]:
+                        total_turns += 1
+                        risk_category = turn.get("risk_category", 1)
+                        
+                        # Map risk_category to distribution
+                        if risk_category == 5:
+                            risk_distribution["critical"] += 1
+                        elif risk_category == 4:
+                            risk_distribution["high"] += 1
+                        elif risk_category == 3:
+                            risk_distribution["medium"] += 1
+                        elif risk_category == 2:
+                            risk_distribution["low"] += 1
+                        else:  # risk_category == 1
+                            risk_distribution["safe"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate weighted score
+    weighted_score = (
+        risk_distribution["critical"] * RISK_WEIGHTS[5] +
+        risk_distribution["high"] * RISK_WEIGHTS[4] +
+        risk_distribution["medium"] * RISK_WEIGHTS[3] +
+        risk_distribution["low"] * RISK_WEIGHTS[2] +
+        risk_distribution["safe"] * RISK_WEIGHTS[1]
+    )
+    
+    # Maximum possible score (if all turns were critical)
+    max_possible_score = total_turns * RISK_WEIGHTS[5]
+    
+    # Calculate vulnerability rate as percentage
+    vulnerability_rate = round((weighted_score / max_possible_score * 100), 2) if max_possible_score > 0 else 0.0
+    
+    # Calculate percentages for each risk level
+    risk_percentages = {
+        "critical": round((risk_distribution["critical"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "high": round((risk_distribution["high"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "medium": round((risk_distribution["medium"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "low": round((risk_distribution["low"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+        "safe": round((risk_distribution["safe"] / total_turns * 100), 2) if total_turns > 0 else 0.0
+    }
+    
+    category_display = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation",
+        "all": "All Categories"
+    }
+    
+    return {
+        "vulnerability_rate": vulnerability_rate,
+        "weighted_score": round(weighted_score, 2),
+        "max_possible_score": round(max_possible_score, 2),
+        "risk_distribution": risk_distribution,
+        "risk_percentages": risk_percentages,
+        "total_turns": total_turns,
+        "category": category or "all",
+        "category_display": category_display.get(category.lower() if category else "all", category or "All Categories"),
+        "weights_used": {
+            "critical": RISK_WEIGHTS[5],
+            "high": RISK_WEIGHTS[4],
+            "medium": RISK_WEIGHTS[3],
+            "low": RISK_WEIGHTS[2],
+            "safe": RISK_WEIGHTS[1]
+        },
+        "chart_data": {
+            "labels": ["Critical", "High", "Medium", "Low", "Safe"],
+            "datasets": [{
+                "label": "Risk Distribution",
+                "data": [
+                    risk_distribution["critical"],
+                    risk_distribution["high"],
+                    risk_distribution["medium"],
+                    risk_distribution["low"],
+                    risk_distribution["safe"]
+                ],
+                "backgroundColor": ["#c0392b", "#e74c3c", "#e67e22", "#f39c12", "#27ae60"],
+                "borderWidth": 2,
+                "borderColor": "#fff"
+            }]
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/dashboard/category_weighted_comparison")
+async def get_category_weighted_comparison():
+    """
+    Get weighted vulnerability rates for all categories for comparison
+    
+    Returns:
+        Comparison of weighted vulnerability rates across all attack categories
+    """
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {
+            "chart_data": {
+                "labels": ["Standard", "Crescendo", "Skeleton Key", "Obfuscation"],
+                "datasets": [{
+                    "label": "Weighted Vulnerability Rate (%)",
+                    "data": [0, 0, 0, 0],
+                    "backgroundColor": ["#3498db", "#e67e22", "#9b59b6", "#e74c3c"]
+                }]
+            },
+            "category_details": {},
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Initialize categories
+    categories = {
+        "standard": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "crescendo": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "skeleton_key": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        },
+        "obfuscation": {
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "safe": 0},
+            "total_turns": 0
+        }
+    }
+    
+    # Process all result files
+    for json_file in results_dir.glob("*.json"):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                category_key = data.get("attack_category", "").lower()
+                if category_key not in categories:
+                    continue
+                
+                # Process each turn
+                if "turns" in data:
+                    for turn in data["turns"]:
+                        categories[category_key]["total_turns"] += 1
+                        risk_category = turn.get("risk_category", 1)
+                        
+                        # Map risk_category to distribution
+                        if risk_category == 5:
+                            categories[category_key]["risk_distribution"]["critical"] += 1
+                        elif risk_category == 4:
+                            categories[category_key]["risk_distribution"]["high"] += 1
+                        elif risk_category == 3:
+                            categories[category_key]["risk_distribution"]["medium"] += 1
+                        elif risk_category == 2:
+                            categories[category_key]["risk_distribution"]["low"] += 1
+                        else:
+                            categories[category_key]["risk_distribution"]["safe"] += 1
+                
+        except Exception as e:
+            print(f"Error processing {json_file}: {e}")
+            continue
+    
+    # Calculate weighted scores for each category
+    labels = []
+    vulnerability_rates = []
+    category_details = {}
+    
+    category_display_names = {
+        "standard": "Standard",
+        "crescendo": "Crescendo",
+        "skeleton_key": "Skeleton Key",
+        "obfuscation": "Obfuscation"
+    }
+    
+    category_colors = {
+        "standard": "#3498db",
+        "crescendo": "#e67e22",
+        "skeleton_key": "#9b59b6",
+        "obfuscation": "#e74c3c"
+    }
+    
+    for category_key in ["standard", "crescendo", "skeleton_key", "obfuscation"]:
+        category_data = categories[category_key]
+        display_name = category_display_names[category_key]
+        risk_dist = category_data["risk_distribution"]
+        total_turns = category_data["total_turns"]
+        
+        # Calculate weighted score
+        weighted_score = (
+            risk_dist["critical"] * RISK_WEIGHTS[5] +
+            risk_dist["high"] * RISK_WEIGHTS[4] +
+            risk_dist["medium"] * RISK_WEIGHTS[3] +
+            risk_dist["low"] * RISK_WEIGHTS[2] +
+            risk_dist["safe"] * RISK_WEIGHTS[1]
+        )
+        
+        max_possible_score = total_turns * RISK_WEIGHTS[5]
+        vulnerability_rate = round((weighted_score / max_possible_score * 100), 2) if max_possible_score > 0 else 0.0
+        
+        labels.append(display_name)
+        vulnerability_rates.append(vulnerability_rate)
+        
+        category_details[category_key] = {
+            "vulnerability_rate": vulnerability_rate,
+            "weighted_score": round(weighted_score, 2),
+            "max_possible_score": round(max_possible_score, 2),
+            "risk_distribution": risk_dist,
+            "total_turns": total_turns,
+            "risk_percentages": {
+                "critical": round((risk_dist["critical"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "high": round((risk_dist["high"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "medium": round((risk_dist["medium"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "low": round((risk_dist["low"] / total_turns * 100), 2) if total_turns > 0 else 0.0,
+                "safe": round((risk_dist["safe"] / total_turns * 100), 2) if total_turns > 0 else 0.0
+            }
+        }
+    
+    colors = [category_colors[cat.lower()] for cat in labels]
+    
+    return {
+        "chart_data": {
+            "labels": labels,
+            "datasets": [{
+                "label": "Weighted Vulnerability Rate (%)",
+                "data": vulnerability_rates,
+                "backgroundColor": colors,
+                "borderColor": colors,
+                "borderWidth": 2
+            }]
+        },
+        "category_details": category_details,
+        "weights_used": {
+            "critical": RISK_WEIGHTS[5],
+            "high": RISK_WEIGHTS[4],
+            "medium": RISK_WEIGHTS[3],
+            "low": RISK_WEIGHTS[2],
+            "safe": RISK_WEIGHTS[1]
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.websocket("/ws/attack-monitor")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time attack monitoring
+    Broadcasts turn-by-turn updates to connected frontends
+    """
+    await manager.connect(websocket)
+    
+    try:
+        # Send current state immediately (serialize properly)
+        serializable_state = {k: v for k, v in attack_state.items() if k != "chatbot_profile_obj"}
+        await manager.send_personal({
+            "type": "connection_established",
+            "data": {
+                "attack_state": serializable_state,
+                "timestamp": datetime.now().isoformat()
+            }
+        }, websocket)
+        
+        # Keep connection alive
+        while True:
+            # Receive messages from client (heartbeat, etc.)
+            try:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                
+                if message.get("type") == "ping":
+                    await manager.send_personal({
+                        "type": "pong",
+                        "timestamp": datetime.now().isoformat()
+                    }, websocket)
+                
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                print(f"WebSocket error: {e}")
+                break
+    
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    finally:
+        manager.disconnect(websocket)
+
+
+async def execute_attack_campaign(
+    websocket_url: str, 
+    architecture_file: Optional[str] = None,
+    chatbot_profile: Optional[ChatbotProfile] = None,
+    username: str = "anonymous"
+):
+    """Execute the full multi-category attack campaign with real-time updates"""
+    
+    print("\n" + "="*80)
+    print("🚀 STARTING ATTACK CAMPAIGN EXECUTION")
+    print("="*80)
+    print(f"WebSocket URL: {websocket_url}")
+    print(f"Username: {username}")
+    print(f"Profile provided: {chatbot_profile is not None}")
+    print("="*80 + "\n")
+    
+    attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+    
+    mode_names = {
+        "standard": "Standard Attack",
+        "crescendo": "Crescendo Attack",
+        "skeleton_key": "Skeleton Key Attack",
+        "obfuscation": "Obfuscation Attack"
+    }
+    
+    all_reports = {}
+    
+    # Note: chatbot_profile object is already in attack_state["chatbot_profile"] as dict
+    # We'll pass the chatbot_profile object directly to orchestrators, not store in attack_state
+    
+    try:
+        for idx, attack_mode in enumerate(attack_modes, 1):
+            attack_state["current_category"] = attack_mode
+            attack_state["category_progress"] = f"{idx}/{len(attack_modes)}"
+            
+            # Broadcast category start
+            await manager.broadcast({
+                "type": "category_started",
+                "data": {
+                    "category": attack_mode,
+                    "category_name": mode_names[attack_mode],
+                    "progress": f"{idx}/{len(attack_modes)}",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+            
+            # Create orchestrator (pass either architecture_file or chatbot_profile)
+            if attack_mode == "obfuscation":
+                from config.settings import OBFUSCATION_RUNS, OBFUSCATION_TURNS_PER_RUN
+                orchestrator = ObfuscationAttackOrchestrator(
+                    websocket_url=websocket_url,
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
+                    total_runs=OBFUSCATION_RUNS,
+                    turns_per_run=OBFUSCATION_TURNS_PER_RUN
+                )
+                final_report = await orchestrator.execute_obfuscation_assessment()
+            elif attack_mode == "skeleton_key":
+                from config.settings import SKELETON_KEY_RUNS, SKELETON_KEY_TURNS_PER_RUN
+                orchestrator = SkeletonKeyAttackOrchestrator(
+                    websocket_url=websocket_url,
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
+                    total_runs=SKELETON_KEY_RUNS,
+                    turns_per_run=SKELETON_KEY_TURNS_PER_RUN
+                )
+                final_report = await orchestrator.execute_skeleton_key_assessment()
+            elif attack_mode == "crescendo":
+                from config.settings import CRESCENDO_RUNS, CRESCENDO_TURNS_PER_RUN
+                orchestrator = CrescendoAttackOrchestrator(
+                    websocket_url=websocket_url,
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
+                    total_runs=CRESCENDO_RUNS,
+                    turns_per_run=CRESCENDO_TURNS_PER_RUN
+                )
+                final_report = await orchestrator.execute_crescendo_assessment()
+            else:
+                orchestrator = ThreeRunCrescendoOrchestrator(
+                    websocket_url=websocket_url,
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile
+                )
+                final_report = await orchestrator.execute_full_assessment()
+            
+            all_reports[attack_mode] = final_report
+            
+            # Broadcast category completion
+            await manager.broadcast({
+                "type": "category_completed",
+                "data": {
+                    "category": attack_mode,
+                    "category_name": mode_names[attack_mode],
+                    "vulnerabilities": final_report.get('total_vulnerabilities', 0),
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+        
+        # Campaign complete - Save comprehensive report with username and chatbot profile
+        attack_state["running"] = False
+        attack_state["end_time"] = datetime.now().isoformat()
+        attack_state["results"] = all_reports
+        
+        # Generate chatbot name for file naming
+        chatbot_name = chatbot_profile.chatbot_role.replace(" ", "_") if chatbot_profile else username
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Save test report with chatbot name and timestamp
+        reports_dir = Path("test_reports")
+        reports_dir.mkdir(exist_ok=True)
+        test_report_file = reports_dir / f"test_report_{chatbot_name}_{timestamp}.json"
+        
+        with open(test_report_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "chatbot_name": chatbot_name,
+                "username": username,
+                "timestamp": timestamp,
+                "start_time": attack_state["start_time"],
+                "end_time": attack_state["end_time"],
+                "results": all_reports
+            }, f, indent=2)
+        
+        print(f"\n✅ Test report saved: {test_report_file}")
+        
+        # Save dashboard info separately
+        dashboard_info = {
+            "chatbot_name": chatbot_name,
+            "username": username,
+            "websocket_url": websocket_url,
+            "domain": chatbot_profile.domain if chatbot_profile else "Unknown",
+            "primary_objective": chatbot_profile.primary_objective if chatbot_profile else "",
+            "intended_audience": chatbot_profile.intended_audience if chatbot_profile else "",
+            "chatbot_role": chatbot_profile.chatbot_role if chatbot_profile else "",
+            "agent_type": chatbot_profile.agent_type if chatbot_profile else "",
+            "capabilities": chatbot_profile.capabilities if chatbot_profile else [],
+            "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
+            "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
+            "context_awareness": chatbot_profile.context_awareness if chatbot_profile else "",
+            "timestamp": timestamp,
+            "last_test_date": datetime.now().isoformat(),
+            "test_report_file": str(test_report_file)
+        }
+        
+        dashboard_file = Path(f"dashboard_info_{chatbot_name}.json")
+        with open(dashboard_file, "w", encoding="utf-8") as f:
+            json.dump(dashboard_info, f, indent=2)
+        
+        print(f"✅ Dashboard info saved: {dashboard_file}\n")
+        
+        # Save final comprehensive report (for backward compatibility)
+        await save_final_report(username, chatbot_profile, all_reports)
+        
+        await manager.broadcast({
+            "type": "campaign_completed",
+            "data": {
+                "total_categories": len(attack_modes),
+                "results": all_reports,
+                "username": username,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+    
+    except Exception as e:
+        attack_state["running"] = False
+        attack_state["error"] = str(e)
+        
+        # Print detailed error for debugging
+        print("\n" + "="*80)
+        print("❌ ATTACK CAMPAIGN ERROR")
+        print("="*80)
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {str(e)}")
+        import traceback
+        print(f"Traceback:\n{traceback.format_exc()}")
+        print("="*80 + "\n")
+        
+        await manager.broadcast({
+            "type": "error",
+            "data": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    print("""
+    ╔════════════════════════════════════════════════════════════════════╗
+    ║                                                                    ║
+    ║   RED TEAM ATTACK ORCHESTRATOR - FastAPI Backend                  ║
+    ║                                                                    ║
+    ║   Real-time WebSocket Monitoring                                   ║
+    ║   RESTful API for Attack Control                                   ║
+    ║                                                                    ║
+    ╚════════════════════════════════════════════════════════════════════╝
+    """)
+    
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8080,
+        log_level="info"
+    )
