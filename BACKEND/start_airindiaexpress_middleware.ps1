@@ -10,6 +10,7 @@ Write-Host ""
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
+
 # Activate virtual environment
 Write-Host "Activating virtual environment..." -ForegroundColor Yellow
 if (Test-Path ".\venv\Scripts\Activate.ps1") {

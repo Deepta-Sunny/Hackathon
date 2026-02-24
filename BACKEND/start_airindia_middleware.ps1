@@ -6,6 +6,7 @@ Write-Host "   Air India Ai.g Middleware Server Launcher   " -ForegroundColor Cy
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
+
 # Ensure we're in the correct directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
