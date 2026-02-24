@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Team Attack Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .form-section h2 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2::before {
+            content: "🎯";
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #34495e;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .capability-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .capability-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .capability-item input {
+            flex: 1;
+        }
+
+        .capability-item button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .capability-item button:hover {
+            background: #c0392b;
+        }
+
+        .add-capability-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .add-capability-btn:hover {
+            background: #229954;
+        }
+
+        .submit-section {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .submit-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .reset-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Red Team Attack Configuration</h1>
+            <p>Configure target chatbot profile for comprehensive security testing</p>
+        </div>
+
+        <div class="form-container">
+            <form id="chatbotProfileForm">
+                <!-- User Information -->
+                <div class="form-section">
+                    <h2>User Information</h2>
+                    <div class="form-group">
+                        <label for="username">Username <span class="required">*</span></label>
+                        <input type="text" id="username" name="username" required 
+                               placeholder="Enter your username (e.g., john_doe)">
+                        <div class="form-help">Your username for report identification</div>
+                    </div>
+                </div>
+
+                <!-- Connection Details -->
+                <div class="form-section">
+                    <h2>Target Chatbot Endpoint</h2>
+                    <div class="form-group">
+                        <label for="websocketUrl">WebSocket URL <span class="required">*</span></label>
+                        <input type="url" id="websocketUrl" name="websocketUrl" required 
+                               placeholder="ws://localhost:8001/chat">
+                        <div class="form-help">WebSocket endpoint for the target chatbot</div>
+                    </div>
+                </div>
+
+                <!-- Domain & Purpose -->
+                <div class="form-section">
+                    <h2>Domain & Purpose</h2>
+                    <div class="form-group">
+                        <label for="domain">Domain <span class="required">*</span></label>
+                        <select id="domain" name="domain" required>
+                            <option value="">-- Select Domain --</option>
+                            <option value="E-commerce">E-commerce</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Education">Education</option>
+                            <option value="Customer Support">Customer Support</option>
+                            <option value="HR/Recruitment">HR/Recruitment</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Legal">Legal</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="form-help">The industry/domain the chatbot operates in</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="primaryObjective">Primary Objective <span class="required">*</span></label>
+                        <textarea id="primaryObjective" name="primaryObjective" required 
+                                  placeholder="Describe what the chatbot is designed to achieve..."></textarea>
+                        <div class="form-help">What problem does this chatbot solve?</div>
+                    </div>
+                </div>
+
+                <!-- Audience & Role -->
+                <div class="form-section">
+                    <h2>Audience & Role</h2>
+                    <div class="form-group">
+                        <label for="intendedAudience">Intended Audience <span class="required">*</span></label>
+                        <input type="text" id="intendedAudience" name="intendedAudience" required 
+                               placeholder="e.g., Customers, Patients, Students, Employees">
+                        <div class="form-help">Who are the primary users?</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chatbotRole">Chatbot Role/Persona <span class="required">*</span></label>
+                        <input type="text" id="chatbotRole" name="chatbotRole" required 
+                               placeholder="e.g., Helpful Assistant, Customer Service Agent">
+                        <div class="form-help">How does the chatbot present itself?</div>
+                    </div>
+                </div>
+
+                <!-- Capabilities -->
+                <div class="form-section">
+                    <h2>Capabilities (What the Chatbot CAN Do)</h2>
+                    <div class="form-group">
+                        <label>List all functions and tasks <span class="required">*</span></label>
+                        <div class="form-help">Add each capability separately - be comprehensive!</div>
+                        <div id="capabilitiesList" class="capability-list">
+                            <div class="capability-item">
+                                <input type="text" name="capability" 
+                                       placeholder="e.g., Provide product recommendations" required>
+                                <button type="button" onclick="removeCapability(this)">Remove</button>
+                            </div>
+                        </div>
+                        <button type="button" class="add-capability-btn" onclick="addCapability()">
+                            + Add Another Capability
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Boundaries & Limitations -->
+                <div class="form-section">
+                    <h2>Boundaries & Limitations</h2>
+                    <div class="form-group">
+                        <label for="boundaries">What the Chatbot SHOULD NOT Do <span class="required">*</span></label>
+                        <textarea id="boundaries" name="boundaries" required 
+                                  placeholder="List restrictions, off-limit topics, and functional boundaries..."></textarea>
+                        <div class="form-help">Define what actions/topics are forbidden</div>
+                    </div>
+                </div>
+
+                <!-- Behavioral Guidelines -->
+                <div class="form-section">
+                    <h2>Behavioral Guidelines</h2>
+                    <div class="form-group">
+                        <label for="communicationStyle">Communication Style <span class="required">*</span></label>
+                        <input type="text" id="communicationStyle" name="communicationStyle" required 
+                               placeholder="e.g., Professional, Friendly, Concise, Empathetic">
+                        <div class="form-help">How should the chatbot communicate?</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contextAwareness">Context/Memory Management</label>
+                        <select id="contextAwareness" name="contextAwareness">
+                            <option value="maintains_context">Maintains context across conversation</option>
+                            <option value="stateless">Stateless (no memory)</option>
+                            <option value="limited_memory">Limited memory (last N messages)</option>
+                        </select>
+                        <div class="form-help">Does the chatbot remember previous interactions?</div>
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="submit-section">
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        🚀 Start Attack Campaign
+                    </button>
+                    <button type="reset" class="reset-btn">
+                        🔄 Reset Form
+                    </button>
+                </div>
+
+                <div id="statusMessage" class="status-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function addCapability() {
+            const capabilitiesList = document.getElementById('capabilitiesList');
+            const newItem = document.createElement('div');
+            newItem.className = 'capability-item';
+            newItem.innerHTML = `
+                <input type="text" name="capability" 
+                       placeholder="e.g., Assist with order tracking" required>
+                <button type="button" onclick="removeCapability(this)">Remove</button>
+            `;
+            capabilitiesList.appendChild(newItem);
+        }
+
+        function removeCapability(button) {
+            const capabilitiesList = document.getElementById('capabilitiesList');
+            if (capabilitiesList.children.length > 1) {
+                button.parentElement.remove();
+            } else {
+                alert('At least one capability is required!');
+            }
+        }
+
+        function showStatus(message, isSuccess) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + (isSuccess ? 'success' : 'error');
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        document.getElementById('chatbotProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Submitting...';
+
+            // Collect all capabilities
+            const capabilityInputs = document.querySelectorAll('input[name="capability"]');
+            const capabilities = Array.from(capabilityInputs)
+                .map(input => input.value.trim())
+                .filter(value => value !== '');
+
+            // Build chatbot profile
+            const chatbotProfile = {
+                username: document.getElementById('username').value.trim(),
+                websocket_url: document.getElementById('websocketUrl').value.trim(),
+                domain: document.getElementById('domain').value,
+                primary_objective: document.getElementById('primaryObjective').value.trim(),
+                intended_audience: document.getElementById('intendedAudience').value.trim(),
+                chatbot_role: document.getElementById('chatbotRole').value.trim(),
+                capabilities: capabilities,
+                boundaries: document.getElementById('boundaries').value.trim(),
+                communication_style: document.getElementById('communicationStyle').value.trim(),
+                context_awareness: document.getElementById('contextAwareness').value,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/api/attack/start-with-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(chatbotProfile)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('✅ Attack campaign started successfully!', true);
+                    console.log('Campaign started:', result);
+                    
+                    // Optionally redirect to monitoring dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 2000);
+                } else {
+                    showStatus('❌ Error: ' + (result.detail || 'Failed to start attack'), false);
+                }
+            } catch (error) {
+                showStatus('❌ Network error: ' + error.message, false);
+                console.error('Submission error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Start Attack Campaign';
+            }
+        });
+    </script>
+</body>
+</html>

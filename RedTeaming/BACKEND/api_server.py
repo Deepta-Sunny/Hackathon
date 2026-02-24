@@ -7,9 +7,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import Optional, List
+from pydantic import BaseModel
 import asyncio
 import json
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -24,6 +26,8 @@ from core.orchestrator import ThreeRunCrescendoOrchestrator
 from core.crescendo_orchestrator import CrescendoAttackOrchestrator
 from core.skeleton_key_orchestrator import SkeletonKeyAttackOrchestrator
 from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
+from models.chatbot_profile import ChatbotProfile
+from utils.report_generator import save_final_report
 
 # Risk severity weights for vulnerability scoring
 RISK_WEIGHTS = {
@@ -141,7 +145,7 @@ async def start_attack(
     architecture_file: UploadFile = File(...)
 ):
     """
-    Start automated multi-category attack campaign
+    Start automated multi-category attack campaign (Legacy .md file upload)
     
     Args:
         websocket_url: Target chatbot WebSocket URL
@@ -164,6 +168,8 @@ async def start_attack(
     attack_state["websocket_url"] = websocket_url
     attack_state["architecture_file"] = arch_filename
     attack_state["start_time"] = datetime.now().isoformat()
+    attack_state["username"] = "anonymous"
+    attack_state["chatbot_profile"] = None
     
     # Broadcast start message
     await manager.broadcast({
@@ -176,13 +182,96 @@ async def start_attack(
     })
     
     # Start attack in background
-    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename))
+    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename, None, "anonymous"))
     
     return {
         "status": "started",
         "message": "Attack campaign initiated",
         "websocket_url": websocket_url,
         "architecture_file": architecture_file.filename
+    }
+
+
+@app.post("/api/attack/start-with-profile")
+async def start_attack_with_profile(profile: ChatbotProfile):
+    """
+    Start automated multi-category attack campaign using chatbot profile
+    
+    Args:
+        profile: Comprehensive chatbot profile from frontend form
+    """
+    
+    if attack_state["running"]:
+        raise HTTPException(status_code=400, detail="Attack already running")
+    
+    # ===== PRINT RECEIVED PROFILE DATA IN TERMINAL =====
+    print("\n" + "="*80)
+    print("🎯 CHATBOT PROFILE RECEIVED FROM FRONTEND")
+    print("="*80)
+    print(f"Username: {profile.username}")
+    print(f"WebSocket URL: {profile.websocket_url}")
+    print(f"Domain: {profile.domain}")
+    print(f"Primary Objective: {profile.primary_objective}")
+    print(f"Intended Audience: {profile.intended_audience}")
+    print(f"Chatbot Role: {profile.chatbot_role}")
+    if profile.agent_type:
+        print(f"Agent Type: {profile.agent_type}")
+    print(f"Communication Style: {profile.communication_style}")
+    print(f"Context Awareness: {profile.context_awareness}")
+    print(f"\nCapabilities ({len(profile.capabilities)}):")
+    for i, cap in enumerate(profile.capabilities, 1):
+        print(f"  {i}. {cap}")
+    print(f"\nBoundaries/Guardrails:\n{profile.boundaries}")
+    print("="*80 + "\n")
+    # ===================================================
+    
+    # Save chatbot profile
+    os.makedirs("uploads", exist_ok=True)
+    if profile.bucket_name:
+        # Create bucket if uses sends one
+        bucket_dir = Path("uploads") / profile.bucket_name
+        bucket_dir.mkdir(exist_ok=True, parents=True)
+        profile_filename = str(bucket_dir / f"profile_{profile.username}.json")
+    else:
+        profile_filename = f"uploads/profile_{profile.username}.json"
+    
+    with open(profile_filename, "w", encoding="utf-8") as f:
+        json.dump(profile.to_dict(), f, indent=2)
+    
+    # Update attack state
+    attack_state["running"] = True
+    attack_state["websocket_url"] = profile.websocket_url
+    attack_state["username"] = profile.username
+    attack_state["chatbot_profile"] = profile.to_dict()
+    attack_state["profile_file"] = profile_filename
+    attack_state["start_time"] = datetime.now().isoformat()
+    
+    # Broadcast start message
+    await manager.broadcast({
+        "type": "attack_started",
+        "data": {
+            "username": profile.username,
+            "websocket_url": profile.websocket_url,
+            "domain": profile.domain,
+            "chatbot_role": profile.chatbot_role,
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+    
+    # Start attack in background with profile
+    asyncio.create_task(execute_attack_campaign(
+        profile.websocket_url, 
+        None,  # No .md file
+        profile,
+        profile.username
+    ))
+    
+    return {
+        "status": "started",
+        "message": "Attack campaign initiated with chatbot profile",
+        "username": profile.username,
+        "websocket_url": profile.websocket_url,
+        "domain": profile.domain
     }
 
 
@@ -202,6 +291,357 @@ async def stop_attack():
     })
     
     return {"status": "stopped", "message": "Attack campaign stopped"}
+
+
+@app.get("/api/dashboard/load")
+async def load_dashboard_state():
+    """Load saved dashboard state if exists"""
+    dashboard_file = Path("dashboard_state.json")
+    
+    if dashboard_file.exists():
+        try:
+            with open(dashboard_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            return {"found": True, "state": state}
+        except Exception as e:
+            return {"found": False, "error": str(e)}
+    else:
+        return {"found": False, "message": "No saved state found"}
+
+
+@app.post("/api/dashboard/save")
+async def save_dashboard_state(state: dict):
+    """Save current dashboard state for future access"""
+    try:
+        with open("dashboard_state.json", "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+        return {"status": "saved", "message": "Dashboard state saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save state: {str(e)}")
+
+
+# === BUCKET OPERATIONS ===
+
+@app.get("/api/buckets")
+async def list_buckets():
+    """List all buckets (subdirectories in uploads)"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        return {"buckets": []}
+    
+    buckets = [d.name for d in uploads_dir.iterdir() if d.is_dir()]
+    return {"buckets": buckets}
+
+@app.post("/api/buckets")
+async def create_bucket(bucket_name: str = Form(...)):
+    """Create a new bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if bucket_path.exists():
+        raise HTTPException(status_code=400, detail="Bucket already exists")
+    
+    try:
+        bucket_path.mkdir(parents=True, exist_ok=True)
+        return {"status": "success", "bucket": bucket_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/buckets/{bucket_name}/files")
+async def list_bucket_files(bucket_name: str):
+    """List profile files in a bucket"""
+    uploads_dir = Path("uploads")
+    bucket_path = uploads_dir / bucket_name
+    
+    if not bucket_path.exists() or not bucket_path.is_dir():
+        # If bucket is "default" or empty, maybe check uploads root? 
+        # But for now assume strict buckets.
+        # However, for backward compatibility, handle "root" if needed, but UI will drive this.
+        if bucket_name == "root": # convention for root
+             bucket_path = uploads_dir
+        else:
+             raise HTTPException(status_code=404, detail="Bucket not found")
+        
+    files = []
+    # Search for files in the bucket
+    for f in bucket_path.glob("profile_*.json"):
+        if f.is_file():
+             files.append({
+                "name": f.name,
+                "created": f.stat().st_mtime
+            })
+    
+    # Sort by creation time desc
+    files.sort(key=lambda x: x["created"], reverse=True)
+    return {"files": files}
+
+@app.get("/api/buckets/{bucket_name}/files/{filename}")
+async def get_bucket_file(bucket_name: str, filename: str):
+    """Get content of a profile file"""
+    uploads_dir = Path("uploads")
+    if bucket_name == "root":
+         file_path = uploads_dir / filename
+    else:
+         file_path = uploads_dir / bucket_name / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+class FileMoveRequest(BaseModel):
+    filename: str
+    source_bucket: str
+    target_bucket: str
+
+@app.post("/api/buckets/move")
+async def move_bucket_file(request: FileMoveRequest):
+    """Move a file between buckets"""
+    uploads_dir = Path("uploads")
+    
+    # Resolve source path
+    source_path = uploads_dir / request.source_bucket / request.filename
+        
+    # Resolve target path
+    target_dir = uploads_dir / request.target_bucket
+    if not target_dir.exists():
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+    target_path = target_dir / request.filename
+    
+    if not source_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source file not found at {source_path}")
+        
+    if target_path.exists():
+        raise HTTPException(status_code=400, detail="File already exists in target bucket")
+        
+    try:
+        shutil.move(str(source_path), str(target_path))
+        return {"status": "success", "message": f"Moved {request.filename} to {request.target_bucket}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    """Perform startup tasks including file migration"""
+    uploads_dir = Path("uploads")
+    if not uploads_dir.exists():
+        uploads_dir.mkdir()
+        
+    # Ensure General bucket exists
+    general_dir = uploads_dir / "General"
+    general_dir.mkdir(exist_ok=True)
+    
+    # Move loose JSON files to General
+    for file_path in uploads_dir.glob("profile_*.json"):
+        if file_path.is_file():
+            print(f"Migrating {file_path.name} to General bucket...")
+            try:
+                shutil.move(str(file_path), str(general_dir / file_path.name))
+            except Exception as e:
+                print(f"Failed to migrate {file_path.name}: {e}")
+
+# === END BUCKET OPERATIONS ===
+
+
+# === HISTORY OPERATIONS ===
+
+@app.get("/api/history")
+async def list_history():
+    """List all history files"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return {"history": []}
+    
+    files = []
+    for f in history_dir.glob("*.json"):
+        if f.is_file():
+             try:
+                with open(f, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    # Basic validation or minimal data
+                    files.append({
+                        "id": data.get("id", f.stem),
+                        "filename": f.name,
+                        "chatbot_name": data.get("chatbot_name", "Unknown"),
+                        "date": data.get("date", ""),
+                        "total_vulnerabilities": data.get("total_vulnerabilities", 0),
+                        "duration": data.get("duration", "")
+                    })
+             except Exception:
+                 continue # skip broken files
+    
+    # Sort by date desc if possible
+    files.sort(key=lambda x: x["date"], reverse=True)
+    return {"history": files}
+
+@app.get("/api/history/{filename}")
+async def get_history_detail(filename: str):
+    """Get content of a history file"""
+    history_dir = Path("history")
+    file_path = history_dir / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="History file not found")
+        
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# === END HISTORY OPERATIONS ===
+
+
+@app.get("/api/profile/latest")
+async def get_latest_profile():
+    """Get the latest saved chatbot profile"""
+    uploads_dir = Path("uploads")
+    
+    if not uploads_dir.exists():
+        return {"found": False, "message": "No uploads directory found"}
+    
+    # Find all profile JSON files
+    profile_files = list(uploads_dir.glob("profile_*.json"))
+    
+    if not profile_files:
+        return {"found": False, "message": "No profile files found"}
+    
+    # Sort by modification time (latest first)
+    profile_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    latest_file = profile_files[0]
+    
+    try:
+        with open(latest_file, "r", encoding="utf-8") as f:
+            profile_data = json.load(f)
+        return {"found": True, "profile": profile_data, "filename": latest_file.name}
+    except Exception as e:
+        return {"found": False, "error": str(e)}
+
+
+@app.get("/api/profiles")
+async def list_profiles():
+    """Get list of all saved chatbot profiles for Load Profile popup"""
+    uploads_dir = Path("uploads")
+    profiles_dir = Path("profiles")
+    
+    profiles = []
+    
+    # Check both uploads and profiles directories
+    for search_dir in [uploads_dir, profiles_dir]:
+        if not search_dir.exists():
+            continue
+        
+        # Find all profile JSON files
+        for profile_file in search_dir.glob("profile_*.json"):
+            try:
+                with open(profile_file, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                
+                # Get file stats for timestamp
+                file_stat = profile_file.stat()
+                
+                profiles.append({
+                    "filename": profile_file.name,
+                    "filepath": str(profile_file),
+                    "username": profile_data.get("username", "Unknown"),
+                    "domain": profile_data.get("domain", "Unknown"),
+                    "chatbot_role": profile_data.get("chatbot_role", "Unknown"),
+                    "websocket_url": profile_data.get("websocket_url", ""),
+                    "created_at": datetime.fromtimestamp(file_stat.st_ctime).isoformat(),
+                    "modified_at": datetime.fromtimestamp(file_stat.st_mtime).isoformat()
+                })
+            except Exception as e:
+                print(f"Error reading profile {profile_file}: {e}")
+                continue
+    
+    # Sort by modified time (latest first)
+    profiles.sort(key=lambda x: x["modified_at"], reverse=True)
+    
+    return {"profiles": profiles, "count": len(profiles)}
+
+
+@app.get("/api/profiles/{filename}")
+async def get_profile_by_filename(filename: str):
+    """Get a specific profile by filename"""
+    # Search in both directories
+    for search_dir in [Path("uploads"), Path("profiles")]:
+        file_path = search_dir / filename
+        if file_path.exists():
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    profile_data = json.load(f)
+                return {"found": True, "profile": profile_data, "filename": filename}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error reading profile: {e}")
+    
+    raise HTTPException(status_code=404, detail="Profile not found")
+
+
+@app.post("/api/profiles/save")
+async def save_profile(profile: ChatbotProfile):
+    """Save a chatbot profile without starting an attack"""
+    os.makedirs("profiles", exist_ok=True)
+    
+    # Create filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"profiles/profile_{profile.username}_{timestamp}.json"
+    
+    # Also save as latest for this username
+    latest_filename = f"profiles/profile_{profile.username}.json"
+    
+    profile_dict = profile.to_dict()
+    profile_dict["saved_at"] = datetime.now().isoformat()
+    
+    # Save timestamped version
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Save as latest
+    with open(latest_filename, "w", encoding="utf-8") as f:
+        json.dump(profile_dict, f, indent=2)
+    
+    # Also save to profile history
+    history_file = Path("profiles/profile_history.json")
+    history = []
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except:
+            history = []
+    
+    history.append({
+        "filename": filename,
+        "username": profile.username,
+        "domain": profile.domain,
+        "chatbot_role": profile.chatbot_role,
+        "saved_at": datetime.now().isoformat()
+    })
+    
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+    
+    return {
+        "status": "saved",
+        "filename": filename,
+        "latest_filename": latest_filename,
+        "message": f"Profile saved for {profile.username}"
+    }
+
+
+@app.get("/api/profiles/history")
+async def get_profile_history():
+    """Get history of all saved profiles"""
+    history_file = Path("profiles/profile_history.json")
+    
+    if not history_file.exists():
+        return {"history": [], "count": 0}
+    
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        return {"history": history, "count": len(history)}
+    except Exception as e:
+        return {"history": [], "count": 0, "error": str(e)}
 
 
 @app.get("/api/results")
@@ -241,6 +681,105 @@ async def get_run_result(category: str, run_number: int):
         data = json.load(f)
     
     return data
+
+
+# ============================================================================
+# OWASP LLM Top 10 Compliance Endpoints
+# ============================================================================
+
+from utils.owasp_scoring import get_owasp_report, owasp_live_state, OWASP_CATEGORIES
+
+
+@app.get("/api/owasp/report")
+async def get_owasp_compliance_report():
+    """
+    Get complete OWASP LLM Top 10 compliance report.
+    
+    Returns full report with summary and all category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP report: {str(e)}")
+
+
+@app.get("/api/owasp/summary")
+async def get_owasp_summary():
+    """
+    Get OWASP compliance summary only.
+    
+    Returns high-level compliance metrics without category details.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"summary": report["summary"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating OWASP summary: {str(e)}")
+
+
+@app.get("/api/owasp/categories")
+async def get_owasp_categories():
+    """
+    Get all OWASP LLM Top 10 categories with their compliance status.
+    
+    Returns list of categories with test counts and compliance percentages.
+    """
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        return {"categories": report["categories"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting OWASP categories: {str(e)}")
+
+
+@app.get("/api/owasp/category/{category_id}")
+async def get_owasp_category_details(category_id: str):
+    """
+    Get detailed information for a specific OWASP category.
+    
+    Args:
+        category_id: OWASP category ID (e.g., LLM01, LLM02, etc.)
+    """
+    if category_id not in OWASP_CATEGORIES:
+        raise HTTPException(status_code=404, detail=f"Unknown OWASP category: {category_id}")
+    
+    try:
+        results_dir = Path("attack_results")
+        report = get_owasp_report(results_dir)
+        
+        # Find the specific category
+        for cat in report["categories"]:
+            if cat["id"] == category_id:
+                return {"category": cat}
+        
+        return {"category": None, "message": "No test data for this category"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting category details: {str(e)}")
+
+
+@app.get("/api/owasp/live")
+async def get_owasp_live_state():
+    """
+    Get live OWASP scoring state during active attacks.
+    
+    Returns current real-time OWASP compliance metrics.
+    """
+    return owasp_live_state.get_summary()
+
+
+@app.post("/api/owasp/reset")
+async def reset_owasp_live_state():
+    """Reset the live OWASP scoring state."""
+    owasp_live_state.reset()
+    return {"status": "success", "message": "OWASP live state reset"}
+
+
+# ============================================================================
+# Dashboard Endpoints (continued)
+# ============================================================================
 
 
 @app.get("/api/dashboard/category_success_rate")
@@ -774,11 +1313,12 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     
     try:
-        # Send current state immediately
+        # Send current state immediately (serialize properly)
+        serializable_state = {k: v for k, v in attack_state.items() if k != "chatbot_profile_obj"}
         await manager.send_personal({
             "type": "connection_established",
             "data": {
-                "attack_state": attack_state,
+                "attack_state": serializable_state,
                 "timestamp": datetime.now().isoformat()
             }
         }, websocket)
@@ -808,8 +1348,21 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-async def execute_attack_campaign(websocket_url: str, architecture_file: str):
+async def execute_attack_campaign(
+    websocket_url: str, 
+    architecture_file: Optional[str] = None,
+    chatbot_profile: Optional[ChatbotProfile] = None,
+    username: str = "anonymous"
+):
     """Execute the full multi-category attack campaign with real-time updates"""
+    
+    print("\n" + "="*80)
+    print("🚀 STARTING ATTACK CAMPAIGN EXECUTION")
+    print("="*80)
+    print(f"WebSocket URL: {websocket_url}")
+    print(f"Username: {username}")
+    print(f"Profile provided: {chatbot_profile is not None}")
+    print("="*80 + "\n")
     
     attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
     
@@ -821,6 +1374,9 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
     }
     
     all_reports = {}
+    
+    # Note: chatbot_profile object is already in attack_state["chatbot_profile"] as dict
+    # We'll pass the chatbot_profile object directly to orchestrators, not store in attack_state
     
     try:
         for idx, attack_mode in enumerate(attack_modes, 1):
@@ -838,12 +1394,13 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 }
             })
             
-            # Create orchestrator
+            # Create orchestrator (pass either architecture_file or chatbot_profile)
             if attack_mode == "obfuscation":
                 from config.settings import OBFUSCATION_RUNS, OBFUSCATION_TURNS_PER_RUN
                 orchestrator = ObfuscationAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=OBFUSCATION_RUNS,
                     turns_per_run=OBFUSCATION_TURNS_PER_RUN
                 )
@@ -853,6 +1410,7 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 orchestrator = SkeletonKeyAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=SKELETON_KEY_RUNS,
                     turns_per_run=SKELETON_KEY_TURNS_PER_RUN
                 )
@@ -862,6 +1420,7 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 orchestrator = CrescendoAttackOrchestrator(
                     websocket_url=websocket_url,
                     architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile,
                     total_runs=CRESCENDO_RUNS,
                     turns_per_run=CRESCENDO_TURNS_PER_RUN
                 )
@@ -869,7 +1428,8 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
             else:
                 orchestrator = ThreeRunCrescendoOrchestrator(
                     websocket_url=websocket_url,
-                    architecture_file=architecture_file
+                    architecture_file=architecture_file,
+                    chatbot_profile=chatbot_profile
                 )
                 final_report = await orchestrator.execute_full_assessment()
             
@@ -886,16 +1446,66 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
                 }
             })
         
-        # Campaign complete
+        # Campaign complete - Save comprehensive report with username and chatbot profile
         attack_state["running"] = False
         attack_state["end_time"] = datetime.now().isoformat()
         attack_state["results"] = all_reports
+        
+        # Generate chatbot name for file naming
+        chatbot_name = chatbot_profile.chatbot_role.replace(" ", "_") if chatbot_profile else username
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Save test report with chatbot name and timestamp
+        reports_dir = Path("test_reports")
+        reports_dir.mkdir(exist_ok=True)
+        test_report_file = reports_dir / f"test_report_{chatbot_name}_{timestamp}.json"
+        
+        with open(test_report_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "chatbot_name": chatbot_name,
+                "username": username,
+                "timestamp": timestamp,
+                "start_time": attack_state["start_time"],
+                "end_time": attack_state["end_time"],
+                "results": all_reports
+            }, f, indent=2)
+        
+        print(f"\n✅ Test report saved: {test_report_file}")
+        
+        # Save dashboard info separately
+        dashboard_info = {
+            "chatbot_name": chatbot_name,
+            "username": username,
+            "websocket_url": websocket_url,
+            "domain": chatbot_profile.domain if chatbot_profile else "Unknown",
+            "primary_objective": chatbot_profile.primary_objective if chatbot_profile else "",
+            "intended_audience": chatbot_profile.intended_audience if chatbot_profile else "",
+            "chatbot_role": chatbot_profile.chatbot_role if chatbot_profile else "",
+            "agent_type": chatbot_profile.agent_type if chatbot_profile else "",
+            "capabilities": chatbot_profile.capabilities if chatbot_profile else [],
+            "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
+            "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
+            "context_awareness": chatbot_profile.context_awareness if chatbot_profile else "",
+            "timestamp": timestamp,
+            "last_test_date": datetime.now().isoformat(),
+            "test_report_file": str(test_report_file)
+        }
+        
+        dashboard_file = Path(f"dashboard_info_{chatbot_name}.json")
+        with open(dashboard_file, "w", encoding="utf-8") as f:
+            json.dump(dashboard_info, f, indent=2)
+        
+        print(f"✅ Dashboard info saved: {dashboard_file}\n")
+        
+        # Save final comprehensive report (for backward compatibility)
+        await save_final_report(username, chatbot_profile, all_reports)
         
         await manager.broadcast({
             "type": "campaign_completed",
             "data": {
                 "total_categories": len(attack_modes),
                 "results": all_reports,
+                "username": username,
                 "timestamp": datetime.now().isoformat()
             }
         })
@@ -904,10 +1514,21 @@ async def execute_attack_campaign(websocket_url: str, architecture_file: str):
         attack_state["running"] = False
         attack_state["error"] = str(e)
         
+        # Print detailed error for debugging
+        print("\n" + "="*80)
+        print("❌ ATTACK CAMPAIGN ERROR")
+        print("="*80)
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {str(e)}")
+        import traceback
+        print(f"Traceback:\n{traceback.format_exc()}")
+        print("="*80 + "\n")
+        
         await manager.broadcast({
             "type": "error",
             "data": {
                 "error": str(e),
+                "error_type": type(e).__name__,
                 "timestamp": datetime.now().isoformat()
             }
         })

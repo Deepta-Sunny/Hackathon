@@ -901,6 +901,207 @@ class GeneralizedPattern:
 
 ---
 
+### 1.12 Web Chatbot Middleware Module (`web_chatbot_middleware.py`)
+
+#### 1.12.1 Purpose
+WebSocket server that bridges web-based chatbots to the WebSocket protocol expected by `api_server.py`. Enables testing of web-based chatbots (like Tia on Air India Express) using the existing red teaming infrastructure.
+
+#### 1.12.2 Architecture Overview
+```
+┌─────────────────┐         WebSocket          ┌──────────────────┐         Selenium         ┌─────────────────┐
+│                 │    (ws://localhost:8001)    │                  │    (Browser Automation)  │                 │
+│  api_server.py  │ ───────────────────────────>│    Middleware    │ ───────────────────────> │  Web Chatbot    │
+│                 │                             │     Server       │                          │   (Browser)     │
+│  (Orchestrator) │ <───────────────────────────│                  │ <─────────────────────── │                 │
+│                 │         Responses           │                  │       Responses          │                 │
+└─────────────────┘                             └──────────────────┘                          └─────────────────┘
+```
+
+**Detailed Architecture Diagrams**: See `doc/06_AIRINDIAEXPRESS_MIDDLEWARE.md` for comprehensive Mermaid diagrams including system architecture, sequence flow, and data flow diagrams.
+
+#### 1.12.3 Key Classes
+
+##### WebChatbotMiddleware
+**Responsibilities:**
+- Provide WebSocket server interface for api_server.py connections
+- Initialize and maintain Selenium WebDriver for web chatbot interaction
+- Translate between WebSocket JSON protocol and web automation
+- Handle multiple concurrent connections from api_server.py
+- Track message statistics and connection health
+
+**Initialization:**
+```python
+def __init__(self, target_url: str, headless: bool = False):
+    self.target_url = target_url
+    self.headless = headless
+    self.web_target: Optional[WebScreenTarget] = None
+    self.active_connections: Set[websockets.WebSocketServerProtocol] = set()
+    self.connected = False
+    
+    # Statistics tracking
+    self.total_messages = 0
+    self.successful_messages = 0
+    self.failed_messages = 0
+```
+
+**Core Methods:**
+```python
+async def initialize_web_target() -> bool
+    # Initialize WebScreenTarget with Selenium
+    # Navigate to target URL
+    # Find and click chatbot activation button
+    # Send test message to verify automation
+    # Return True if successful
+
+async def handle_client(websocket)
+    # Accept WebSocket connection from api_server.py
+    # Register connection in active_connections
+    # Send connection confirmation message
+    # Process incoming messages until disconnect
+
+async def process_message(websocket, message: str)
+    # Parse JSON message from api_server.py
+    # Expected format: {"type": "query", "message": "...", "thread_id": "..."}
+    # Forward message to web chatbot via WebScreenTarget
+    # Handle timeouts (60 second default)
+    # Return response to api_server.py
+    # Support reset and ping message types
+```
+
+#### 1.12.4 WebSocket Protocol
+
+##### Message Types from api_server.py
+```json
+// Query message
+{
+    "type": "query",
+    "message": "attack prompt text",
+    "thread_id": "uuid-string"
+}
+
+// Reset conversation
+{
+    "type": "reset"
+}
+
+// Health check
+{
+    "type": "ping"
+}
+```
+
+##### Response Messages to api_server.py
+```json
+// Successful response
+{
+    "type": "response",
+    "message": "chatbot response text",
+    "timestamp": "2025-02-17T10:30:00.000000",
+    "thread_id": "uuid-string"
+}
+
+// Error response
+{
+    "type": "error",
+    "message": "error description",
+    "timestamp": "2025-02-17T10:30:00.000000"
+}
+
+// Connection confirmation
+{
+    "type": "connection",
+    "message": "Connected to Web Chatbot Middleware",
+    "status": "ready",
+    "timestamp": "2025-02-17T10:30:00.000000"
+}
+```
+
+#### 1.12.5 Integration with api_server.py
+
+**Connection Establishment:**
+- api_server.py uses `ChatbotWebSocketTarget` (from `core/websocket_target.py`)
+- Connects to middleware WebSocket URL (default: `ws://localhost:8001/chat`)
+- Middleware accepts connection and registers it
+- Sends confirmation message to api_server.py
+
+**Message Flow:**
+1. Orchestrator calls `websocket_target.send_message(prompt)`
+2. `websocket_target` sends JSON to middleware WebSocket
+3. Middleware receives message and extracts prompt
+4. Middleware calls `web_target.send_message(prompt)` (Selenium automation)
+5. Web chatbot responds in browser
+6. Middleware extracts response text
+7. Middleware sends JSON response back to `websocket_target`
+8. `websocket_target` returns response to orchestrator
+
+**Error Handling:**
+- WebSocket connection failures: Automatic retry with backoff
+- Selenium timeouts: 60-second timeout with error response
+- Browser crashes: Connection status monitoring
+- Invalid messages: JSON parsing error responses
+
+#### 1.12.6 WebScreenTarget Integration
+
+**Purpose:** Selenium-based web automation for chatbot interaction
+
+**Key Methods:**
+```python
+async def connect() -> bool
+    # Initialize Chrome WebDriver
+    # Navigate to target URL
+    # Find chatbot activation elements
+    # Click to open chat interface
+
+async def send_message(message: str) -> str
+    # Locate message input field
+    # Clear and type message
+    # Find and click send button
+    # Wait for response to appear
+    # Extract response text from DOM
+```
+
+**Element Detection:**
+- Uses XPath selectors for robust element finding
+- Handles dynamic content loading
+- Supports multiple chatbot UI patterns
+- Configurable timeouts for element waiting
+
+#### 1.12.7 Statistics and Monitoring
+
+**Tracked Metrics:**
+```python
+total_messages: int      # Total messages processed
+successful_messages: int # Successfully forwarded and responded
+failed_messages: int     # Failed message exchanges
+active_connections: int  # Current WebSocket connections
+```
+
+**Logging:**
+- Comprehensive logging with timestamps
+- Message content logging for debugging
+- Connection lifecycle events
+- Error details with stack traces
+- Separate log file per middleware session
+
+#### 1.12.8 Startup and Configuration
+
+**Command Line Options:**
+```bash
+python web_chatbot_middleware.py \
+    --url "https://www.airindiaexpress.com/" \
+    --host "localhost" \
+    --port 8001 \
+    --headless false
+```
+
+**Dependencies:**
+- `websockets` for WebSocket server
+- `selenium` for browser automation
+- `webdriver-manager` for Chrome driver management
+- `core.web_screen_target` for web interaction logic
+
+---
+
 ## 2. Algorithm Details
 
 ### 2.1 Adaptive Attack Plan Generation
