@@ -38,8 +38,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add BACKEND root directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Ensure logs directory exists
+_LOG_DIR = Path(__file__).parent.parent / "logs"
+_LOG_DIR.mkdir(exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
@@ -48,7 +52,7 @@ logging.basicConfig(
     handlers=[
         logging.StreamHandler(sys.stdout),
         logging.FileHandler(
-            f"aig_middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            str(_LOG_DIR / f"aig_middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
         ),
     ],
 )

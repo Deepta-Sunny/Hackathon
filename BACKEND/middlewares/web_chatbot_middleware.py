@@ -22,10 +22,14 @@ from typing import Optional, Dict, Set
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add BACKEND root directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.web_screen_target import WebScreenTarget
+
+# Ensure logs directory exists
+_LOG_DIR = Path(__file__).parent.parent / "logs"
+_LOG_DIR.mkdir(exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
@@ -33,7 +37,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(f"middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logging.FileHandler(str(_LOG_DIR / f"middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"))
     ]
 )
 logger = logging.getLogger(__name__)
