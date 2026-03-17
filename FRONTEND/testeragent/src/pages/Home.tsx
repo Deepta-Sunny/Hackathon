@@ -215,7 +215,7 @@ function Home() {
   return (
     <Box>
       <Header />
-      <Box display={"flex"} flexDirection={"column"} gap={2} marginTop={4}>
+      <Box display={"flex"} flexDirection={"column"} gap={0.5} marginTop={1}>
         {/* Profile Information Card */}
           <Paper className={classes.profileCard} elevation={8}>
           <div className={classes.profileHeader} />
@@ -244,7 +244,7 @@ function Home() {
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel} style={{visibility: 'hidden'}}>actions</div>
-              <div style={{display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between'}}>
+              <div style={{display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center'}}>
                 <Button
                   variant="solid"
                   className={classes.editButton}

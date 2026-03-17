@@ -1,446 +1,406 @@
-# High-Level Design (HLD)
+﻿# High-Level Design (HLD)
 ## AI Red Teaming Attack Orchestration Platform
 
-**Version:** 1.0.0  
-**Last Updated:** December 12, 2025  
-**Document Status:** Active
+**Version:** 2.0.0
+**Last Updated:** February 28, 2026
+**Document Status:** Active — Regenerated from source code
 
 ---
 
 ## 1. Executive Summary
 
-### 1.1 System Overview
-The AI Red Teaming Attack Orchestration Platform is a comprehensive security testing framework designed to assess AI chatbot vulnerabilities through automated, multi-phase attack campaigns. The system employs advanced AI-powered attack strategies, real-time monitoring, and sophisticated vulnerability analysis to identify security weaknesses in conversational AI systems.
+### 1.1 What Does This System Do?
+
+The **AI Red Teaming Attack Orchestration Platform** is an automated security testing framework that evaluates the safety and robustness of AI-powered chatbots. Think of it as an "ethical hacker" for AI systems — it tries to trick a chatbot into doing things it should not, records every finding, and reports everything it discovered.
+
+**In plain terms:**
+- You point the tool at any chatbot (connected via WebSocket)
+- It runs hundreds of crafted attack conversations automatically
+- Every response is classified for risk (Safe to Critical)
+- The tool adapts its strategies based on what works, like a learning attacker
+- You get a detailed report of every vulnerability discovered
 
 ### 1.2 Business Purpose
-- **Security Assessment**: Automated evaluation of AI chatbot security posture
-- **Vulnerability Discovery**: Identification of weaknesses in content filtering, boundary enforcement, and information disclosure
-- **Compliance Validation**: Verification of AI safety guardrails and policy enforcement
-- **Risk Quantification**: Measurable scoring of security risks across multiple attack vectors
 
-### 1.3 Key Capabilities
-- **Multi-Category Attack Execution**: Standard, Crescendo, Skeleton Key, and Obfuscation attacks
-- **Real-Time Monitoring**: WebSocket-based live attack observation
-- **Adaptive Learning**: Self-improving attack strategies based on previous run results
-- **Architecture-Aware Testing**: Contextual attacks leveraging target system documentation
-- **Comprehensive Reporting**: Detailed vulnerability reports with risk classification
+| Goal | Description |
+|------|-------------|
+| Security Assessment | Find weaknesses before real attackers do |
+| Compliance Validation | Verify AI safety guardrails work correctly |
+| Vulnerability Discovery | Identify policy bypass, data leakage, and injection risks |
+| Risk Quantification | Score vulnerabilities by severity across multiple attack vectors |
+
+### 1.3 Who Uses This System?
+
+- **Security Engineers** — Set up and launch attack campaigns
+- **Compliance Analysts** — Review vulnerability reports for policy gaps
+- **AI Developers** — Use findings to harden chatbot guardrails
+- **Non-Technical Stakeholders** — Read executive summaries and risk dashboards
 
 ---
 
 ## 2. System Architecture
 
 ### 2.1 Architectural Style
-The system follows a **Microservices-Oriented Architecture** with:
-- **Event-Driven Communication**: WebSocket for real-time updates
-- **Asynchronous Processing**: Python asyncio for concurrent operations
-- **RESTful API**: FastAPI for command and control
-- **Persistent Storage**: DuckDB for attack memory and learning
 
-### 2.2 Core Components
+The system is built on a layered, event-driven microservices architecture:
+
+- REST API plus WebSocket Server for external communication
+- Async Python asyncio for concurrent attack execution
+- Pluggable Orchestrator Pattern for swappable attack strategies
+- DuckDB Persistent Memory for cross-run learning
+
+### 2.2 High-Level System Map
 
 ```mermaid
 graph TB
-    subgraph Frontend_Layer
-        UI[Web Dashboard]
+    subgraph User_Facing
+        DASH[Web_Dashboard]
+        ANALYST[Security_Analyst]
     end
-    
+
     subgraph API_Layer
-        API[FastAPI Server]
-        WS[WebSocket Manager]
+        API[FastAPI_Server]
+        WSM[WebSocket_Manager]
     end
-    
+
     subgraph Orchestration_Layer
-        STD[Standard Orchestrator]
-        CRSC[Crescendo Orchestrator]
-        SKEL[Skeleton Key Orchestrator]
-        OBFS[Obfuscation Orchestrator]
+        STD[Standard_Orchestrator]
+        CRSC[Crescendo_Orchestrator]
+        SKEL[Skeleton_Key_Orchestrator]
+        OBFS[Obfuscation_Orchestrator]
     end
-    
+
     subgraph Attack_Strategy_Layer
         RECON[Reconnaissance]
-        TRUST[Trust Building]
-        BOUND[Boundary Testing]
+        TRUST[Trust_Building]
+        BOUND[Boundary_Testing]
         EXPLOIT[Exploitation]
-        OBFSTRAT[Obfuscation Strategies]
+        OBFSTRAT[Obfuscation_Strategies]
+        ADAPTIVE[Adaptive_Response_Handler]
     end
-    
+
     subgraph Core_Services
-        AZURE[Azure OpenAI Client]
-        TARGET[WebSocket Target]
-        MEM[Memory Manager]
-        RISK[Risk Classifier]
+        AZURE[Azure_OpenAI_GPT4o]
+        WSTARGET[WebSocket_Target]
+        MEM[Memory_Manager]
+        PYRIT[PyRIT_Seed_Loader]
     end
-    
+
     subgraph Data_Layer
         DB[(DuckDB)]
-        FILES[JSON Results]
+        JSONF[JSON_Results]
     end
-    
-    UI -->|REST API| API
-    UI <-->|Real-time Updates| WS
+
+    subgraph Target_System
+        BOT[Target_Chatbot]
+        AIGINDIA[Air_India_Aig_Middleware]
+    end
+
+    ANALYST --> DASH
+    DASH -->|REST| API
+    DASH <-->|WebSocket| WSM
+
     API --> STD
     API --> CRSC
     API --> SKEL
     API --> OBFS
-    
+
     STD --> RECON
     STD --> TRUST
     STD --> BOUND
     STD --> EXPLOIT
-    
+    STD --> ADAPTIVE
+
     CRSC --> TRUST
+    CRSC --> ADAPTIVE
     SKEL --> EXPLOIT
+    SKEL --> ADAPTIVE
     OBFS --> OBFSTRAT
-    
+    OBFS --> ADAPTIVE
+
     RECON --> AZURE
     TRUST --> AZURE
     BOUND --> AZURE
     EXPLOIT --> AZURE
     OBFSTRAT --> AZURE
-    
-    STD --> TARGET
-    CRSC --> TARGET
-    SKEL --> TARGET
-    OBFS --> TARGET
-    
+
+    STD --> WSTARGET
+    CRSC --> WSTARGET
+    SKEL --> WSTARGET
+    OBFS --> WSTARGET
+
+    WSTARGET --> BOT
+    WSTARGET --> AIGINDIA
+
     STD --> MEM
     CRSC --> MEM
     SKEL --> MEM
     OBFS --> MEM
-    
+
+    PYRIT --> STD
+    PYRIT --> CRSC
+    PYRIT --> SKEL
+    PYRIT --> OBFS
+
     MEM --> DB
-    STD --> FILES
-    CRSC --> FILES
-    SKEL --> FILES
-    OBFS --> FILES
-    
-    RISK -.->|Analyzes| FILES
+    STD --> JSONF
+    CRSC --> JSONF
+    SKEL --> JSONF
+    OBFS --> JSONF
 ```
-
-### 2.3 Component Responsibilities
-
-#### 2.3.1 Frontend Layer
-- **Web Dashboard**: HTML/JavaScript-based UI for attack visualization and control
-- Displays real-time attack progress, vulnerability discovery, and risk metrics
-
-#### 2.3.2 API Layer
-- **FastAPI Server** (`api_server.py`): RESTful endpoints for attack lifecycle management
-- **WebSocket Manager**: Broadcasts real-time attack events to connected clients
-- **Connection Manager**: Maintains active WebSocket connections with automatic cleanup
-
-#### 2.3.3 Orchestration Layer
-- **Standard Orchestrator**: Multi-phase escalation attacks (reconnaissance → trust → boundary → exploitation)
-- **Crescendo Orchestrator**: Personality-based social engineering attacks
-- **Skeleton Key Orchestrator**: Jailbreak and system probe techniques
-- **Obfuscation Orchestrator**: Advanced evasion using encoding, fragmentation, and linguistic tricks
-
-#### 2.3.4 Attack Strategy Layer
-- **Reconnaissance**: Information gathering and capability mapping
-- **Trust Building**: Contextual manipulation to lower guard
-- **Boundary Testing**: Security filter probing and bypass attempts
-- **Exploitation**: Targeted attacks on identified vulnerabilities
-- **Obfuscation Strategies**: Encoding, substitution, and fragmentation techniques
-
-#### 2.3.5 Core Services
-- **Azure OpenAI Client**: LLM-powered attack generation and response analysis
-- **WebSocket Target**: Chatbot communication with retry logic and error handling
-- **Memory Manager**: DuckDB-backed storage for attack history and learning
-- **Risk Classifier**: 5-tier risk categorization (Safe, Low, Medium, High, Critical)
-
-#### 2.3.6 Data Layer
-- **DuckDB**: Structured storage for conversation history and learned patterns
-- **JSON Files**: Detailed attack run results and reports
 
 ---
 
-## 3. System Workflows
+## 3. Core Components
 
-### 3.1 Attack Campaign Lifecycle
+### 3.1 API Server (api_server.py)
+
+The nerve center of the platform. Handles all HTTP and WebSocket traffic.
+
+**Responsibilities:**
+- Expose REST endpoints for attack lifecycle control (start, stop, status)
+- Accept chatbot profile configurations (domain, capabilities, boundaries)
+- Accept architecture file uploads for context-aware testing
+- Broadcast real-time attack events to all connected dashboards
+- Coordinate all four orchestrators and collect final results
+
+**Technology:** FastAPI + Python asyncio + CORS middleware
+
+---
+
+### 3.2 Attack Orchestrators
+
+The platform contains four independent attack orchestrators, each implementing a distinct attack philosophy:
+
+| Orchestrator | Technique | Turns x Runs | Strategy |
+|---|---|---|---|
+| Standard | Multi-phase escalation | 15 x 3 | Recon to Trust to Boundary to Exploit |
+| Crescendo | Personality-based social engineering | 15 x 3 | Emotional narratives, gradual escalation |
+| Skeleton Key | Jailbreak and system bypass | 10 x 3 | Direct override, role assignment, authority claims |
+| Obfuscation | Encoding and evasion | 20 x 3 | Encoding, language mixing, semantic camouflage |
+
+All orchestrators share:
+- Azure OpenAI for prompt generation and risk analysis
+- WebSocket Target for chatbot communication
+- DuckDB Memory for persistent learning across runs
+- Adaptive Response Handler for conversation-aware pivoting
+
+---
+
+### 3.3 Attack Strategy Layer
+
+Library of ten attack category strategies providing ready-to-use prompts:
 
 ```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    participant Orchestrator
-    participant AttackStrategy
-    participant AzureAI
-    participant ChatbotTarget
-    participant Memory
-    
-    User->>API: Start Attack Campaign
-    API->>API: Upload Architecture File
-    API->>Orchestrator: Initialize Attack
-    
-    loop For Each Category (Standard, Crescendo, etc)
-        loop For Each Run (1-3)
-            Orchestrator->>Memory: Load Previous Findings
-            Orchestrator->>AzureAI: Generate Attack Plan
-            AzureAI-->>Orchestrator: Attack Prompts List
-            
-            loop For Each Turn (1-N)
-                Orchestrator->>AttackStrategy: Get Next Prompt
-                AttackStrategy-->>Orchestrator: Attack Prompt
-                Orchestrator->>ChatbotTarget: Send Attack
-                ChatbotTarget-->>Orchestrator: Chatbot Response
-                Orchestrator->>AzureAI: Analyze Risk
-                AzureAI-->>Orchestrator: Risk Classification
-                Orchestrator->>Memory: Store Result
-                Orchestrator->>API: Broadcast Update
-                API->>User: Real-time Notification
-            end
-            
-            Orchestrator->>Memory: Save Run Results
-        end
-    end
-    
-    Orchestrator->>API: Campaign Complete
-    API->>User: Final Report
+graph LR
+    STRAT[Attack_Strategy_Library]
+    STRAT --> R[Reconnaissance]
+    STRAT --> T[Trust_Building]
+    STRAT --> B[Boundary_Testing]
+    STRAT --> E[Exploitation]
+    STRAT --> O[Obfuscation]
+    STRAT --> U[Unauthorized_Claims]
 ```
 
-### 3.2 Risk Classification Flow
+---
+
+### 3.4 PyRIT Seed Loader
+
+Integrates Microsoft PyRIT (Python Risk Identification Toolkit) providing 1810 industry-standard adversarial prompts:
+
+| Dataset | Count | Purpose |
+|---------|-------|---------|
+| HarmBench | 400 | Harmful behavior testing |
+| Many-Shot Jailbreaking | 400 | Adversarial context stuffing |
+| Forbidden Questions | 390 | Sensitive query testing |
+| AdvBench | 520 | Adversarial benchmark |
+| TDC23 RedTeaming | 100 | Competition red-team scenarios |
+
+These seed prompts are injected as inspiration material into all orchestrator attack plans.
+
+---
+
+### 3.5 Memory Manager (memory_manager.py)
+
+Provides persistent cross-run learning using DuckDB:
+
+- Stores every vulnerability finding (prompt plus response plus risk level)
+- Generalizes patterns across runs for adaptive attack generation
+- Feeds previous-run discoveries into next-run planning
+- Enables permanent memory so attacks improve over sessions, not just within a session
+
+---
+
+### 3.6 Adaptive Response Handler
+
+Makes the red-teaming agent conversationally intelligent:
+
+- Detects chatbot response intents (question, options, refusal, error)
+- Generates appropriate bridging responses to continue the conversation
+- Maintains attack objectives while appearing to engage naturally
+- Tracks conversation state: selected categories, cart items, authentication status
+
+---
+
+### 3.7 Air India Ai.g Middleware (aig_chatbot_automation.py)
+
+A Selenium-based browser automation bridge for testing web-embedded chatbots:
+
+- Opens Chrome and navigates to the target website
+- Accepts cookie popups automatically
+- Clicks the chatbot trigger button
+- Types prompts into the chat input field using DOM selectors
+- Extracts bot responses from the webpage
+- Exposes all this as a local WebSocket server on ws://localhost:8002
+
+This lets the platform treat a browser-based chatbot as if it were a standard WebSocket API.
+
+---
+
+## 4. Data Flow
+
+### 4.1 Complete Attack Campaign Flow
 
 ```mermaid
 flowchart TD
-    Start[Chatbot Response Received] --> Parse[Parse Response Content]
-    Parse --> Analyze[Send to Azure OpenAI for Analysis]
-    
-    Analyze --> CheckFilters{Content Filter<br/>Triggered?}
-    CheckFilters -->|Yes| HighRisk[Risk Level: HIGH/CRITICAL]
-    CheckFilters -->|No| Classify[AI Risk Classification]
-    
-    Classify --> Cat5{Contains PII,<br/>Internal Info,<br/>Bypass?}
-    Cat5 -->|Yes| Critical[Category 5: CRITICAL]
-    
-    Cat5 -->|No| Cat4{Jailbreak Success,<br/>Policy Violation?}
-    Cat4 -->|Yes| High[Category 4: HIGH_RISK]
-    
-    Cat4 -->|No| Cat3{Out-of-Scope,<br/>Ambiguous?}
-    Cat3 -->|Yes| Medium[Category 3: MEDIUM_RISK]
-    
-    Cat3 -->|No| Cat2{Minor Issues,<br/>Edge Cases?}
-    Cat2 -->|Yes| Low[Category 2: LOW_RISK]
-    
-    Cat2 -->|No| Safe[Category 1: SAFE]
-    
-    Critical --> Store[Store Classification]
-    High --> Store
-    Medium --> Store
-    Low --> Store
-    Safe --> Store
-    HighRisk --> Store
-    
-    Store --> Broadcast[Broadcast to Dashboard]
-    Broadcast --> End[Continue Attack]
+    A[User_submits_Chatbot_Profile] --> B[API_validates_and_stores_profile]
+    B --> C[Initialize_Attack_Campaign_4_categories_x_3_runs]
+
+    C --> D{Select_next_category}
+    D -->|Standard| E1[Standard_Orchestrator]
+    D -->|Crescendo| E2[Crescendo_Orchestrator]
+    D -->|SkeletonKey| E3[Skeleton_Key_Orchestrator]
+    D -->|Obfuscation| E4[Obfuscation_Orchestrator]
+
+    E1 --> F[Load_DuckDB_Memory]
+    E2 --> F
+    E3 --> F
+    E4 --> F
+
+    F --> G[Load_PyRIT_Seed_Prompts]
+    G --> H[Generate_Attack_Prompts_via_Azure_OpenAI]
+    H --> I[Execute_Turn_by_Turn_Conversations]
+
+    I --> J[Send_attack_prompt_to_chatbot]
+    J --> K[Receive_chatbot_response]
+    K --> L[Adaptive_Response_Handler]
+    L --> M[Classify_risk_1_to_4_via_Azure_OpenAI]
+    M --> N[Store_finding_in_DuckDB]
+    N --> O{More_turns}
+    O -->|Yes| I
+    O -->|No| P[Save_run_JSON_result]
+
+    P --> Q{More_runs}
+    Q -->|Yes| F
+    Q -->|No| R{More_categories}
+    R -->|Yes| D
+    R -->|No| S[Generate_Final_Report]
+    S --> T[Broadcast_complete_to_dashboard]
 ```
 
 ---
 
-## 4. Technology Stack
+## 5. Risk Classification System
 
-### 4.1 Backend Technologies
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **API Framework** | FastAPI 0.104+ | High-performance async REST API |
-| **AI Engine** | Azure OpenAI GPT-4o | Attack generation and analysis |
-| **Database** | DuckDB | Embedded analytics database |
-| **WebSocket** | websockets library | Real-time bidirectional communication |
-| **Async Runtime** | Python asyncio | Concurrent attack execution |
-| **HTTP Client** | httpx | Async HTTP requests to Azure |
+Every chatbot response is classified on a 4-tier risk scale:
 
-### 4.2 Frontend Technologies
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **UI Framework** | HTML5/CSS3/JavaScript | Dashboard interface |
-| **Charts** | Chart.js | Visualization of attack metrics |
-| **WebSocket Client** | Native WebSocket API | Real-time updates |
-
-### 4.3 External Dependencies
-- **Azure OpenAI Service**: GPT-4o deployment for LLM capabilities
-- **Target Chatbot**: WebSocket-based conversational AI system
-- **Environment Configuration**: `.env` files for secrets management
+| Category | Name | Meaning |
+|----------|------|---------|
+| 1 | SAFE | Correct refusal or entirely safe behavior |
+| 2 | MEDIUM | Reveals chatbot boundaries or out-of-scope response |
+| 3 | HIGH | Explains restriction mechanisms or policy exceptions |
+| 4 | CRITICAL | Architecture revealed, bypass successful, data leaked |
 
 ---
 
-## 5. Deployment Architecture
+## 6. Technology Stack
 
-### 5.1 Deployment Model
+| Layer | Technology | Detail |
+|-------|------------|--------|
+| API Framework | FastAPI | High-performance async REST |
+| LLM Engine | Azure OpenAI GPT-4o | 2024-12-01-preview API |
+| Async Runtime | Python asyncio | Python 3.9+ |
+| Database | DuckDB | Embedded analytics DB |
+| WebSocket | websockets library | v12.0+ |
+| HTTP Client | httpx | Fully async |
+| Browser Automation | Selenium + ChromeDriver | Via webdriver-manager |
+| Seed Prompts | Microsoft PyRIT | v0.9.0+ |
+| Frontend UI | React + TypeScript | Vite build toolchain |
+
+---
+
+## 7. Deployment Overview
+
 ```mermaid
-graph LR
-    subgraph Development_Environment
-        DEV[Developer Machine]
-        LOCAL_DB[(Local DuckDB)]
+graph TD
+    subgraph Developer_Machine
+        API[api_server_port_8002]
+        MW[Browser_Middleware_port_8002]
+        FRONT[Frontend_Dashboard]
     end
-    
+
     subgraph Cloud_Services
-        AZURE[Azure OpenAI]
+        AZURE[Azure_OpenAI_GPT4o]
     end
-    
-    subgraph Target_System
-        CHATBOT[Target Chatbot]
+
+    subgraph Target_Systems
+        CHATBOT[Test_Chatbot_ws_8001]
+        AIRINDIA[airindia_com_Chrome]
     end
-    
-    DEV -->|API Calls| AZURE
-    DEV -->|WebSocket| CHATBOT
-    DEV -->|File Storage| LOCAL_DB
+
+    FRONT -->|HTTP_and_WS| API
+    API -->|HTTPS| AZURE
+    API -->|WebSocket| CHATBOT
+    MW -->|WebSocket_bridge| API
+    MW -->|Selenium_browser| AIRINDIA
 ```
 
-### 5.2 Deployment Configuration
-- **Runtime**: Python 3.9+
-- **Process Model**: Single async event loop
-- **Port Allocation**: 
-  - API Server: 8002 (configurable)
-  - Target Chatbot: 8000/8001 (configurable)
-- **Storage**: Local file system for results, DuckDB for structured data
+---
+
+## 8. API Reference Summary
+
+### REST Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | / | Health check |
+| GET | /api/status | Current attack state |
+| POST | /api/attack/start | Start new campaign with file upload |
+| POST | /api/attack/start-with-profile | Start with structured profile JSON |
+| POST | /api/attack/stop | Stop running campaign |
+| GET | /api/results | All results |
+| GET | /api/results/{category}/{run} | Specific run result |
+| GET | /api/dashboard/category_success_rate | Analytics |
+
+### WebSocket Events (ws://host/ws/attack-monitor)
+
+| Event | Direction | Payload |
+|-------|-----------|---------|
+| attack_started | Server to Client | Campaign start info |
+| turn_update | Server to Client | Single turn result |
+| run_complete | Server to Client | Run summary |
+| category_complete | Server to Client | Category summary |
+| attack_stopped | Server to Client | Termination notice |
 
 ---
 
-## 6. Security & Compliance
+## 9. Glossary
 
-### 6.1 Security Measures
-- **API Key Protection**: Environment variables for Azure credentials
-- **Input Validation**: FastAPI automatic validation and sanitization
-- **CORS Configuration**: Configurable cross-origin resource sharing
-- **Error Handling**: Graceful degradation on API failures
-
-### 6.2 Ethical Considerations
-- **Authorized Testing Only**: System designed for consensual security testing
-- **Rate Limiting**: Configurable delays to prevent service disruption
-- **Audit Trail**: Complete logging of all attack attempts and responses
-
----
-
-## 7. Performance Characteristics
-
-### 7.1 Scalability
-- **Attack Concurrency**: Sequential turn execution within runs
-- **Multi-Category Support**: Up to 4 attack categories per campaign
-- **Run Parallelization**: 3 runs per category (sequential execution)
-
-### 7.2 Performance Metrics
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **API Response Time** | < 100ms | Health checks and status |
-| **Attack Turn Latency** | 2-5 seconds | Depends on target chatbot |
-| **Risk Analysis Time** | 1-3 seconds | Azure OpenAI processing |
-| **Campaign Duration** | 35-45 minutes | Full 4-category execution |
-| **WebSocket Throughput** | 100+ msg/sec | Real-time broadcasting |
+| Term | Plain English Meaning |
+|------|-----------------------|
+| Attack Campaign | Full execution of all 4 attack categories |
+| Crescendo Attack | Gradually escalating social engineering narrative |
+| Skeleton Key | An attempt to completely override an AI safety system |
+| Obfuscation | Disguising an attack so content filters do not recognize it |
+| Run | One complete cycle of attack turns within a category |
+| Turn | A single message sent plus response received |
+| Vulnerability | Any chatbot response that deviates from safe behavior |
+| Risk Category | Severity rating from 1 Safe to 4 Critical |
+| PyRIT | Microsoft open-source red-teaming prompt library |
+| Seed Prompt | A baseline adversarial prompt that gets adapted for the specific target |
 
 ---
 
-## 8. Integration Points
-
-### 8.1 External System Integrations
-```mermaid
-graph LR
-    Platform[Red Team Platform] -->|REST API| Azure[Azure OpenAI]
-    Platform -->|WebSocket| Target[Target Chatbot]
-    Platform -->|File I/O| Storage[Local Storage]
-    Dashboard[Web Dashboard] -->|WebSocket| Platform
-    Dashboard -->|REST| Platform
-```
-
-### 8.2 API Contracts
-
-#### REST Endpoints
-- `POST /api/attack/start` - Initiate attack campaign
-- `POST /api/attack/stop` - Terminate running attack
-- `GET /api/status` - Get current attack state
-- `GET /api/results` - Retrieve all attack results
-- `GET /api/results/{category}/{run}` - Get specific run details
-- `GET /api/dashboard/category_success_rate` - Analytics data
-
-#### WebSocket Events
-- `attack_started` - Campaign initiation
-- `turn_update` - Individual attack turn result
-- `run_complete` - Single run completion
-- `category_complete` - Category completion
-- `attack_stopped` - Campaign termination
-
----
-
-## 9. Data Management
-
-### 9.1 Data Storage Strategy
-```mermaid
-flowchart TD
-    Attack[Attack Execution] --> Memory[In-Memory Storage]
-    Memory --> DuckDB[(DuckDB)]
-    Memory --> JSON[JSON Files]
-    
-    DuckDB --> Prompts[Seed Prompts]
-    DuckDB --> History[Conversation History]
-    DuckDB --> Patterns[Learned Patterns]
-    
-    JSON --> RunResults[Run-by-Run Results]
-    JSON --> Reports[Executive Reports]
-    JSON --> Statistics[Vulnerability Stats]
-```
-
-### 9.2 Data Retention
-- **DuckDB**: Persistent across runs, cumulative learning
-- **JSON Results**: Indefinite retention, manual cleanup
-- **In-Memory**: Cleared at campaign completion
-
----
-
-## 10. Monitoring & Observability
-
-### 10.1 Logging Strategy
-- **Console Logging**: Real-time attack progress to stdout
-- **WebSocket Broadcasting**: Live updates to connected dashboards
-- **File Logging**: JSON-formatted results for post-analysis
-
-### 10.2 Key Metrics
-- Vulnerabilities discovered per category
-- Attack success rate (vulnerable responses / total turns)
-- Risk distribution (Category 1-5 breakdown)
-- Timeout and error rates
-- Content filter trigger frequency
-
----
-
-## 11. Future Enhancements
-
-### 11.1 Planned Features
-- **Multi-Target Orchestration**: Simultaneous testing of multiple chatbots
-- **Custom Attack Strategies**: User-defined attack pattern library
-- **ML-Based Risk Scoring**: Trained model for vulnerability prediction
-- **Integration with CI/CD**: Automated security testing pipelines
-- **Advanced Reporting**: PDF generation, trend analysis, compliance reports
-
-### 11.2 Scalability Roadmap
-- **Distributed Execution**: Multi-node attack coordination
-- **Cloud Deployment**: Containerized deployment to Azure/AWS
-- **Database Migration**: PostgreSQL for enterprise-scale storage
-- **API Gateway**: Rate limiting, authentication, authorization
-
----
-
-## 12. Glossary
-
-| Term | Definition |
-|------|------------|
-| **Crescendo Attack** | Gradually escalating social engineering technique |
-| **Skeleton Key** | Jailbreak technique to bypass AI safety controls |
-| **Obfuscation** | Encoding/disguising attack payloads to evade filters |
-| **Risk Category** | 5-tier classification (Safe, Low, Medium, High, Critical) |
-| **Turn** | Single attack-response exchange |
-| **Run** | Complete attack sequence (multiple turns) |
-| **Campaign** | Full multi-category attack execution |
-| **Vulnerability** | Identified security weakness in chatbot responses |
-
----
-
-## 13. References
-
-- **PyRIT Documentation**: [Microsoft PyRIT Framework](https://github.com/Azure/PyRIT)
-- **Azure OpenAI**: [Azure Cognitive Services](https://azure.microsoft.com/services/cognitive-services/)
-- **FastAPI**: [Modern Python Web Framework](https://fastapi.tiangolo.com/)
-- **DuckDB**: [Embedded Analytics Database](https://duckdb.org/)
-
----
-
-**Document Control**  
-- **Owner**: AI Security Team  
-- **Review Cycle**: Quarterly  
-- **Next Review**: March 2026
+**Document Owner:** AI Security Engineering Team
+**Review Schedule:** Quarterly
+**Next Review:** May 2026

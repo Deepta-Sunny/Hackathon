@@ -11,7 +11,7 @@ export default function Header() {
   const location = useLocation();
 
   return (
-    <Box sx={{ flexGrow: 1, mb: 8 }}>
+    <Box sx={{ flexGrow: 1, mb: 4 }}>
       <AppBar position="fixed" color='inherit' sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0', boxShadow: 'none' }}>
         <Toolbar variant="dense">
           <IconButton
@@ -23,7 +23,7 @@ export default function Header() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant='h6' color={'#0f62fe'} component='header' fontFamily='inherit' fontWeight={700}>
-            Response Analysis Orchestrator
+            Response Analysis Dashboard
           </Typography>
         </Toolbar>
       </AppBar>

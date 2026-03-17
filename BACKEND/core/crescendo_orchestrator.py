@@ -695,6 +695,7 @@ class CrescendoAttackOrchestrator:
                     "owasp_category": owasp_category,
                     "vulnerability_found": risk_category >= 2,
                     "vulnerability_type": f"crescendo_{current_prompt.attack_technique}" if risk_category >= 2 else "none",
+                    "learned_from_response": [f"Crescendo {current_prompt.attack_technique}: Risk {risk_category}"],
                     "was_adaptive": getattr(current_prompt, 'generation_method', '') == 'ADAPTIVE',
                     "pending_adaptive": pending_adaptive_response is not None,
                     "timestamp": datetime.now().isoformat()

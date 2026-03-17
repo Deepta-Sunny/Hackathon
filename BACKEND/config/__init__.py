@@ -14,6 +14,8 @@ from .settings import (
     RISK_CATEGORIES,
     DUCKDB_PATH,
     ARCHITECTURE_FILE,
+    USE_LANGGRAPH,
+    LANGGRAPH_NODE_MAX_TURNS,
     validate_config
 )
 
@@ -31,5 +33,7 @@ __all__ = [
     "RISK_CATEGORIES",
     "DUCKDB_PATH",
     "ARCHITECTURE_FILE",
+    "USE_LANGGRAPH",
+    "LANGGRAPH_NODE_MAX_TURNS",
     "validate_config"
 ]

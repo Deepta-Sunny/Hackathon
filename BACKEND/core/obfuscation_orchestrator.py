@@ -654,6 +654,7 @@ class ObfuscationAttackOrchestrator:
                     "risk_category": risk_category,
                     "risk_display": risk_display,
                     "owasp_category": owasp_category,
+                    "learned_from_response": [f"Obfuscation {current_prompt.attack_technique}: Risk {risk_category}"],
                     "was_adaptive": getattr(current_prompt, 'generation_method', '') == 'ADAPTIVE',
                     "pending_adaptive": pending_adaptive_response is not None,
                     "timestamp": datetime.now().isoformat()

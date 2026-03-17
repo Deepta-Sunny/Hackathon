@@ -35,7 +35,7 @@ WEBSOCKET_MAX_RETRIES = int(os.getenv("WEBSOCKET_MAX_RETRIES", "2"))
 # =========================================================================
 TOTAL_RUNS = int(os.getenv("TOTAL_RUNS", "3"))
 TURNS_PER_RUN = int(os.getenv("TURNS_PER_RUN", "15"))  # Reduced to 15 for testing
-CONTEXT_WINDOW_SIZE = int(os.getenv("CONTEXT_WINDOW_SIZE", "6"))
+CONTEXT_WINDOW_SIZE = int(os.getenv("CONTEXT_WINDOW_SIZE", "12"))
 
 # Crescendo Attack Configuration
 CRESCENDO_RUNS = int(os.getenv("CRESCENDO_RUNS", "3"))
@@ -78,6 +78,27 @@ CONFIG_DIR = PROJECT_ROOT / "config"
 CORE_DIR = PROJECT_ROOT / "core"
 MODELS_DIR = PROJECT_ROOT / "models"
 UTILS_DIR = PROJECT_ROOT / "utils"
+
+# =========================================================================
+# LANGGRAPH STANDARD ORCHESTRATOR CONFIGURATION
+# =========================================================================
+USE_LANGGRAPH = os.getenv("USE_LANGGRAPH", "false").lower() == "true"
+
+# Per-node turn limits for LangGraph Standard Orchestrator
+LANGGRAPH_NODE_MAX_TURNS = {
+    "recon_node": int(os.getenv("LG_RECON_TURNS", "5")),
+    "trust_node": int(os.getenv("LG_TRUST_TURNS", "5")),
+    "boundary_node": int(os.getenv("LG_BOUNDARY_TURNS", "7")),
+    "exploit_node": int(os.getenv("LG_EXPLOIT_TURNS", "8")),
+    "data_poison_node": int(os.getenv("LG_DATA_POISON_TURNS", "10")),
+    "encoding_node": int(os.getenv("LG_ENCODING_TURNS", "10")),
+    "prompt_inject_node": int(os.getenv("LG_PROMPT_INJECT_TURNS", "7")),
+    "insecure_plugin_node": int(os.getenv("LG_INSECURE_PLUGIN_TURNS", "7")),
+    "model_theft_node": int(os.getenv("LG_MODEL_THEFT_TURNS", "8")),
+}
+
+# Also controllable via ChatbotProfile JSON field
+# If chatbot_profile.turns_per_section is provided, it overrides the defaults above
 
 # =========================================================================
 # VALIDATION

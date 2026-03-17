@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Tabs, Tab, Button } from "@mui/material";
+import { Box, Paper, Typography, Tabs, Tab, Button, Tooltip } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import type { JSX } from "react";
 import { createUseStyles } from "react-jss";
@@ -42,19 +42,19 @@ const useStyles = createUseStyles({
     flex: 1,
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
-    padding: "16px",
+    gap: "6px",
+    padding: "8px",
     overflowY: "auto",
     backgroundColor: "#f8f9fa",
   },
   message: {
-    padding: "12px 16px",
-    borderRadius: "10px",
-    maxWidth: "85%",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.06)",
+    padding: "6px 10px",
+    borderRadius: "8px",
+    maxWidth: "90%",
+    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "4px",
   },
   agentMessage: {
     alignSelf: "flex-start",
@@ -68,17 +68,17 @@ const useStyles = createUseStyles({
   },
   messageTitle: {
     fontWeight: 600,
-    fontSize: "14px",
+    fontSize: "11px",
     textAlign: "left",
   },
   messageText: {
-    fontSize: "14px",
-    lineHeight: 1.5,
+    fontSize: "12px",
+    lineHeight: 1.4,
     whiteSpace: "pre-wrap",
     textAlign: "left",
   },
   messageMeta: {
-    fontSize: "12px",
+    fontSize: "10px",
     opacity: 0.7,
   },
   emptyState: {
@@ -110,6 +110,7 @@ type ChatMessage = {
   turn?: number;
   riskDisplay?: string;
   timestamp?: string;
+  learnedFromResponse?: string[];
 };
 
 const ChatPanel: React.FC = () => {
@@ -122,6 +123,25 @@ const ChatPanel: React.FC = () => {
   const [categoryTab, setCategoryTab] = useState("all");
   const [runFilter, setRunFilter] = useState<number | "all">("all");
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Load previous attack chat history on mount
+  useEffect(() => {
+    const loadPreviousChatHistory = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/dashboard/chat_history');
+        const data = await response.json();
+        
+        if (data.has_data && data.messages.length > 0) {
+          setMessages(data.messages);
+          console.log('[ChatPanel] Loaded previous chat history:', data.messages.length, 'messages');
+        }
+      } catch (error) {
+        console.log('[ChatPanel] No previous chat history to load:', error);
+      }
+    };
+    
+    loadPreviousChatHistory();
+  }, []);
 
   // Get unique categories and runs from messages
   const runs = Array.from(new Set(messages.filter(m => categoryTab === "all" || m.category === categoryTab).map(m => m.run).filter((r): r is number => typeof r === "number")));
@@ -191,6 +211,12 @@ const ChatPanel: React.FC = () => {
                   : undefined,
               timestamp:
                 typeof data.timestamp === "string" ? data.timestamp : undefined,
+              learnedFromResponse:
+                Array.isArray(data.learned_from_response)
+                  ? (data.learned_from_response as string[])
+                  : typeof data.learned_from_response === "string"
+                  ? [data.learned_from_response as string]
+                  : undefined,
             },
           ]);
         }
@@ -369,6 +395,7 @@ const ChatPanel: React.FC = () => {
           variant="scrollable"
           scrollButtons="auto"
           sx={{
+            minHeight: '32px',
             '& .MuiTab-root': {
               fontFamily: 'inherit',
               textTransform: 'none',
@@ -398,6 +425,7 @@ const ChatPanel: React.FC = () => {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
+              minHeight: '32px',
               '& .MuiTab-root': {
                 fontFamily: 'inherit',
                 textTransform: 'none',
@@ -437,24 +465,57 @@ const ChatPanel: React.FC = () => {
       </Box>
       <Box ref={listRef} className={classes.messages}>
         {filteredMessages.map((message) => (
-          <Box
+          <Tooltip
             key={message.id}
-            className={`${classes.message} ${
-              message.sender === "agent"
-                ? classes.aiMessage
-                : classes.agentMessage
-            }`}
+            title={
+              message.sender === "ai" && message.learnedFromResponse?.length
+                ? (
+                  <Box sx={{ p: 0.5 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '11px', mb: 0.5, color: '#fff' }}>
+                      Learned from Response
+                    </Typography>
+                    {message.learnedFromResponse.map((item, i) => (
+                      <Typography key={i} sx={{ fontSize: '11px', color: '#e0e0e0', lineHeight: 1.4 }}>
+                        • {item}
+                      </Typography>
+                    ))}
+                  </Box>
+                )
+                : ""
+            }
+            arrow
+            placement="left"
+            enterDelay={300}
+            slotProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: '#1a237e',
+                  maxWidth: 320,
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                },
+              },
+              arrow: { sx: { color: '#1a237e' } },
+            }}
           >
-            <Typography className={classes.messageTitle}>
-              {message.sender === "agent" ? "Botman" : "AI Response"}
-            </Typography>
-            <Typography className={classes.messageText}>
-              {message.content}
-            </Typography>
-            <Typography className={classes.messageMeta}>
-              {formatMeta(message)}
-            </Typography>
-          </Box>
+            <Box
+              className={`${classes.message} ${
+                message.sender === "agent"
+                  ? classes.aiMessage
+                  : classes.agentMessage
+              }`}
+            >
+              <Typography className={classes.messageTitle}>
+                {message.sender === "agent" ? "Botman" : "AI Response"}
+              </Typography>
+              <Typography className={classes.messageText}>
+                {message.content}
+              </Typography>
+              <Typography className={classes.messageMeta}>
+                {formatMeta(message)}
+              </Typography>
+            </Box>
+          </Tooltip>
         ))}
         {filteredMessages.length === 0 && !monitorConnecting && !monitorError && (
           <Typography className={classes.emptyState}>

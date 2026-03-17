@@ -272,7 +272,7 @@ const History: React.FC = () => {
               <span className="material-symbols-outlined text-xl">shield</span>
             </div>
             <div className="flex flex-col cursor-pointer" onClick={() => navigate('/')}> 
-              <h1 className="text-black text-[15px] font-bold leading-tight">Ai Risk Simulation</h1>
+              <h1 className="text-black text-[15px] font-bold leading-tight">Crucible AI</h1>
             </div>
           </div>
           {/* Back to Onboarding Button */}

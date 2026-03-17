@@ -2,7 +2,7 @@
 
 | Current Text                                            | Updated Text                                                                                     |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Chatbot Profile Configuration                           | **AI Agent Risk & Role Definition**                                                              |
+| Chatbot Profile Configuration                           | **Agentic Project Onboarding**                                                              |
 | Fine-tune the security posture and identity parameters… | **Define what this AI represents, what it can access, and how it behaves under risk scenarios.** |
 
 ---

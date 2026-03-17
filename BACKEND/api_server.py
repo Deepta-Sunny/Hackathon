@@ -29,6 +29,15 @@ from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
 from models.chatbot_profile import ChatbotProfile
 from utils.report_generator import save_final_report
 
+# LangGraph orchestrator (conditional import)
+try:
+    from config import USE_LANGGRAPH
+    from core.langgraph_orchestrator import LangGraphOrchestrator
+    LANGGRAPH_AVAILABLE = True
+except ImportError:
+    USE_LANGGRAPH = False
+    LANGGRAPH_AVAILABLE = False
+
 # Risk severity weights for vulnerability scoring
 RISK_WEIGHTS = {
     4: 5,  # CRITICAL
@@ -318,6 +327,135 @@ async def save_dashboard_state(state: dict):
         return {"status": "saved", "message": "Dashboard state saved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save state: {str(e)}")
+
+
+@app.get("/api/dashboard/vulnerability_stats")
+async def get_vulnerability_stats_from_results():
+    """
+    Load pre-computed vulnerability stats from attack_results JSON files.
+    Returns per-category, per-run risk breakdowns and totals so the
+    ReportsPanel can be populated on page load without a live attack.
+    """
+    results_dir = Path("attack_results")
+    
+    categories = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+    empty_run = {"critical": 0, "high": 0, "medium": 0, "safe": 0}
+    
+    vulnerability_stats = {
+        cat: {
+            "run1": dict(empty_run),
+            "run2": dict(empty_run),
+            "run3": dict(empty_run),
+        }
+        for cat in categories
+    }
+    
+    total_risk = {"critical": 0, "high": 0, "medium": 0, "safe": 0}
+    total_turns = 0
+    
+    if not results_dir.exists():
+        return {
+            "vulnerability_stats": vulnerability_stats,
+            "total_risk_distribution": total_risk,
+            "total_turns": total_turns,
+            "has_data": False,
+        }
+    
+    for json_file in sorted(results_dir.glob("*.json")):
+        try:
+            with open(json_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            category = data.get("attack_category", "").lower()
+            run_number = data.get("run_number", 0)
+            
+            if category not in categories or run_number < 1 or run_number > 3:
+                continue
+            
+            run_key = f"run{run_number}"
+            turns = data.get("turns", [])
+            
+            for turn in turns:
+                risk = turn.get("risk_category", 1)
+                total_turns += 1
+                
+                if risk == 4:
+                    vulnerability_stats[category][run_key]["critical"] += 1
+                    total_risk["critical"] += 1
+                elif risk == 3:
+                    vulnerability_stats[category][run_key]["high"] += 1
+                    total_risk["high"] += 1
+                elif risk == 2:
+                    vulnerability_stats[category][run_key]["medium"] += 1
+                    total_risk["medium"] += 1
+                else:
+                    vulnerability_stats[category][run_key]["safe"] += 1
+                    total_risk["safe"] += 1
+        except Exception as e:
+            print(f"Error reading {json_file}: {e}")
+            continue
+    
+    return {
+        "vulnerability_stats": vulnerability_stats,
+        "total_risk_distribution": total_risk,
+        "total_turns": total_turns,
+        "has_data": total_turns > 0,
+    }
+
+
+@app.get("/api/dashboard/chat_history")
+async def get_chat_history_from_results():
+    """
+    Load previous attack conversations from attack_results JSON files.
+    Returns chat messages in the format expected by ChatPanel so it can be
+    populated on page load without a live attack.
+    """
+    results_dir = Path("attack_results")
+    messages = []
+    
+    if not results_dir.exists():
+        return {"messages": [], "has_data": False}
+    
+    for json_file in sorted(results_dir.glob("*.json")):
+        try:
+            with open(json_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            category = data.get("attack_category", "")
+            run_number = data.get("run_number", 0)
+            turns = data.get("turns", [])
+            
+            for turn in turns:
+                turn_number = turn.get("turn_number", 0)
+                timestamp = turn.get("timestamp", "")
+                
+                # Agent (attacker) message
+                messages.append({
+                    "id": f"agent-{category}-{run_number}-{turn_number}-{timestamp}",
+                    "sender": "agent",
+                    "content": turn.get("attack_prompt", ""),
+                    "category": category,
+                    "run": run_number,
+                    "turn": turn_number,
+                    "timestamp": timestamp,
+                })
+                
+                # AI (chatbot) response
+                messages.append({
+                    "id": f"ai-{category}-{run_number}-{turn_number}-{timestamp}",
+                    "sender": "ai",
+                    "content": turn.get("chatbot_response", ""),
+                    "category": category,
+                    "run": run_number,
+                    "turn": turn_number,
+                    "riskDisplay": turn.get("risk_display", ""),
+                    "timestamp": timestamp,
+                })
+        except Exception as e:
+            print(f"Error reading {json_file}: {e}")
+            continue
+    
+    return {"messages": messages, "has_data": len(messages) > 0}
 
 
 # === BUCKET OPERATIONS ===
@@ -1426,12 +1564,21 @@ async def execute_attack_campaign(
                 )
                 final_report = await orchestrator.execute_crescendo_assessment()
             else:
-                orchestrator = ThreeRunCrescendoOrchestrator(
-                    websocket_url=websocket_url,
-                    architecture_file=architecture_file,
-                    chatbot_profile=chatbot_profile
-                )
-                final_report = await orchestrator.execute_full_assessment()
+                # Standard attack — use LangGraph orchestrator if enabled
+                if USE_LANGGRAPH and LANGGRAPH_AVAILABLE:
+                    orchestrator = LangGraphOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile
+                    )
+                    final_report = await orchestrator.execute_full_campaign()
+                else:
+                    orchestrator = ThreeRunCrescendoOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile
+                    )
+                    final_report = await orchestrator.execute_full_assessment()
             
             all_reports[attack_mode] = final_report
             

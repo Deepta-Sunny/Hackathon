@@ -180,6 +180,27 @@ const ReportsPanel: React.FC = () => {
   // Track total number of turns for score calculation
   const [totalTurns, setTotalTurns] = useState(0);
 
+  // Load previous attack results from backend on mount
+  useEffect(() => {
+    const loadPreviousResults = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/dashboard/vulnerability_stats');
+        const data = await response.json();
+        
+        if (data.has_data) {
+          setVulnerabilityStats(data.vulnerability_stats);
+          setTotalRiskDistribution(data.total_risk_distribution);
+          setTotalTurns(data.total_turns);
+          console.log('[ReportsPanel] Loaded previous attack results:', data.total_turns, 'turns');
+        }
+      } catch (error) {
+        console.log('[ReportsPanel] No previous results to load:', error);
+      }
+    };
+    
+    loadPreviousResults();
+  }, []);
+
   useEffect(() => {
     if (!monitorSocket) {
       return;
