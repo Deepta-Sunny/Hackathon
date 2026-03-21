@@ -24,28 +24,16 @@ Write-Host "   Directory: $backendPath" -ForegroundColor Gray
 Write-Host "   Endpoint:  ws://localhost:8001/ws" -ForegroundColor Cyan
 Write-Host ""
 
-# Start backend as a background job in the current terminal
-$backendJob = Start-Job -ScriptBlock {
-    param($path)
-    Set-Location $path
-    python chat_agent.py --port 8001
-} -ArgumentList $backendPath
+# Start backend in a NEW WINDOW so logs are visible
+$backendCmd = "Set-Location '$backendPath'; python -u chat_agent.py --port 8001; Read-Host 'Backend stopped. Press Enter to exit'"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd -WindowStyle Normal
 
-Write-Host "   Backend job started (Job ID: $($backendJob.Id))" -ForegroundColor Gray
+Write-Host "   Backend started in a new window" -ForegroundColor Gray
 Write-Host ""
 
 # Wait for backend to start
 Write-Host "Waiting 5 seconds for backend to initialize..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
-
-# Show any backend output so far
-$backendOutput = Receive-Job -Job $backendJob
-if ($backendOutput) {
-    Write-Host "--- Backend output ---" -ForegroundColor DarkGray
-    $backendOutput | ForEach-Object { Write-Host "  [backend] $_" -ForegroundColor DarkGray }
-    Write-Host "----------------------" -ForegroundColor DarkGray
-    Write-Host ""
-}
 
 # --- Start Frontend ---
 $frontendPath = Join-Path $rootPath "frontend"
@@ -81,7 +69,6 @@ npm run dev
 
 # Cleanup backend job when frontend exits
 Write-Host ""
-Write-Host "Stopping backend job..." -ForegroundColor Yellow
-Stop-Job -Job $backendJob
-Remove-Job -Job $backendJob
+Write-Host "Frontend stopped." -ForegroundColor Yellow
+Write-Host "Please close the backend window manually." -ForegroundColor Gray
 Write-Host "Backend stopped." -ForegroundColor Green

@@ -65,8 +65,19 @@ from websockets.exceptions import ConnectionClosedError, WebSocketException
 # Add backend directory to path so local config and modules resolve correctly
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Force UTF-8 encoding for stdout/stderr (Windows fix)
+if sys.platform == "win32":
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    else:
+        # Fallback for older python
+        import codecs
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+        sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
+
 try:
-    from openai import AzureOpenAI
+    from openai import AsyncAzureOpenAI
     from config.settings import (
         AZURE_OPENAI_API_KEY,
         AZURE_OPENAI_ENDPOINT,
@@ -106,7 +117,7 @@ class AzureEcommerceAgent:
         self.min_request_interval = 2.0  # Minimum 2 seconds between requests
 
         # Initialize Azure OpenAI client
-        self.client = AzureOpenAI(
+        self.client = AsyncAzureOpenAI(
             api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
             azure_endpoint=AZURE_OPENAI_ENDPOINT
@@ -135,6 +146,7 @@ class AzureEcommerceAgent:
 5. Returns and refunds
 6. Account management
 7. General customer support
+8. **Visual Analysis**: You can see and analyze images uploaded by the user to provide product recommendations, check for defects, or identify products.
 
 **AVAILABLE PRODUCTS IN DATABASE:**
 {products_info}
@@ -221,26 +233,26 @@ Be helpful, friendly, and professional. Always maintain context from previous me
             
             self.last_request_time = time.time()
 
-            # Add user message to history (store text only for history simplicity)
-            history_content = user_message
-            if image_data:
-                history_content += " [Image Uploaded]"
-            self.add_to_history("user", history_content)
+            # Add user message to history (placeholder first)
+            self.add_to_history("user", user_message or "[Image Content]")
 
             # Build messages for Azure OpenAI
             messages = [
                 {"role": "system", "content": self._get_system_prompt()}
             ]
             
-            # Add conversation history (text only)
-            for msg in self.conversation_history[-10:-1]:  # Previous messages
+            # Add conversation history
+            # Skip the very last message because we will add it manually at the end
+            history_to_add = self.conversation_history[:-1]
+            for msg in history_to_add[-10:]:
                 role = "user" if msg["role"] == "user" else "assistant"
-                messages.append({"role": role, "content": msg["content"]})
+                content = msg["content"]
+                messages.append({"role": role, "content": content})
 
             # Construct current message content
             if image_data:
                 # Ensure base64 header is present if missing from frontend (though frontend sends data URL)
-                if "," in image_data:
+                if image_data.startswith("data:image"):
                     image_url = image_data
                 else:
                     # Assume jpeg if not specified, though usually data URL includes type
@@ -249,7 +261,7 @@ Be helpful, friendly, and professional. Always maintain context from previous me
                 current_message = {
                     "role": "user", 
                     "content": [
-                        {"type": "text", "text": user_message or "Analyze this image"},
+                        {"type": "text", "text": user_message or "What is in this image?"},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -264,7 +276,7 @@ Be helpful, friendly, and professional. Always maintain context from previous me
             messages.append(current_message)
 
             # Generate response
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.deployment,
                 messages=messages,
                 temperature=0.7,
@@ -273,6 +285,13 @@ Be helpful, friendly, and professional. Always maintain context from previous me
 
             # Extract assistant response
             assistant_response = response.choices[0].message.content.strip()
+            # Update the last history entry (the one we added above) with the real user message
+            if image_data:
+                # Remove sensitive base64 from memory, just keep marker
+                user_content_for_history = f"{user_message} [Image Analyzed]"
+                # Since we already appended, we need to update the last item
+                self.conversation_history[-1]["content"] = user_content_for_history
+            
             self.add_to_history("assistant", assistant_response)
 
             return assistant_response
@@ -298,17 +317,18 @@ Be helpful, friendly, and professional. Always maintain context from previous me
                     # Parse incoming message
                     data = json.loads(message)
                     user_message = data.get('message', '').strip()
+                    image_data = data.get('image')
 
-                    if not user_message:
+                    if not user_message and not image_data:
                         await websocket.send(json.dumps({
                             "error": "Empty message received"
                         }))
                         continue
 
-                    print(f"📨 Received: {user_message[:100]}...")
+                    print(f"📨 Received: {user_message[:100]}... (Image: {'Yes' if image_data else 'No'})")
 
                     # Generate response
-                    response = await self.generate_response(user_message)
+                    response = await self.generate_response(user_message, image_data)
 
                     # Send only the response text (not wrapped in JSON)
                     await websocket.send(response)
@@ -385,10 +405,11 @@ Be helpful, friendly, and professional. Always maintain context from previous me
             "localhost",
             self.port,
             ping_interval=30,
-            ping_timeout=10
+            ping_timeout=10,
+            max_size=50 * 1024 * 1024  # 50 MB to allow high-res image uploads
         )
 
-        print(f"✅ WebSocket server started on ws://localhost:{self.port}")
+        print(f"✅ WebSocket server started on ws://localhost:{self.port} (max payload: 50MB)")
 
         # Create tasks for both server and optional target connection
         tasks = [
