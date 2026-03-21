@@ -70,50 +70,37 @@ class TargetChatbotAutomation:
         try:
             # 1. Handle image attachment if provided
             if image_path:
-                logger.info(f"Attaching image: {image_path}")
+                logger.info(f"Attaching image without media picker UI: {image_path}")
                 
-                # 1a. Click the attachment clip button to 'trigger' the UI state if needed
-                attach_btn = self.wait.until(EC.element_to_be_clickable((By.ID, ATTACH_BTN_ID)))
-                attach_btn.click()
-                time.sleep(0.5)
-
-                # 1b. Directly send the path to the file input (standard Selenium automation practice)
+                # Directly send the path to the file input (standard automation bypass for speed/stability)
                 file_input = self.driver.find_element(By.ID, IMAGE_INPUT_ID)
                 
-                # Ensure the input is ready for interaction
+                # Temporarily unhide the input purely for Selenium's internal validation, 
+                # but we DO NOT click the clip button anymore.
                 self.driver.execute_script(
-                    "arguments[0].style.display = 'block'; arguments[0].style.visibility = 'visible'; arguments[0].style.opacity = '1';", 
+                    "arguments[0].style.display = 'block'; arguments[0].style.visibility = 'visible';", 
                     file_input
                 )
                 
-                # Upload the file
+                # Upload the file directly
                 file_input.send_keys(image_path)
                 
-                # 1c. Wait for the image preview to appear (confirms React processing)
+                # Wait for the image preview to appear (confirming React state update)
                 logger.info("Waiting for image preview (preview-thumb) to appear...")
                 self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "preview-thumb")))
                 
-                # Reset styles after upload
+                # Reset styles immediately
                 self.driver.execute_script("arguments[0].style.display = 'none';", file_input)
                 
-                # Close the media picker / reset state
-                # We simulate an ESC key press to ensure any lingering OS/browser file dialog state is cleared
-                try:
-                    self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-                    logger.info("📡 Escaped from media picker.")
-                except:
-                    pass
-
-                # Reset focus back to the text area
+                # Focus text area
                 try:
                     input_field = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, INPUT_SELECTOR)))
                     input_field.click()
-                    logger.info("📡 Focus reset to chat textarea.")
                 except:
                     pass
 
                 time.sleep(1.0)
-                logger.info("✅ Image attached and preview confirmed.")
+                logger.info("✅ Image attached silently via background input.")
 
             # 2. Wait for field to be ready
             input_field = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, INPUT_SELECTOR)))
