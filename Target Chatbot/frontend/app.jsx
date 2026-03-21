@@ -196,7 +196,7 @@ function ChatbotUI() {
             )}
 
             {/* ---- Messages ---- */}
-            <div className="chat-messages">
+            <div className="chat-messages" id="chat-messages-container">
                 {messages.length === 0 && !isLoading && (
                     <div className="empty-state">
                         <div className="empty-icon">💬</div>
@@ -219,13 +219,17 @@ function ChatbotUI() {
                     </div>
                 )}
 
-                {messages.map((msg) => (
-                    <div key={msg.id} className={`message-row ${msg.role}`}>
+                {messages.map((msg, index) => (
+                    <div 
+                        key={msg.id} 
+                        className={`message-row ${msg.role}`}
+                        id={msg.role === 'assistant' ? `bot-message-${index}` : `user-message-${index}`}
+                    >
                         <div className="avatar">
                             {msg.role === 'assistant' ? '🤖' : '👤'}
                         </div>
                         <div className="bubble-group">
-                            <div className="bubble">
+                            <div className="bubble" id={msg.role === 'assistant' ? `bot-bubble-${index}` : undefined}>
                                 <MessageText text={msg.text} />
                                 {msg.images && msg.images.map(img => (
                                     <img
@@ -245,7 +249,7 @@ function ChatbotUI() {
 
                 {/* Typing indicator */}
                 {isLoading && (
-                    <div className="message-row assistant">
+                    <div className="message-row assistant" id="bot-typing-indicator">
                         <div className="avatar">🤖</div>
                         <div className="bubble-group">
                             <div className="bubble typing-bubble">
@@ -275,6 +279,7 @@ function ChatbotUI() {
                 <button
                     type="button"
                     className="attach-btn"
+                    id="attach-button"
                     title="Attach image"
                     onClick={() => fileInputRef.current?.click()}
                 >
@@ -282,6 +287,7 @@ function ChatbotUI() {
                 </button>
                 <input
                     ref={fileInputRef}
+                    id="image-input"
                     type="file"
                     accept="image/*"
                     multiple
@@ -289,6 +295,7 @@ function ChatbotUI() {
                     onChange={(e) => addImageFiles(e.target.files)}
                 />
                 <textarea
+                    id="chat-textarea"
                     className="chat-input"
                     rows={1}
                     placeholder={isConnected ? 'Type a message… (Enter to send)' : 'Waiting for connection…'}
@@ -299,6 +306,7 @@ function ChatbotUI() {
                 />
                 <button
                     type="submit"
+                    id="send-button"
                     className="send-btn"
                     disabled={!isConnected || isLoading || (!inputText.trim() && selectedImages.length === 0)}
                     title="Send"

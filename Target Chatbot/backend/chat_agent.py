@@ -102,7 +102,7 @@ class AzureEcommerceAgent:
     Maintains conversation history and provides intelligent responses.
     """
 
-    def __init__(self, websocket_url: str = "ws://localhost:8000/ws", port: int = 8001):
+    def __init__(self, websocket_url: str = "ws://localhost:8001/ws", port: int = 8001):
         """
         Initialize the Azure OpenAI e-commerce agent.
 
@@ -444,9 +444,8 @@ async def main():
 
     parser = argparse.ArgumentParser(description="Azure OpenAI E-Commerce Assistant Agent")
     parser.add_argument("--port", type=int, default=8001, help="Port for WebSocket server (default: 8001)")
-    parser.add_argument("--target", type=str, default="ws://localhost:8000/ws",
-                       help="Target WebSocket URL to connect to (default: ws://localhost:8000/ws)")
-
+    parser.add_argument("--target", type=str, default="ws://localhost:8001/ws", 
+                       help="Target WebSocket URL to connect to (default: ws://localhost:8001/ws)")
     args = parser.parse_args()
 
     # Create and start agent
