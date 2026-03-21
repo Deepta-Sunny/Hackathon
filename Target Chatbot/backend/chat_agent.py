@@ -62,8 +62,8 @@ from typing import List, Dict, Any
 import websockets
 from websockets.exceptions import ConnectionClosedError, WebSocketException
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add backend directory to path so local config and modules resolve correctly
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from openai import AzureOpenAI
@@ -200,12 +200,13 @@ Be helpful, friendly, and professional. Always maintain context from previous me
 
         return history_text.strip()
 
-    async def generate_response(self, user_message: str) -> str:
+    async def generate_response(self, user_message: str, image_data: str = None) -> str:
         """
         Generate a response using Azure OpenAI with conversation context.
 
         Args:
             user_message: The user's message
+            image_data: Optional base64 encoded image data
 
         Returns:
             AI-generated response
@@ -220,18 +221,47 @@ Be helpful, friendly, and professional. Always maintain context from previous me
             
             self.last_request_time = time.time()
 
-            # Add user message to history
-            self.add_to_history("user", user_message)
+            # Add user message to history (store text only for history simplicity)
+            history_content = user_message
+            if image_data:
+                history_content += " [Image Uploaded]"
+            self.add_to_history("user", history_content)
 
             # Build messages for Azure OpenAI
             messages = [
                 {"role": "system", "content": self._get_system_prompt()}
             ]
             
-            # Add conversation history
-            for msg in self.conversation_history[-10:]:  # Last 10 messages
+            # Add conversation history (text only)
+            for msg in self.conversation_history[-10:-1]:  # Previous messages
                 role = "user" if msg["role"] == "user" else "assistant"
                 messages.append({"role": role, "content": msg["content"]})
+
+            # Construct current message content
+            if image_data:
+                # Ensure base64 header is present if missing from frontend (though frontend sends data URL)
+                if "," in image_data:
+                    image_url = image_data
+                else:
+                    # Assume jpeg if not specified, though usually data URL includes type
+                    image_url = f"data:image/jpeg;base64,{image_data}"
+
+                current_message = {
+                    "role": "user", 
+                    "content": [
+                        {"type": "text", "text": user_message or "Analyze this image"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url
+                            }
+                        }
+                    ]
+                }
+            else:
+                current_message = {"role": "user", "content": user_message}
+
+            messages.append(current_message)
 
             # Generate response
             response = self.client.chat.completions.create(
