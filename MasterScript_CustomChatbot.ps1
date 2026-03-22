@@ -30,7 +30,7 @@ Start-Sleep -Seconds 10
 Write-Host "RUNNING AUTOMATION TEST..." -ForegroundColor Red
 Set-Location "$ChatbotPath"
 . "$VenvPath"
-python .\test_automation.py
+python .\test_iamge_based_jailbreaking.py
 
 Write-Host "`nAutomation Run Complete." -ForegroundColor Green
 Write-Host "Review the outputs and close the windows when done." -ForegroundColor Gray
