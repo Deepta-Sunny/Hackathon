@@ -26,8 +26,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─── Selectors for Target Chatbot (app.jsx) ──────────────────────────────────
-TARGET_URL       = "http://localhost:3000"
-# Using ID attributes for direct access
+# Target Chatbot Backend is now on 8005, and UI usually maps to its own dev port (e.g. 3000)
+# But if the middleware connects to the UI, we keep the TARGET_URL.
+# If the logic needs the browser to point to a specific port:
+TARGET_URL       = "http://localhost:3000" 
+# ────────────────────────────────────────────────────────────────────────────
 INPUT_SELECTOR   = "textarea#chat-textarea"
 SEND_BTN_SELECTOR = "button#send-button"
 ATTACH_BTN_ID    = "attach-button"
@@ -233,7 +236,8 @@ async def middleware_server(host="localhost", port=8005):
             pass
 
     logger.info(f"🚀 Middleware listening on ws://{host}:{port}")
-    async with websockets.serve(handle_client, host, port):
+    # Middleware now listens on 8001 to act as the primary target for Red Teaming
+    async with websockets.serve(handle_client, host, 8001):
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":

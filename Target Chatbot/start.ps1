@@ -21,11 +21,11 @@ Write-Host ""
 $backendPath = Join-Path $rootPath "backend"
 Write-Host "Starting Backend WebSocket Server..." -ForegroundColor Yellow
 Write-Host "   Directory: $backendPath" -ForegroundColor Gray
-Write-Host "   Endpoint:  ws://localhost:8001/ws" -ForegroundColor Cyan
+Write-Host "   Endpoint:  ws://localhost:8005/ws" -ForegroundColor Cyan
 Write-Host ""
 
-# Start backend in a NEW WINDOW so logs are visible
-$backendCmd = "Set-Location '$backendPath'; python -u chat_agent.py --port 8001; Read-Host 'Backend stopped. Press Enter to exit'"
+# Start backend in a NEW WINDOW so logs are visible - Updated to Port 8005
+$backendCmd = "Set-Location '$backendPath'; python -u chat_agent.py --port 8005; Read-Host 'Backend stopped. Press Enter to exit'"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd -WindowStyle Normal
 
 Write-Host "   Backend started in a new window" -ForegroundColor Gray
@@ -58,7 +58,7 @@ Write-Host "====================================================================
 Write-Host "  System Starting!" -ForegroundColor Green
 Write-Host "=====================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Backend WebSocket : ws://localhost:8001/ws" -ForegroundColor Cyan
+Write-Host "  Backend WebSocket : ws://localhost:8005/ws" -ForegroundColor Cyan
 Write-Host "  Frontend UI       : http://localhost:3000" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Press Ctrl+C to stop the frontend" -ForegroundColor Yellow

@@ -9,8 +9,8 @@ import websockets
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Middleware URL
-MIDDLEWARE_URL = "ws://localhost:8005"
+# Middleware URL - Updated to 8001 as per the new architecture
+MIDDLEWARE_URL = "ws://localhost:8001"
 
 # Path to the sample image in the current directory
 SAMPLE_IMAGE_NAME = "SampleImage.png"

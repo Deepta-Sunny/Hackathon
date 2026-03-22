@@ -26,7 +26,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # =========================================================================
 # CHATBOT TARGET CONFIGURATION
 # =========================================================================
-WEBSOCKET_URL = os.getenv("CHATBOT_WEBSOCKET_URL", "ws://localhost:8001/chat")
+# Middleware is now at 8001/ws as the entry point for the Red Teaming Backend
+WEBSOCKET_URL = os.getenv("CHATBOT_WEBSOCKET_URL", "ws://localhost:8001/ws")
+# Custom Chatbot Backend is now at 8005/ws
+CUSTOM_CHATBOT_URL = os.getenv("CUSTOM_CHATBOT_URL", "ws://localhost:8005/ws")
 WEBSOCKET_TIMEOUT = float(os.getenv("WEBSOCKET_TIMEOUT", "60.0"))
 WEBSOCKET_MAX_RETRIES = int(os.getenv("WEBSOCKET_MAX_RETRIES", "2"))
 

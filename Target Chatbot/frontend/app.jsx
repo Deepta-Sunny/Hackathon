@@ -2,7 +2,7 @@
 import ReactDOM from 'react-dom/client';
 import WebSocketService from './websocket-service.js';
 
-const WS_URL = 'ws://localhost:8001/ws';
+const WS_URL = 'ws://localhost:8005/ws';
 
 // Renders message text preserving newlines
 function MessageText({ text }) {
@@ -64,7 +64,7 @@ function ChatbotUI() {
 
         ws.connect().catch(() => {
             setStatusText('Cannot reach backend');
-            setErrorBanner('Cannot connect to chatbot backend at ws://localhost:8001/ws. Make sure the backend is running.');
+            setErrorBanner('Cannot connect to chatbot backend at ws://localhost:8005/ws. Make sure the backend is running.');
         });
 
         return () => ws.disconnect();

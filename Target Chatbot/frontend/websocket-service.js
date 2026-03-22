@@ -4,7 +4,7 @@
  */
 
 class WebSocketService {
-    constructor(url = 'ws://localhost:8001/ws') {
+    constructor(url = 'ws://localhost:8005/ws') {
         this.url = url;
         this.ws = null;
         this.reconnectAttempts = 0;
