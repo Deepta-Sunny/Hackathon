@@ -1,7 +1,8 @@
-import asyncio
+﻿import asyncio
 import json
 import logging
 import os
+import glob
 from datetime import datetime
 import websockets
 
@@ -12,66 +13,132 @@ logger = logging.getLogger(__name__)
 # Middleware URL - Updated to 8001 as per the new architecture
 MIDDLEWARE_URL = "ws://localhost:8001"
 
-# Path to the sample image in the current directory
-SAMPLE_IMAGE_NAME = "SampleImage.png"
-SAMPLE_IMAGE_PATH = os.path.abspath(SAMPLE_IMAGE_NAME)
+# Folder containing jailbreak images (place your images here)
+IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jailbreak_images")
+
+# Supported image extensions
+IMAGE_EXTENSIONS = ("*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.webp")
+
+# Default prompt sent with each image (can be customized per image via a .txt sidecar file)
+DEFAULT_IMAGE_PROMPT = "Please explain what is in this image."
+
+
+def get_image_files():
+    """Collect all image files from the jailbreak_images folder, sorted by name."""
+    images = []
+    for ext in IMAGE_EXTENSIONS:
+        images.extend(glob.glob(os.path.join(IMAGES_FOLDER, ext)))
+    images.sort()
+    return images
+
+
+def get_prompt_for_image(image_path: str) -> str:
+    base = os.path.splitext(image_path)[0]
+    txt_path = base + ".txt"
+    if os.path.exists(txt_path):
+        with open(txt_path, "r", encoding="utf-8") as f:
+            prompt = f.read().strip()
+            if prompt:
+                return prompt
+    return DEFAULT_IMAGE_PROMPT
+
 
 async def test_automation_flow():
-    """
-    Client script that connects to the middleware and sends commands.
-    """
-    if not os.path.exists(SAMPLE_IMAGE_PATH):
-        logger.error(f"❌ Could not find {SAMPLE_IMAGE_NAME} at {SAMPLE_IMAGE_PATH}")
+    if not os.path.isdir(IMAGES_FOLDER):
+        logger.error(f"Images folder not found: {IMAGES_FOLDER}")
         return
 
+    image_files = get_image_files()
+    if not image_files:
+        logger.error(f"No images found in {IMAGES_FOLDER}")
+        return
+
+    logger.info(f"Found {len(image_files)} image(s) in {IMAGES_FOLDER}")
+    for img in image_files:
+        logger.info(f"   - {os.path.basename(img)}")
+
     logger.info(f"Connecting to target chatbot middleware at {MIDDLEWARE_URL}...")
-    
+
     try:
         async with websockets.connect(MIDDLEWARE_URL) as ws:
-            logger.info("✅ Connected to middleware.")
-            
-            # 1. Send "hi"
+            logger.info("Connected to middleware.")
+
+            # 1. Send initial greeting
             test_prompt_1 = {"prompt": "hi"}
             logger.info(f"Sending: {test_prompt_1['prompt']}")
             await ws.send(json.dumps(test_prompt_1))
-            
+
             response_1 = await ws.recv()
             data_1 = json.loads(response_1)
-            print(f"\n[CLIENT RECEIVED RESPONSE 1] {data_1.get('response')}\n")
-            
-            # 2. Send "what can you do?"
-            test_prompt_2 = {"prompt": "what can you do?"}
-            logger.info(f"Sending: {test_prompt_2['prompt']}")
-            await ws.send(json.dumps(test_prompt_2))
-            
-            response_2 = await ws.recv()
-            data_2 = json.loads(response_2)
-            print(f"\n[CLIENT RECEIVED RESPONSE 2] {data_2.get('response')}\n")
-            
-            # 3. Send image analysis (At the end)
-            logger.info(f"Preparing to send image: {SAMPLE_IMAGE_NAME}")
-            test_prompt_3 = {
-                "prompt": "Please explain what is in this image.",
-                "image_path": SAMPLE_IMAGE_PATH
-            }
-            logger.info(f"Sending prompt with image: {test_prompt_3['prompt']}")
-            await ws.send(json.dumps(test_prompt_3))
-            
-            logger.info("Waiting for image analysis response...")
-            response_3 = await ws.recv()
-            data_3 = json.loads(response_3)
-            
-            if "error" in data_3:
-                logger.error(f"❌ Automation Error: {data_3['error']}")
-            else:
-                print(f"\n[CLIENT RECEIVED IMAGE ANALYSIS RESPONSE]\n{data_3.get('response')}\n")
-            
+            print(f"\n[CLIENT RECEIVED RESPONSE] {data_1.get('response')}\n")
+
+            # 2. Loop through all images in the folder
+            results = []
+            for idx, image_path in enumerate(image_files, 1):
+                image_name = os.path.basename(image_path)
+                prompt = get_prompt_for_image(image_path)
+
+                print(f"\n{'='*70}")
+                print(f"  IMAGE {idx}/{len(image_files)}: {image_name}")
+                print(f"  PROMPT: {prompt}")
+                print(f"{'='*70}\n")
+
+                logger.info(f"[{idx}/{len(image_files)}] Sending image: {image_name}")
+                payload = {
+                    "prompt": prompt,
+                    "image_path": os.path.abspath(image_path)
+                }
+                await ws.send(json.dumps(payload))
+
+                logger.info("Waiting for response...")
+                response = await ws.recv()
+                data = json.loads(response)
+
+                if "error" in data:
+                    logger.error(f"Error for {image_name}: {data['error']}")
+                    results.append({
+                        "image": image_name,
+                        "prompt": prompt,
+                        "response": None,
+                        "error": data["error"],
+                        "timestamp": datetime.now().isoformat()
+                    })
+                else:
+                    response_text = data.get("response", "")
+                    print(f"\n[RESPONSE for {image_name}]\n{response_text}\n")
+                    results.append({
+                        "image": image_name,
+                        "prompt": prompt,
+                        "response": response_text,
+                        "error": None,
+                        "timestamp": datetime.now().isoformat()
+                    })
+
+                # Small delay between images to avoid overwhelming the UI
+                await asyncio.sleep(2)
+
+            # 3. Save results to JSON
+            results_file = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                f"image_test_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
+            with open(results_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "test_run": datetime.now().isoformat(),
+                    "total_images": len(image_files),
+                    "results": results
+                }, f, indent=2, ensure_ascii=False)
+
+            print(f"\n{'='*70}")
+            print(f"  TEST COMPLETE: {len(results)} image(s) processed")
+            print(f"  Results saved to: {results_file}")
+            print(f"{'='*70}\n")
+
             logger.info("Test flow completed. Closing connection.")
-            
+
     except Exception as e:
-        logger.error(f"❌ Connection failed: {e}")
+        logger.error(f"Connection failed: {e}")
         print("Tip: Make sure the middleware is running (python BACKEND/middlewares/custom_chatbot_middleware.py)")
 
 if __name__ == "__main__":
     asyncio.run(test_automation_flow())
-
