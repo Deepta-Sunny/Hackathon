@@ -89,70 +89,153 @@ class AigChatbotDriver:
         opts.add_argument("--window-size=1920,1080")
         opts.add_argument("--disable-gpu")
         opts.add_argument("--disable-extensions")
+        opts.add_argument("--disable-blink-features=AutomationControlled")
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
         opts.page_load_strategy = "eager"
         service = Service(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=opts)
+        driver = webdriver.Chrome(service=service, options=opts)
+        # Stealth: remove webdriver flag via CDP
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        })
+        return driver
+
+    def _dismiss_cookie(self):
+        """Dismiss cookie consent popup if present."""
+        logger.info("[Ai.g Driver] Checking for cookie consent popup...")
+        try:
+            cookie_btn = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.ID, COOKIE_BTN_ID))
+            )
+            cookie_btn.click()
+            logger.info("[Ai.g Driver] Cookie consent dismissed.")
+            time.sleep(1)
+        except Exception:
+            logger.info("[Ai.g Driver] No cookie popup found, continuing.")
+
+    def _try_click_chatbot_icon(self) -> bool:
+        """Try multiple strategies to click the chatbot icon."""
+        # Strategy 1: Find by ID
+        logger.info(f"[Ai.g Driver] Trying to find chatbot icon by id='{CHATBOT_ICON_ID}'...")
+        try:
+            icon = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.ID, CHATBOT_ICON_ID))
+            )
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", icon)
+            time.sleep(1)
+            self.driver.execute_script("arguments[0].click();", icon)
+            logger.info("[Ai.g Driver] Chatbot icon clicked via ID.")
+            return True
+        except Exception:
+            logger.info("[Ai.g Driver] Icon not found by ID, trying alternatives...")
+
+        # Strategy 2: Find by img with alt text containing 'aig' or 'chat'
+        try:
+            icon = self.driver.execute_script("""
+                var imgs = document.querySelectorAll('img[id*="aig"], img[id*="chat"], img[alt*="chat" i], img[alt*="aig" i]');
+                if (imgs.length > 0) { imgs[0].click(); return true; }
+                var btns = document.querySelectorAll('[id*="ask-aig"], [class*="ask-aig"], [id*="chatbot"], [class*="chatbot-icon"]');
+                if (btns.length > 0) { btns[0].click(); return true; }
+                return false;
+            """)
+            if icon:
+                logger.info("[Ai.g Driver] Chatbot icon clicked via JS fallback selector.")
+                return True
+        except Exception:
+            pass
+
+        # Strategy 3: Find any floating action button in bottom-right
+        try:
+            icon = self.driver.execute_script("""
+                var elems = document.querySelectorAll('img, button, div');
+                for (var e of elems) {
+                    var r = e.getBoundingClientRect();
+                    if (r.right > window.innerWidth - 150 && r.bottom > window.innerHeight - 150 && r.width < 120 && r.width > 20) {
+                        var s = window.getComputedStyle(e);
+                        if (s.position === 'fixed' || s.position === 'absolute') {
+                            e.click(); return true;
+                        }
+                    }
+                }
+                return false;
+            """)
+            if icon:
+                logger.info("[Ai.g Driver] Chatbot icon clicked via position-based fallback.")
+                return True
+        except Exception:
+            pass
+
+        logger.warning("[Ai.g Driver] All strategies to click chatbot icon failed.")
+        return False
 
     def connect(self) -> bool:
         """Open browser, navigate to Air India and activate the Ai.g chat window."""
         try:
             logger.info("[Ai.g Driver] Initialising Chrome...")
             self.driver = self._build_driver()
-            self.driver.set_page_load_timeout(30)
+            self.driver.set_page_load_timeout(60)
 
-            logger.info(f"[Ai.g Driver] Navigating to {AIRINDIA_URL} ...")
-            try:
-                self.driver.get(AIRINDIA_URL)
-            except Exception as e:
-                logger.warning(f"[Ai.g Driver] Page load timeout (continuing): {str(e)[:80]}")
+            for attempt in range(3):
+                logger.info(f"[Ai.g Driver] Connection attempt {attempt + 1}/3...")
+                logger.info(f"[Ai.g Driver] Navigating to {AIRINDIA_URL} ...")
+                try:
+                    self.driver.get(AIRINDIA_URL)
+                except Exception as e:
+                    logger.warning(f"[Ai.g Driver] Page load timeout (continuing): {str(e)[:80]}")
 
-            # Wait for page to settle
-            logger.info("[Ai.g Driver] Waiting for page stabilisation (15s)...")
-            time.sleep(15)
+                # Wait for page to settle
+                wait_time = 20 + (attempt * 5)
+                logger.info(f"[Ai.g Driver] Waiting for page stabilisation ({wait_time}s)...")
+                time.sleep(wait_time)
 
-            # ── Dismiss cookie popup if present ──────────────────────────
-            logger.info("[Ai.g Driver] Checking for cookie consent popup...")
-            try:
-                cookie_btn = WebDriverWait(self.driver, 5).until(
-                    EC.element_to_be_clickable((By.ID, COOKIE_BTN_ID))
-                )
-                cookie_btn.click()
-                logger.info("[Ai.g Driver] ✅ Cookie consent dismissed.")
-                time.sleep(1)
-            except Exception:
-                logger.info("[Ai.g Driver] No cookie popup found, continuing.")
+                # Dismiss cookie popup
+                self._dismiss_cookie()
 
-            # ── Click chatbot icon via JS (img element, normal click intercepted) ──
-            logger.info(f"[Ai.g Driver] Clicking chatbot icon (id='{CHATBOT_ICON_ID}')...")
-            try:
-                icon = WebDriverWait(self.driver, 10).until(
-                    EC.presence_of_element_located((By.ID, CHATBOT_ICON_ID))
-                )
-                self.driver.execute_script("arguments[0].click();", icon)
-                logger.info("[Ai.g Driver] ✅ Chatbot icon clicked, waiting for chat window (5s)...")
-                time.sleep(5)
-            except Exception as e:
-                logger.warning(f"[Ai.g Driver] Could not click chatbot icon: {e}")
+                # Log page state for debugging
+                try:
+                    page_title = self.driver.title
+                    body_len = len(self.driver.page_source)
+                    logger.info(f"[Ai.g Driver] Page title: '{page_title}', body length: {body_len}")
+                    # Check what IDs exist on the page that might be the chatbot
+                    chatbot_ids = self.driver.execute_script("""
+                        var results = [];
+                        var all = document.querySelectorAll('[id*="aig"], [id*="chat"], [id*="bot"]');
+                        all.forEach(function(e) { results.push(e.tagName + '#' + e.id); });
+                        return results.slice(0, 20);
+                    """)
+                    logger.info(f"[Ai.g Driver] Chatbot-related elements found: {chatbot_ids}")
+                except Exception:
+                    pass
 
-            # ── Verify input field is visible ────────────────────────────
-            logger.info(f"[Ai.g Driver] Waiting for input field (id='{INPUT_FIELD_ID}')...")
-            try:
-                WebDriverWait(self.driver, 15).until(
-                    EC.visibility_of_element_located((By.ID, INPUT_FIELD_ID))
-                )
-                logger.info("[Ai.g Driver] ✅ Chat input field is visible — ready!")
-            except Exception as e:
-                logger.error(f"[Ai.g Driver] ❌ Chat input field not found: {e}")
-                return False
+                # Try clicking chatbot icon
+                icon_clicked = self._try_click_chatbot_icon()
+                if icon_clicked:
+                    time.sleep(5)
 
-            # Snapshot current bot message count as baseline
-            self._prev_bot_msg_count = len(
-                self.driver.find_elements(By.CSS_SELECTOR, BOT_MSG_SELECTOR)
-            )
+                # Verify input field is visible
+                logger.info(f"[Ai.g Driver] Waiting for input field (id='{INPUT_FIELD_ID}')...")
+                try:
+                    WebDriverWait(self.driver, 20).until(
+                        EC.visibility_of_element_located((By.ID, INPUT_FIELD_ID))
+                    )
+                    logger.info("[Ai.g Driver] Chat input field is visible - ready!")
 
-            return True
+                    # Snapshot current bot message count as baseline
+                    self._prev_bot_msg_count = len(
+                        self.driver.find_elements(By.CSS_SELECTOR, BOT_MSG_SELECTOR)
+                    )
+                    return True
+                except Exception as e:
+                    logger.warning(f"[Ai.g Driver] Attempt {attempt + 1}/3 - Chat input not found yet.")
+                    if attempt < 2:
+                        logger.info("[Ai.g Driver] Refreshing page and retrying...")
+                        continue
+                    else:
+                        logger.error(f"[Ai.g Driver] Chat input field not found after all attempts: {e}")
+                        return False
+
+            return False
 
         except Exception as e:
             logger.error(f"[Ai.g Driver] Connection failed: {e}")
