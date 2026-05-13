@@ -122,6 +122,49 @@ const ChatPanel: React.FC = () => {
   const [categoryTab, setCategoryTab] = useState("all");
   const [runFilter, setRunFilter] = useState<number | "all">("all");
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  // Load existing attack results on mount
+  useEffect(() => {
+    const loadExistingResults = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/results/replay-all');
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
+          const loadedMessages: ChatMessage[] = [];
+          for (const msg of data.messages) {
+            if (msg.type === "turn_started" && msg.data) {
+              loadedMessages.push({
+                id: `agent-${msg.data.category}-${msg.data.run}-${msg.data.turn}-${msg.data.timestamp || Date.now()}`,
+                sender: "agent",
+                content: String(msg.data.prompt || ""),
+                category: String(msg.data.category || ""),
+                run: Number(msg.data.run || 0),
+                turn: Number(msg.data.turn || 0),
+                timestamp: msg.data.timestamp || undefined,
+              });
+            } else if (msg.type === "turn_completed" && msg.data) {
+              loadedMessages.push({
+                id: `ai-${msg.data.category}-${msg.data.run}-${msg.data.turn}-${msg.data.timestamp || Date.now()}`,
+                sender: "ai",
+                content: String(msg.data.response || ""),
+                category: String(msg.data.category || ""),
+                run: Number(msg.data.run || 0),
+                turn: Number(msg.data.turn || 0),
+                riskDisplay: msg.data.risk_display || undefined,
+                timestamp: msg.data.timestamp || undefined,
+              });
+            }
+          }
+          setMessages(loadedMessages);
+          setHistoryLoaded(true);
+        }
+      } catch (error) {
+        console.log("No existing attack results to load");
+      }
+    };
+    loadExistingResults();
+  }, []);
 
   // Get unique categories and runs from messages
   const runs = Array.from(new Set(messages.filter(m => categoryTab === "all" || m.category === categoryTab).map(m => m.run).filter((r): r is number => typeof r === "number")));
@@ -262,6 +305,9 @@ const ChatPanel: React.FC = () => {
       if (text.toUpperCase().includes('CRITICAL')) {
         color = '#d32f2f';
         text = 'CRITICAL';
+      } else if (text.toUpperCase().includes('HIGH')) {
+        color = '#e65100';
+        text = 'HIGH';
       } else if (text.toUpperCase().includes('MEDIUM')) {
         color = '#fbc02d';
         text = 'MEDIUM';

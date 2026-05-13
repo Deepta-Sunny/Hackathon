@@ -6,7 +6,7 @@ import type {
   StatusResponse,
 } from "../types/Types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -70,6 +70,11 @@ export async function getResults(): Promise<AttackResultsResponse> {
 
 export async function getRunResult(category: string, runNumber: number) {
   const response = await apiClient.get(`/api/results/${category}/${runNumber}`);
+  return response.data;
+}
+
+export async function replayAllResults() {
+  const response = await apiClient.get("/api/results/replay-all");
   return response.data;
 }
 

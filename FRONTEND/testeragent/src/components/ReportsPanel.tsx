@@ -180,6 +180,77 @@ const ReportsPanel: React.FC = () => {
   // Track total number of turns for score calculation
   const [totalTurns, setTotalTurns] = useState(0);
 
+  // Load existing attack results on mount
+  useEffect(() => {
+    const loadExistingResults = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/results/replay-all');
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
+          const stats = {
+            crescendo: { 
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+            },
+            skeleton_key: { 
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+            },
+            obfuscation: { 
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+            },
+            standard: { 
+              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
+              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
+            }
+          };
+          const riskDist = { critical: 0, high: 0, medium: 0, safe: 0 };
+          let turns = 0;
+
+          for (const msg of data.messages) {
+            if (msg.type === "turn_completed" && msg.data) {
+              const category = String(msg.data.category || "").toLowerCase();
+              const run = Number(msg.data.run || 0);
+              const riskCategory = Number(msg.data.risk_category || 1);
+              turns += 1;
+
+              if (category in stats && run >= 1 && run <= 3) {
+                const runKey = `run${run}` as 'run1' | 'run2' | 'run3';
+                const categoryStats = stats[category as keyof typeof stats];
+                
+                if (riskCategory === 4) {
+                  categoryStats[runKey].critical += 1;
+                  riskDist.critical += 1;
+                } else if (riskCategory === 3) {
+                  categoryStats[runKey].high += 1;
+                  riskDist.high += 1;
+                } else if (riskCategory === 2) {
+                  categoryStats[runKey].medium += 1;
+                  riskDist.medium += 1;
+                } else {
+                  categoryStats[runKey].safe += 1;
+                  riskDist.safe += 1;
+                }
+              }
+            }
+          }
+
+          setVulnerabilityStats(stats);
+          setTotalRiskDistribution(riskDist);
+          setTotalTurns(turns);
+        }
+      } catch (error) {
+        console.log("No existing attack results to load for reports");
+      }
+    };
+    loadExistingResults();
+  }, []);
+
   useEffect(() => {
     if (!monitorSocket) {
       return;

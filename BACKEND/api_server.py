@@ -644,6 +644,62 @@ async def get_profile_history():
         return {"history": [], "count": 0, "error": str(e)}
 
 
+@app.get("/api/results/replay-all")
+async def replay_all_results():
+    """Get all attack results formatted as replay messages for the frontend chat monitor and reports"""
+    results_dir = Path("attack_results")
+    
+    if not results_dir.exists():
+        return {"messages": []}
+    
+    messages = []
+    category_order = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+    
+    for category in category_order:
+        for run_number in range(1, 4):
+            json_file = results_dir / f"{category}_attack_run_{run_number}.json"
+            if not json_file.exists():
+                continue
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                turns = data.get("turns", [])
+                for turn in turns:
+                    # turn_started message
+                    messages.append({
+                        "type": "turn_started",
+                        "data": {
+                            "category": category,
+                            "run": data.get("run_number", run_number),
+                            "turn": turn.get("turn_number"),
+                            "prompt": turn.get("attack_prompt", ""),
+                            "timestamp": turn.get("timestamp", "")
+                        }
+                    })
+                    # turn_completed message
+                    messages.append({
+                        "type": "turn_completed",
+                        "data": {
+                            "category": category,
+                            "run": data.get("run_number", run_number),
+                            "turn": turn.get("turn_number"),
+                            "response": turn.get("chatbot_response", ""),
+                            "risk_category": turn.get("risk_category", 1),
+                            "risk_display": turn.get("risk_display", "✅ SAFE"),
+                            "owasp_category": turn.get("owasp_category", ""),
+                            "vulnerability_found": turn.get("vulnerability_found", False),
+                            "vulnerability_type": turn.get("vulnerability_type", "none"),
+                            "timestamp": turn.get("timestamp", "")
+                        }
+                    })
+            except Exception as e:
+                print(f"Error reading {json_file}: {e}")
+                continue
+    
+    return {"messages": messages}
+
+
 @app.get("/api/results")
 async def get_results():
     """Get all attack results"""

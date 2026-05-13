@@ -55,7 +55,7 @@ Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
 
 # Build command
-$cmd = "python web_chatbot_middleware.py --url `"$TARGET_URL`" --host $SERVER_HOST --port $PORT"
+$cmd = "python middlewares/web_chatbot_middleware.py --url `"$TARGET_URL`" --host $SERVER_HOST --port $PORT"
 if ($HEADLESS) {
     $cmd += " --headless"
 }

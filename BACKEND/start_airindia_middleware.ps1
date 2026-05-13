@@ -56,7 +56,7 @@ Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
 
 # Build command
-$cmd = "python aig_chatbot_automation.py --host $SERVER_HOST --port $PORT"
+$cmd = "python middlewares/aig_chatbot_automation.py --host $SERVER_HOST --port $PORT"
 if ($HEADLESS) {
     $cmd += " --headless"
 }
