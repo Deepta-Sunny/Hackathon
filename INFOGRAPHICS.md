@@ -141,6 +141,94 @@ flowchart TD
     style Cat4 fill:#fff59d
 ```
 
+## Data Flow Diagram
+
+```mermaid
+flowchart LR
+    subgraph "Input Layer"
+        UserInput[User Configuration<br/>- WebSocket URL<br/>- Architecture File<br/>- Attack Parameters]
+    end
+    
+    subgraph "Processing Layer"
+        Config[Configuration Data<br/>- Parsed settings<br/>- Context extraction]
+        
+        Plans[Attack Plans<br/>- Generated prompts<br/>- Strategy selection<br/>- Turn sequences]
+        
+        Execution[Attack Execution<br/>- Sent prompts<br/>- Received responses<br/>- Real-time monitoring]
+        
+        Analysis[Response Analysis<br/>- Vulnerability detection<br/>- Risk classification<br/>- Pattern matching]
+    end
+    
+    subgraph "Storage Layer"
+        Conversations[(Conversation History<br/>DuckDB)]
+        Vulnerabilities[(Vulnerability Findings<br/>DuckDB)]
+        Patterns[(Attack Patterns<br/>DuckDB)]
+        Results[/Results Files<br/>JSON/]
+    end
+    
+    subgraph "Output Layer"
+        Reports[Reports & Summaries<br/>- Executive summary<br/>- Generalized patterns<br/>- Statistics]
+        
+        RealTime[Real-time Updates<br/>- WebSocket broadcasts<br/>- Live status<br/>- Progress logs]
+    end
+    
+    subgraph "External Data Sources"
+        Azure[Azure OpenAI<br/>- Prompt generation<br/>- Response analysis]
+        Target[Target Chatbot<br/>- Attack responses]
+        Historical[Historical Data<br/>- Previous patterns<br/>- Memory]
+    end
+    
+    UserInput --> Config
+    Config --> Plans
+    
+    Plans -->|Request prompts| Azure
+    Azure -->|Generated prompts| Plans
+    
+    Plans --> Execution
+    
+    Execution -->|Send prompts| Target
+    Target -->|Responses| Execution
+    
+    Execution --> Analysis
+    
+    Analysis -->|Request analysis| Azure
+    Azure -->|Risk assessment| Analysis
+    
+    Historical -->|Load patterns| Plans
+    
+    Analysis --> Conversations
+    Analysis --> Vulnerabilities
+    Analysis --> Patterns
+    Analysis --> Results
+    
+    Conversations --> Reports
+    Vulnerabilities --> Reports
+    Patterns --> Reports
+    Results --> Reports
+    
+    Patterns --> Historical
+    
+    Config --> RealTime
+    Plans --> RealTime
+    Execution --> RealTime
+    Analysis --> RealTime
+    Reports --> RealTime
+    
+    style UserInput fill:#e1f5ff
+    style Config fill:#bbdefb
+    style Plans fill:#90caf9
+    style Execution fill:#64b5f6
+    style Analysis fill:#42a5f5
+    style Reports fill:#81c784
+    style RealTime fill:#aed581
+    style Azure fill:#ffb74d
+    style Target fill:#ff8a65
+    style Conversations fill:#ffd54f
+    style Vulnerabilities fill:#ffd54f
+    style Patterns fill:#ffd54f
+    style Results fill:#fff59d
+```
+
 ## ER Diagram
 
 ```mermaid
