@@ -42,7 +42,7 @@ async def main():
         print("   - AZURE_OPENAI_API_KEY")
         print("   - AZURE_OPENAI_ENDPOINT")
         print("\nOptional configuration:")
-        print("   - AZURE_OPENAI_DEPLOYMENT (default: gpt-4o)")
+        print("   - AZURE_OPENAI_DEPLOYMENT (default: gpt-5-chat)")
         print("   - CHATBOT_WEBSOCKET_URL (default: ws://localhost:8000/chat)")
         print("   - TOTAL_RUNS (default: 3)")
         print("   - TURNS_PER_RUN (default: 25)")
