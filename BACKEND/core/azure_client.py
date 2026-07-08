@@ -3,14 +3,13 @@ Azure OpenAI client for generating attack prompts and analyzing responses.
 """
 
 import json
-import httpx
 from typing import Optional
+from openai import AsyncOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 from config import (
     AZURE_OPENAI_ENDPOINT,
-    AZURE_OPENAI_API_KEY,
     AZURE_OPENAI_DEPLOYMENT,
-    AZURE_OPENAI_API_VERSION
 )
 
 
@@ -26,10 +25,14 @@ class AzureOpenAIClient:
     
     def __init__(self):
         self.endpoint = AZURE_OPENAI_ENDPOINT
-        self.api_key = AZURE_OPENAI_API_KEY
         self.deployment = AZURE_OPENAI_DEPLOYMENT
-        self.api_version = AZURE_OPENAI_API_VERSION
-        self.client: Optional[httpx.AsyncClient] = None
+        
+        token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://ai.azure.com/.default")
+        
+        self.client = AsyncOpenAI(
+            base_url=self.endpoint,
+            api_key=token_provider()
+        )
         
         # Statistics
         self.error_count = 0
@@ -39,15 +42,69 @@ class AzureOpenAIClient:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
     
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self) -> AsyncOpenAI:
         """Get or create HTTP client."""
-        if self.client is None:
-            self.client = httpx.AsyncClient(timeout=120.0)
         return self.client
     
     async def generate(
         self,
         system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1500
+    ) -> str:
+        """
+        Generate a response from Azure OpenAI.
+        """
+        client = await self._get_client()
+
+        try:
+            response = await client.responses.create(
+                model="gpt-5.5",
+                reasoning={"effort": "medium"},
+                input=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_output_tokens=max_tokens,
+            )
+
+            self.success_count += 1
+            if response.usage:
+                self.total_input_tokens += response.usage.input_tokens
+                self.total_output_tokens += response.usage.output_tokens
+
+            # Log reasoning summary if present
+            for item in response.output:
+                if item.type == "reasoning":
+                    summaries = getattr(item, "summary", [])
+                    if summaries:
+                        reasoning_text = " | ".join(s.text for s in summaries if hasattr(s, "text"))
+                    else:
+                        reasoning_text = "(no summary)"
+                    print(f"    [REASONING] {reasoning_text}")
+
+            # Extract the text output
+            for item in response.output:
+                if item.type == "message":
+                    return item.content[0].text if item.content else ""
+
+            return ""
+
+        except Exception as e:
+            self.error_count += 1
+            print(f"[!] Azure OpenAI API error: {e}")
+            return json.dumps({"error": str(e), "message": "Failed to generate response from LLM."})
+
+    def get_statistics(self) -> dict:
+        """Get client statistics."""
+        return {
+            "success_count": self.success_count,
+            "error_count": self.error_count,
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens
+        }
+
         user_prompt: str,
         temperature: float = 0.7,
         max_tokens: int = 2000
