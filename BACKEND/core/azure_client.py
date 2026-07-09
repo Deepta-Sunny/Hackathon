@@ -43,6 +43,7 @@ class AzureOpenAIClient:
         # Retry settings for transient Azure/OpenAI infrastructure errors
         self.max_retries = 2
         self.retry_delay_seconds = 1.0
+        self.max_retry_delay_seconds = 10.0
     
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
@@ -119,11 +120,13 @@ class AzureOpenAIClient:
                 
                 # Get detailed error message from Azure
                 error_detail = ""
-                status_code = None
+                status_code = "unknown"
+                numeric_status_code = None
                 is_content_filter = False
                 try:
                     if hasattr(e, 'response') and e.response is not None:
-                        status_code = e.response.status_code
+                        numeric_status_code = e.response.status_code
+                        status_code = str(numeric_status_code)
                         error_body = e.response.text
                         
                         # Check if this is a content filter violation
@@ -142,12 +145,15 @@ class AzureOpenAIClient:
                 
                 retryable_status_codes = {408, 429, 500, 502, 503, 504}
                 is_retryable = (
-                    (status_code is not None and status_code in retryable_status_codes)
+                    (numeric_status_code is not None and numeric_status_code in retryable_status_codes)
                     or isinstance(e, (httpx.TimeoutException, httpx.TransportError))
                 )
                 
                 if is_retryable and attempt < self.max_retries:
-                    delay = self.retry_delay_seconds * (2 ** attempt)
+                    delay = min(
+                        self.retry_delay_seconds * (2 ** attempt),
+                        self.max_retry_delay_seconds
+                    )
                     print(
                         f"    ↻ Retrying Azure request in {delay:.1f}s "
                         f"(attempt {attempt + 2}/{self.max_retries + 1})"
@@ -156,10 +162,9 @@ class AzureOpenAIClient:
                     continue
                 
                 # Return a safe fallback JSON response for non-retryable/final errors
-                fallback_status = status_code if status_code is not None else "unknown"
                 fallback = {
                     "risk_category": 2,
-                    "risk_explanation": f"Azure API error ({fallback_status}) - using safe default",
+                    "risk_explanation": f"Azure API error ({status_code}) - using safe default",
                     "vulnerability_type": "api_error",
                     "response_source": "error_fallback",
                     "information_leaked": [],

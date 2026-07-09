@@ -9,9 +9,11 @@ import httpx
 sys.path.insert(0, str(Path(__file__).parent.parent / "core"))
 from azure_client import AzureOpenAIClient
 
+TEST_ENDPOINT_URL = "https://example.openai.azure.com/chat/completions"
+
 
 def _http_status_error(status_code: int, body: str) -> httpx.HTTPStatusError:
-    request = httpx.Request("POST", "https://example.openai.azure.com/chat/completions")
+    request = httpx.Request("POST", TEST_ENDPOINT_URL)
     response = httpx.Response(status_code, request=request, text=body)
     return httpx.HTTPStatusError(
         f"Server error '{status_code}'",
@@ -21,7 +23,7 @@ def _http_status_error(status_code: int, body: str) -> httpx.HTTPStatusError:
 
 
 def _success_response(content: str) -> httpx.Response:
-    request = httpx.Request("POST", "https://example.openai.azure.com/chat/completions")
+    request = httpx.Request("POST", TEST_ENDPOINT_URL)
     payload = {
         "choices": [{"message": {"content": content}}],
         "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}
