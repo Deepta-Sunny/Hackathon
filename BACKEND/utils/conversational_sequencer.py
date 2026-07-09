@@ -14,6 +14,7 @@ from openai import AzureOpenAI
 import os
 from dataclasses import dataclass
 
+# Optional domain-specific libraries that can be extended without changing class logic.
 HEALTHCARE_SEQUENCES = {}
 FINANCE_SEQUENCES = {}
 

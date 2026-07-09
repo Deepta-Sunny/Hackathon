@@ -179,7 +179,7 @@ Respond in JSON:
                 obj, end_idx = decoder.raw_decode(text[start:])
                 if isinstance(obj, dict):
                     return obj
-                raise ValueError("Expected JSON object in model output")
+                raise ValueError("Expected JSON dictionary, got different JSON type")
             except json.JSONDecodeError:
                 start = text.find("{", start + 1)
         raise ValueError("No valid JSON object found in model output")

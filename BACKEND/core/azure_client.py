@@ -83,7 +83,7 @@ class AzureOpenAIClient:
             "temperature": temperature,
             "max_tokens": max_tokens
         }
-        if reasoning_effort:
+        if reasoning_effort is not None and reasoning_effort != "":
             payload["reasoning"] = {"effort": reasoning_effort}
         
         try:
