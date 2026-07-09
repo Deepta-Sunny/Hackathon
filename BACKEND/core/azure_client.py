@@ -147,7 +147,7 @@ class AzureOpenAIClient:
                 )
                 
                 if is_retryable and attempt < self.max_retries:
-                    delay = self.retry_delay_seconds * (attempt + 1)
+                    delay = self.retry_delay_seconds * (2 ** attempt)
                     print(
                         f"    ↻ Retrying Azure request in {delay:.1f}s "
                         f"(attempt {attempt + 2}/{self.max_retries + 1})"
