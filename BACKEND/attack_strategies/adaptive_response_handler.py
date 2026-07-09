@@ -587,7 +587,8 @@ class AdaptiveResponseHandler:
         chatbot_response: str,
         current_attack: 'AttackPrompt',
         conversation_history: List[Dict],
-        attack_phase: str
+        attack_phase: str,
+        conversation_summary: str = ""
     ) -> Tuple[str, Dict[str, Any]]:
         """
         Generate adaptive response using LLM for more sophisticated adaptation.
@@ -596,6 +597,7 @@ class AdaptiveResponseHandler:
             chatbot_response: The chatbot's response
             current_attack: Current attack prompt
             conversation_history: Recent conversation history
+            conversation_summary: Rolling summary from prior turns
             attack_phase: Current attack phase
             
         Returns:
@@ -651,6 +653,9 @@ Objective: {current_attack.expected_outcome}
 
 CONVERSATION HISTORY:
 {history_text}
+
+ROLLING CONVERSATION SUMMARY:
+{conversation_summary or "No previous summary."}
 
 Generate a response that:
 1. Answers/addresses what the chatbot asked

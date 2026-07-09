@@ -27,10 +27,10 @@ class DomainDetector:
         """Initialize Azure OpenAI client for domain detection."""
         self.client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-01-preview"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
-        self.deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT", os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5-chat"))
+        self.deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT", os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5"))
     
     async def detect_domain(
         self,

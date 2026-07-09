@@ -4,7 +4,8 @@ Azure OpenAI client for generating attack prompts and analyzing responses.
 
 import json
 import httpx
-from typing import Optional
+import os
+from typing import Optional, List
 
 from config import (
     AZURE_OPENAI_ENDPOINT,
@@ -44,6 +45,26 @@ class AzureOpenAIClient:
         if self.client is None:
             self.client = httpx.AsyncClient(timeout=120.0)
         return self.client
+
+    def _build_url(self, deployment: str) -> str:
+        """Build Azure OpenAI chat completions URL."""
+        return f"{self.endpoint}/openai/deployments/{deployment}/chat/completions?api-version={self.api_version}"
+
+    def _get_fallback_deployments(self) -> List[str]:
+        """Return prioritized deployment fallbacks for GPT-5 reasoning workloads."""
+        candidates = [
+            self.deployment,
+            os.getenv("AZURE_OPENAI_REASONING_DEPLOYMENT", ""),
+            os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", ""),
+            "gpt-5",
+            "gpt-5-chat"
+        ]
+        ordered = []
+        for dep in candidates:
+            dep = (dep or "").strip()
+            if dep and dep not in ordered:
+                ordered.append(dep)
+        return ordered
     
     async def generate(
         self,
@@ -65,8 +86,6 @@ class AzureOpenAIClient:
         Returns:
             str: Generated response or fallback JSON on error
         """
-        url = f"{self.endpoint}/openai/deployments/{self.deployment}/chat/completions?api-version={self.api_version}"
-        
         headers = {
             "Content-Type": "application/json",
             "api-key": self.api_key
@@ -88,21 +107,44 @@ class AzureOpenAIClient:
         
         try:
             client = await self._get_client()
+            url = self._build_url(self.deployment)
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
         except Exception as e:
             # Compatibility fallback: retry without reasoning if API version/model doesn't support it
             error_text = ""
+            status_code = None
             try:
                 if hasattr(e, "response") and e.response is not None:
                     error_text = (e.response.text or "").lower()
+                    status_code = e.response.status_code
             except Exception:
                 pass
             if reasoning_effort and "reasoning" in error_text:
                 fallback_payload = dict(payload)
                 fallback_payload.pop("reasoning", None)
+                url = self._build_url(self.deployment)
                 response = await client.post(url, headers=headers, json=fallback_payload)
                 response.raise_for_status()
+            elif status_code == 404:
+                # Deployment fallback: recover from stale/missing deployment names
+                fallback_error = None
+                for fallback_deployment in self._get_fallback_deployments():
+                    if fallback_deployment == self.deployment:
+                        continue
+                    try:
+                        fallback_url = self._build_url(fallback_deployment)
+                        response = await client.post(fallback_url, headers=headers, json=payload)
+                        response.raise_for_status()
+                        self.deployment = fallback_deployment
+                        print(f"    [INFO] Azure deployment fallback succeeded: {fallback_deployment}")
+                        break
+                    except Exception as fallback_exc:
+                        fallback_error = fallback_exc
+                else:
+                    if fallback_error:
+                        raise fallback_error
+                    raise
             else:
                 raise
 
