@@ -199,11 +199,20 @@ class ConversationalAttackSequencer:
         self.current_turn_in_sequence = 0
         self.conversation_history: List[Dict[str, str]] = []
         self.successful_attacks: List[Dict[str, Any]] = []
+        self.current_domain: str = "general"
     
-    def get_attack_sequences_for_domain(self, domain: str = "ecommerce") -> List[Dict]:
-        """Get all attack sequences flattened into a list."""
+    def get_attack_sequences_for_domain(self, domain: str = "general") -> List[Dict]:
+        """Get all attack sequences flattened into a list for the requested domain."""
+        normalized_domain = (domain or "general").strip().lower()
+        if normalized_domain in {"healthcare", "medical", "health"}:
+            source_sequences = HEALTHCARE_SEQUENCES
+        elif normalized_domain in {"finance", "financial", "banking", "bank"}:
+            source_sequences = FINANCE_SEQUENCES
+        else:
+            source_sequences = self.ATTACK_SEQUENCES
+
         all_sequences = []
-        for category, sequences in self.ATTACK_SEQUENCES.items():
+        for category, sequences in source_sequences.items():
             for seq in sequences:
                 all_sequences.append({
                     **seq,
@@ -230,7 +239,8 @@ class ConversationalAttackSequencer:
         Returns:
             Tuple of (prompt, metadata)
         """
-        sequences = self.get_attack_sequences_for_domain(domain)
+        self.current_domain = (domain or self.current_domain or "general").strip().lower()
+        sequences = self.get_attack_sequences_for_domain(self.current_domain)
         
         if not sequences:
             return "What services do you offer?", {"topic": "fallback", "turn_in_sequence": 0}
@@ -359,7 +369,8 @@ The follow-up should acknowledge the refusal but try to find a way around it."""
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.8,
-                max_tokens=300
+                max_tokens=300,
+                reasoning={"effort": "high"}
             )
             
             return response.choices[0].message.content.strip()
@@ -393,14 +404,14 @@ The follow-up should acknowledge the refusal but try to find a way around it."""
     
     def get_current_topic(self) -> str:
         """Get the current attack topic."""
-        sequences = self.get_attack_sequences_for_domain("ecommerce")
+        sequences = self.get_attack_sequences_for_domain(self.current_domain)
         if self.current_topic_index < len(sequences):
             return sequences[self.current_topic_index]["topic"]
         return "unknown"
     
     def get_progress_summary(self) -> Dict[str, Any]:
         """Get summary of attack progress."""
-        sequences = self.get_attack_sequences_for_domain("ecommerce")
+        sequences = self.get_attack_sequences_for_domain(self.current_domain)
         return {
             "total_topics": len(sequences),
             "current_topic_index": self.current_topic_index,

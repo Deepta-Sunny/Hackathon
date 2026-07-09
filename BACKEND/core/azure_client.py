@@ -50,7 +50,8 @@ class AzureOpenAIClient:
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0.7,
-        max_tokens: int = 2000
+        max_tokens: int = 2000,
+        reasoning_effort: Optional[str] = "high"
     ) -> str:
         """
         Generate response from Azure OpenAI.
@@ -82,6 +83,8 @@ class AzureOpenAIClient:
             "temperature": temperature,
             "max_tokens": max_tokens
         }
+        if reasoning_effort:
+            payload["reasoning"] = {"effort": reasoning_effort}
         
         try:
             client = await self._get_client()

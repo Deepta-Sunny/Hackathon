@@ -78,7 +78,8 @@ Extract in JSON format:
                 model=self.deployment,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
-                max_tokens=1000
+                max_tokens=1000,
+                reasoning={"effort": "high"}
             )
 
             result = response.choices[0].message.content.strip()
@@ -95,8 +96,8 @@ Extract in JSON format:
         except Exception as e:
             print(f"⚠️ Error: {e}")
             return {
-                "primary_purpose": "E-commerce assistant",
-                "allowed_functionalities": ["product search", "order tracking"],
+                "primary_purpose": "Domain-specific assistant",
+                "allowed_functionalities": ["in-domain support", "user assistance"],
                 "restricted_areas": ["admin access", "system info"],
                 "security_boundaries": ["authentication", "authorization"],
                 "vulnerability_indicators": ["input validation", "access control"]
@@ -130,7 +131,8 @@ Respond with ONLY the attack prompt text.
                 model=self.deployment,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.9,
-                max_tokens=150
+                max_tokens=150,
+                reasoning={"effort": "high"}
             )
             return response.choices[0].message.content.strip().strip('"\'')
         except Exception as e:
@@ -162,7 +164,8 @@ Respond in JSON:
                 model=self.deployment,
                 messages=[{"role": "user", "content": validation_prompt}],
                 temperature=0.2,
-                max_tokens=300
+                max_tokens=300,
+                reasoning={"effort": "high"}
             )
             
             result = resp.choices[0].message.content.strip()
