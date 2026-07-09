@@ -90,6 +90,24 @@ class AzureOpenAIClient:
             client = await self._get_client()
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
+        except Exception as e:
+            # Compatibility fallback: retry without reasoning if API version/model doesn't support it
+            error_text = ""
+            try:
+                if hasattr(e, "response") and e.response is not None:
+                    error_text = (e.response.text or "").lower()
+            except Exception:
+                pass
+            if reasoning_effort and "reasoning" in error_text:
+                fallback_payload = dict(payload)
+                fallback_payload.pop("reasoning", None)
+                response = await client.post(url, headers=headers, json=fallback_payload)
+                response.raise_for_status()
+            else:
+                raise
+
+        try:
+            response.raise_for_status()
             result = response.json()
             self.success_count += 1
             
