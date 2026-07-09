@@ -135,6 +135,7 @@ class AzureOpenAIClient:
                         
                         error_detail = f"\nAzure Response ({status_code}): {error_body[:500]}"
                 except Exception:
+                    # Best-effort diagnostic extraction only; never fail the main fallback path.
                     pass
                 
                 print(f"⚠️ Azure API Error #{self.error_count}: {str(e)}{error_detail}")
