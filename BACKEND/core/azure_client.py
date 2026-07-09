@@ -142,7 +142,7 @@ class AzureOpenAIClient:
                 
                 retryable_status_codes = {408, 429, 500, 502, 503, 504}
                 is_retryable = (
-                    status_code in retryable_status_codes
+                    (status_code is not None and status_code in retryable_status_codes)
                     or isinstance(e, (httpx.TimeoutException, httpx.TransportError))
                 )
                 
