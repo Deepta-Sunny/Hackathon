@@ -107,7 +107,6 @@ class AzureOpenAIClient:
                 raise
 
         try:
-            response.raise_for_status()
             result = response.json()
             self.success_count += 1
             

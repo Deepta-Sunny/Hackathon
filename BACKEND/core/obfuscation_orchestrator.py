@@ -784,7 +784,7 @@ You must also categorize the attack according to OWASP Top 10 for LLM Applicatio
         profile_context = ""
         domain_label = "target"
         if self.chatbot_profile:
-            domain_label = self.chatbot_profile.domain or "target"
+            domain_label = self.chatbot_profile.domain if self.chatbot_profile.domain else "target"
             profile_context = f"""
 TARGET CHATBOT PROFILE (FROM ONBOARDING):
 Domain: {self.chatbot_profile.domain}

@@ -81,7 +81,7 @@ Extract in JSON format:
             )
 
             result = response.choices[0].message.content.strip()
-            behavior = json.loads(self._extract_json_payload(result))
+            behavior = self._extract_json_payload(result)
             self.expected_behavior = behavior
             print(f"✅ Behavior extracted: {behavior.get('primary_purpose', 'Unknown')[:60]}...")
             return behavior
@@ -158,7 +158,7 @@ Respond in JSON:
             )
             
             result = resp.choices[0].message.content.strip()
-            return json.loads(self._extract_json_payload(result))
+            return self._extract_json_payload(result)
         except Exception as e:
             return {
                 "stays_in_scope": True,
@@ -170,14 +170,16 @@ Respond in JSON:
             }
 
     @staticmethod
-    def _extract_json_payload(text: str) -> str:
-        """Extract the first valid JSON object from model output."""
+    def _extract_json_payload(text: str) -> Dict[str, Any]:
+        """Extract and parse the first valid JSON object from model output."""
         decoder = json.JSONDecoder()
         start = text.find("{")
         while start != -1:
             try:
                 obj, end_idx = decoder.raw_decode(text[start:])
-                return json.dumps(obj)
+                if isinstance(obj, dict):
+                    return obj
+                raise ValueError("Expected JSON object in model output")
             except json.JSONDecodeError:
                 start = text.find("{", start + 1)
         raise ValueError("No valid JSON object found in model output")

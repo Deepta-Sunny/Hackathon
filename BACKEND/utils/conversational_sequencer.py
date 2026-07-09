@@ -14,6 +14,9 @@ from openai import AzureOpenAI
 import os
 from dataclasses import dataclass
 
+HEALTHCARE_SEQUENCES = {}
+FINANCE_SEQUENCES = {}
+
 
 @dataclass
 class AttackSequence:
@@ -209,12 +212,10 @@ class ConversationalAttackSequencer:
     def get_attack_sequences_for_domain(self, domain: str = "general") -> List[Dict]:
         """Get all attack sequences flattened into a list for the requested domain."""
         normalized_domain = (domain or "general").strip().lower()
-        healthcare_sequences = globals().get("HEALTHCARE_SEQUENCES", {})
-        finance_sequences = globals().get("FINANCE_SEQUENCES", {})
         if normalized_domain in self.DOMAIN_ALIASES["healthcare"]:
-            source_sequences = healthcare_sequences or self.ATTACK_SEQUENCES
+            source_sequences = HEALTHCARE_SEQUENCES or self.ATTACK_SEQUENCES
         elif normalized_domain in self.DOMAIN_ALIASES["finance"]:
-            source_sequences = finance_sequences or self.ATTACK_SEQUENCES
+            source_sequences = FINANCE_SEQUENCES or self.ATTACK_SEQUENCES
         else:
             source_sequences = self.ATTACK_SEQUENCES
 

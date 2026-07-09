@@ -1209,7 +1209,7 @@ Return ONLY valid JSON in this format:
         profile_context = ""
         domain_label = "target"
         if self.chatbot_profile:
-            domain_label = self.chatbot_profile.domain or "target"
+            domain_label = self.chatbot_profile.domain if self.chatbot_profile.domain else "target"
             profile_context = f"""
 TARGET CHATBOT PROFILE (FROM ONBOARDING):
 Domain: {self.chatbot_profile.domain}
