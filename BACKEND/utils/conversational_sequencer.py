@@ -183,6 +183,11 @@ class ConversationalAttackSequencer:
         ]
     }
     
+    DOMAIN_ALIASES = {
+        "healthcare": {"healthcare", "medical", "health"},
+        "finance": {"finance", "financial", "banking", "bank"}
+    }
+    
     def __init__(self, azure_client=None):
         """Initialize Azure OpenAI client for follow-up generation."""
         self.client = AzureOpenAI(
@@ -204,9 +209,9 @@ class ConversationalAttackSequencer:
     def get_attack_sequences_for_domain(self, domain: str = "general") -> List[Dict]:
         """Get all attack sequences flattened into a list for the requested domain."""
         normalized_domain = (domain or "general").strip().lower()
-        if normalized_domain in {"healthcare", "medical", "health"}:
+        if normalized_domain in self.DOMAIN_ALIASES["healthcare"]:
             source_sequences = HEALTHCARE_SEQUENCES
-        elif normalized_domain in {"finance", "financial", "banking", "bank"}:
+        elif normalized_domain in self.DOMAIN_ALIASES["finance"]:
             source_sequences = FINANCE_SEQUENCES
         else:
             source_sequences = self.ATTACK_SEQUENCES

@@ -83,12 +83,7 @@ Extract in JSON format:
             )
 
             result = response.choices[0].message.content.strip()
-            if "```json" in result:
-                result = result.split("```json")[1].split("```")[0].strip()
-            elif "```" in result:
-                result = result.split("```")[1].split("```")[0].strip()
-
-            behavior = json.loads(result)
+            behavior = json.loads(self._extract_json_payload(result))
             self.expected_behavior = behavior
             print(f"✅ Behavior extracted: {behavior.get('primary_purpose', 'Unknown')[:60]}...")
             return behavior
@@ -169,12 +164,7 @@ Respond in JSON:
             )
             
             result = resp.choices[0].message.content.strip()
-            if "```json" in result:
-                result = result.split("```json")[1].split("```")[0].strip()
-            elif "```" in result:
-                result = result.split("```")[1].split("```")[0].strip()
-
-            return json.loads(result)
+            return json.loads(self._extract_json_payload(result))
         except Exception as e:
             return {
                 "stays_in_scope": True,
@@ -184,6 +174,19 @@ Respond in JSON:
                 "explanation": f"Validation error: {e}",
                 "attack_category_success": None
             }
+
+    @staticmethod
+    def _extract_json_payload(text: str) -> str:
+        """Extract the first valid JSON object from model output."""
+        decoder = json.JSONDecoder()
+        start = text.find("{")
+        while start != -1:
+            try:
+                obj, end_idx = decoder.raw_decode(text[start:])
+                return json.dumps(obj)
+            except json.JSONDecodeError:
+                start = text.find("{", start + 1)
+        return text
 
     async def store_successful_attack(self, attack_data: Dict[str, Any]):
         """Store successful attack in database."""
