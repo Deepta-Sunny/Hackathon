@@ -3,6 +3,7 @@ Azure OpenAI client for generating attack prompts and analyzing responses.
 """
 
 import json
+import asyncio
 import httpx
 from typing import Optional
 
@@ -38,6 +39,11 @@ class AzureOpenAIClient:
         # Global token counters
         self.total_input_tokens = 0
         self.total_output_tokens = 0
+        
+        # Retry settings for transient Azure/OpenAI infrastructure errors
+        self.max_retries = 2
+        self.retry_delay_seconds = 1.0
+        self.max_retry_delay_seconds = 10.0
     
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
@@ -83,69 +89,91 @@ class AzureOpenAIClient:
             "max_tokens": max_tokens
         }
         
-        try:
-            client = await self._get_client()
-            response = await client.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            result = response.json()
-            self.success_count += 1
-            
-            # Track token usage
-            usage = result.get('usage', {})
-            if usage:
-                input_tokens = usage.get('prompt_tokens', 0)
-                output_tokens = usage.get('completion_tokens', 0)
-                total_tokens = usage.get('total_tokens', 0)
-                
-                # Update global counters
-                self.total_input_tokens += input_tokens
-                self.total_output_tokens += output_tokens
-                
-                # Print real-time token usage
-                print(f"    💰 Tokens: +{input_tokens} input, +{output_tokens} output, +{total_tokens} total | "
-                      f"Running Totals: {self.total_input_tokens:,} input, {self.total_output_tokens:,} output, "
-                      f"{self.total_input_tokens + self.total_output_tokens:,} total")
-            
-            return result["choices"][0]["message"]["content"]
-            
-        except Exception as e:
-            self.error_count += 1
-            
-            # Get detailed error message from Azure
-            error_detail = ""
-            status_code = "unknown"
-            is_content_filter = False
+        for attempt in range(self.max_retries + 1):
             try:
-                if hasattr(e, 'response'):
-                    status_code = e.response.status_code
-                    error_body = e.response.text
+                client = await self._get_client()
+                response = await client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                result = response.json()
+                self.success_count += 1
+                
+                # Track token usage
+                usage = result.get('usage', {})
+                if usage:
+                    input_tokens = usage.get('prompt_tokens', 0)
+                    output_tokens = usage.get('completion_tokens', 0)
+                    total_tokens = usage.get('total_tokens', 0)
                     
-                    # Check if this is a content filter violation
-                    if '"code":"content_filter"' in error_body or '"ResponsibleAIPolicyViolation"' in error_body:
-                        is_content_filter = True
+                    # Update global counters
+                    self.total_input_tokens += input_tokens
+                    self.total_output_tokens += output_tokens
                     
-                    error_detail = f"\nAzure Response ({status_code}): {error_body[:500]}"
-            except:
-                pass
-            
-            print(f"⚠️ Azure API Error #{self.error_count}: {str(e)}{error_detail}")
-            
-            # For content filter violations, return a special marker instead of JSON
-            if is_content_filter:
-                return "[CONTENT_FILTER_VIOLATION] Azure OpenAI blocked this prompt due to content safety policies. This indicates the prompt contains potentially harmful content that was filtered."
-            
-            # Return a safe fallback JSON response for other errors
-            fallback = {
-                "risk_category": 2,
-                "risk_explanation": f"Azure API error ({status_code}) - using safe default",
-                "vulnerability_type": "api_error",
-                "response_source": "error_fallback",
-                "information_leaked": [],
-                "context_exploitation": "no",
-                "adaptation_needed": False,
-                "learned_from_response": [f"Azure API unavailable: {str(e)[:100]}"]
-            }
-            return json.dumps(fallback)
+                    # Print real-time token usage
+                    print(f"    💰 Tokens: +{input_tokens} input, +{output_tokens} output, +{total_tokens} total | "
+                          f"Running Totals: {self.total_input_tokens:,} input, {self.total_output_tokens:,} output, "
+                          f"{self.total_input_tokens + self.total_output_tokens:,} total")
+                
+                return result["choices"][0]["message"]["content"]
+                
+            except Exception as e:
+                self.error_count += 1
+                
+                # Get detailed error message from Azure
+                error_detail = ""
+                status_code = "unknown"
+                numeric_status_code = None
+                is_content_filter = False
+                try:
+                    if hasattr(e, 'response') and e.response is not None:
+                        numeric_status_code = e.response.status_code
+                        status_code = str(numeric_status_code)
+                        error_body = e.response.text
+                        
+                        # Check if this is a content filter violation
+                        if '"code":"content_filter"' in error_body or '"ResponsibleAIPolicyViolation"' in error_body:
+                            is_content_filter = True
+                        
+                        error_detail = f"\nAzure Response ({status_code}): {error_body[:500]}"
+                except Exception:
+                    # Best-effort diagnostic extraction only; never fail the main fallback path.
+                    pass
+                
+                print(f"⚠️ Azure API Error #{self.error_count}: {str(e)}{error_detail}")
+                
+                # For content filter violations, return a special marker instead of JSON
+                if is_content_filter:
+                    return "[CONTENT_FILTER_VIOLATION] Azure OpenAI blocked this prompt due to content safety policies. This indicates the prompt contains potentially harmful content that was filtered."
+                
+                retryable_status_codes = {408, 429, 500, 502, 503, 504}
+                is_retryable = (
+                    (numeric_status_code is not None and numeric_status_code in retryable_status_codes)
+                    or isinstance(e, (httpx.TimeoutException, httpx.TransportError))
+                )
+                
+                if is_retryable and attempt < self.max_retries:
+                    delay = min(
+                        self.retry_delay_seconds * (2 ** attempt),
+                        self.max_retry_delay_seconds
+                    )
+                    print(
+                        f"    ↻ Retrying Azure request in {delay:.1f}s "
+                        f"(attempt {attempt + 2}/{self.max_retries + 1})"
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                
+                # Return a safe fallback JSON response for non-retryable/final errors
+                fallback = {
+                    "risk_category": 2,
+                    "risk_explanation": f"Azure API error ({status_code}) - using safe default",
+                    "vulnerability_type": "api_error",
+                    "response_source": "error_fallback",
+                    "information_leaked": [],
+                    "context_exploitation": "no",
+                    "adaptation_needed": False,
+                    "learned_from_response": [f"Azure API unavailable: {str(e)[:100]}"]
+                }
+                return json.dumps(fallback)
     
     async def close(self):
         """Close HTTP client."""
