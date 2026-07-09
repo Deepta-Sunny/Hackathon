@@ -15,8 +15,10 @@ load_dotenv()
 # =========================================================================
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "https://hackathon-proj.services.ai.azure.com")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
-AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+# Backward-compatible alias for modules that still import this symbol.
+AZURE_OPENAI_DEPLOYMENT = AZURE_OPENAI_DEPLOYMENT_NAME
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
 # =========================================================================
 # GEMINI AI CONFIGURATION
@@ -92,7 +94,7 @@ def validate_config():
     
     print("✅ Configuration validated successfully")
     print(f"   🌐 Endpoint: {AZURE_OPENAI_ENDPOINT}")
-    print(f"   🤖 Deployment: {AZURE_OPENAI_DEPLOYMENT}")
+    print(f"   🤖 Deployment: {AZURE_OPENAI_DEPLOYMENT_NAME}")
     print(f"   📅 API Version: {AZURE_OPENAI_API_VERSION}")
     print(f"   🔌 WebSocket: {WEBSOCKET_URL}")
     print(f"   📊 Campaign: {TOTAL_RUNS} runs × {TURNS_PER_RUN} turns = {TOTAL_RUNS * TURNS_PER_RUN} total attacks")
