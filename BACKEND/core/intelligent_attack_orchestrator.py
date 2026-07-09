@@ -91,8 +91,8 @@ Extract in JSON format:
         except Exception as e:
             print(f"⚠️ Error: {e}")
             return {
-                "primary_purpose": "Domain-specific assistant",
-                "allowed_functionalities": ["in-domain support", "user assistance"],
+                "primary_purpose": "Target assistant described in architecture",
+                "allowed_functionalities": ["documented in-domain support", "user assistance"],
                 "restricted_areas": ["admin access", "system info"],
                 "security_boundaries": ["authentication", "authorization"],
                 "vulnerability_indicators": ["input validation", "access control"]
@@ -186,7 +186,7 @@ Respond in JSON:
                 return json.dumps(obj)
             except json.JSONDecodeError:
                 start = text.find("{", start + 1)
-        return text
+        raise ValueError("No valid JSON object found in model output")
 
     async def store_successful_attack(self, attack_data: Dict[str, Any]):
         """Store successful attack in database."""

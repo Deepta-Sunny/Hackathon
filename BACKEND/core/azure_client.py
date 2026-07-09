@@ -51,7 +51,7 @@ class AzureOpenAIClient:
         user_prompt: str,
         temperature: float = 0.7,
         max_tokens: int = 2000,
-        reasoning_effort: Optional[str] = "high"
+        reasoning_effort: str = "high"
     ) -> str:
         """
         Generate response from Azure OpenAI.
