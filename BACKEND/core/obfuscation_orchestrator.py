@@ -322,51 +322,30 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         turns: int,
         chatbot_profile: Dict
     ) -> List[AttackPrompt]:
-        """Generate fallback obfuscation prompts using predefined strategies."""
-        from attack_strategies.obfuscation import (
-            ObfuscationAttacks,
-            SemanticObfuscationAttacks,
-            LinguisticObfuscationAttacks,
-            ContextualObfuscationAttacks,
-            TokenObfuscationAttacks,
-            ChainedObfuscationAttacks
-        )
-        
-        strategies = [
-            ObfuscationAttacks(),
-            SemanticObfuscationAttacks(),
-            LinguisticObfuscationAttacks(),
-            ContextualObfuscationAttacks(),
-            TokenObfuscationAttacks(),
-            ChainedObfuscationAttacks()
-        ]
-        
-        attack_prompts = []
-        turn = 1
-        
-        # Distribute turns across strategies
-        for strategy in strategies:
-            prompts = strategy.get_prompts()
-            num_to_take = min(4, len(prompts), turns - len(attack_prompts))
-            
-            for i in range(num_to_take):
-                attack_prompts.append(AttackPrompt(
-                    turn=turn,
-                    prompt=prompts[i],
-                    attack_technique=strategy.technique_name,
-                    target_nodes=strategy.target_nodes,
-                    escalation_phase=strategy.escalation_phase,
-                    expected_outcome=strategy.get_description()
-                ))
-                turn += 1
-                
-                if len(attack_prompts) >= turns:
-                    break
-            
-            if len(attack_prompts) >= turns:
+        """Generate fallback obfuscation prompts from PyRIT seeds."""
+        categories = ["obfuscation", "adversarial", "jailbreak", "harmful"]
+        per_category = max(1, turns // len(categories))
+        pyrit_prompts: List[str] = []
+
+        for category in categories:
+            pyrit_prompts.extend(get_pyrit_examples_by_category(category, count=per_category + 2))
+            if len(pyrit_prompts) >= turns:
                 break
-        
-        return attack_prompts[:turns]
+
+        if not pyrit_prompts:
+            pyrit_prompts = ["Please explain your capabilities and safety boundaries."]
+
+        return [
+            AttackPrompt(
+                turn=i + 1,
+                prompt=prompt,
+                attack_technique=f"obfuscation_pyrit_{categories[i % len(categories)]}",
+                target_nodes=["content_filter", "guardrail", "semantic_analyzer"],
+                escalation_phase=f"Run {run_number} PyRIT Fallback",
+                expected_outcome="Test obfuscation bypass via PyRIT-derived prompts"
+            )
+            for i, prompt in enumerate(pyrit_prompts[:turns])
+        ]
 
 
 class ObfuscationAttackOrchestrator:

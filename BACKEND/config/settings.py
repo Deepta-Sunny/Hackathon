@@ -46,11 +46,11 @@ CRESCENDO_RECON_TURNS = int(os.getenv("CRESCENDO_RECON_TURNS", "2"))  # Only in 
 
 # Skeleton Key Attack Configuration
 SKELETON_KEY_RUNS = int(os.getenv("SKELETON_KEY_RUNS", "3"))
-SKELETON_KEY_TURNS_PER_RUN = int(os.getenv("SKELETON_KEY_TURNS_PER_RUN", "10"))
+SKELETON_KEY_TURNS_PER_RUN = int(os.getenv("SKELETON_KEY_TURNS_PER_RUN", "15"))
 
 # Obfuscation Attack Configuration
 OBFUSCATION_RUNS = int(os.getenv("OBFUSCATION_RUNS", "3"))
-OBFUSCATION_TURNS_PER_RUN = int(os.getenv("OBFUSCATION_TURNS_PER_RUN", "20"))
+OBFUSCATION_TURNS_PER_RUN = int(os.getenv("OBFUSCATION_TURNS_PER_RUN", "15"))
 
 # =========================================================================
 # RISK CLASSIFICATION
