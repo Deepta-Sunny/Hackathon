@@ -218,6 +218,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         print(f"Agent Type: {profile.agent_type}")
     print(f"Communication Style: {profile.communication_style}")
     print(f"Context Awareness: {profile.context_awareness}")
+    print(f"Testing Strategy: {profile.testing_strategy or 'all'}")
     print(f"\nCapabilities ({len(profile.capabilities)}):")
     for i, cap in enumerate(profile.capabilities, 1):
         print(f"  {i}. {cap}")
@@ -1420,14 +1421,21 @@ async def execute_attack_campaign(
     print(f"Profile provided: {chatbot_profile is not None}")
     print("="*80 + "\n")
     
-    attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
-    
+    all_attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+
     mode_names = {
         "standard": "Standard Attack",
         "crescendo": "Crescendo Attack",
         "skeleton_key": "Skeleton Key Attack",
         "obfuscation": "Obfuscation Attack"
     }
+
+    # Determine which attack modes to run based on testing_strategy
+    strategy = (chatbot_profile.testing_strategy or "all") if chatbot_profile else "all"
+    if strategy and strategy != "all" and strategy in all_attack_modes:
+        attack_modes = [strategy]
+    else:
+        attack_modes = all_attack_modes
     
     all_reports = {}
     
