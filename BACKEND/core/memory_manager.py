@@ -4,7 +4,7 @@ Memory management for storing vulnerabilities and attack results in DuckDB.
 
 import json
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 from pyrit.memory import DuckDBMemory
 from pyrit.models import SeedPrompt
@@ -20,6 +20,7 @@ class VulnerableResponseMemory:
     
     def __init__(self):
         self.findings: List[VulnerabilityFinding] = []
+        self.run_findings: List[Dict[str, Any]] = []
     
     def add_finding(
         self,
@@ -53,19 +54,88 @@ class VulnerableResponseMemory:
     
     def get_summary_for_next_run(self) -> str:
         """Generate summary of findings for next run's context."""
-        if not self.findings:
-            return "No previous vulnerabilities found."
+        if not self.findings and not self.run_findings:
+            return "No previous run findings available."
         
-        summary_lines = [f"DISCOVERED VULNERABILITIES ({len(self.findings)} total):"]
+        summary_lines: List[str] = []
         
-        for i, finding in enumerate(self.findings[-10:], 1):  # Last 10
-            summary_lines.append(
-                f"{i}. Run {finding.run}, Turn {finding.turn}: "
-                f"{finding.vulnerability_type} (Risk {finding.risk_category}) - "
-                f"{finding.attack_technique}"
-            )
+        if self.run_findings:
+            summary_lines.append(f"RUN CONVERSATION FINDINGS ({len(self.run_findings)} total):")
+            for idx, run_finding in enumerate(self.run_findings[-3:], 1):
+                summary_lines.append(
+                    f"{idx}. Run {run_finding['run']} ({run_finding['attack_category']}): "
+                    f"{run_finding['summary']}"
+                )
+        
+        if self.findings:
+            summary_lines.append(f"DISCOVERED VULNERABILITIES ({len(self.findings)} total):")
+            
+            for i, finding in enumerate(self.findings[-10:], 1):  # Last 10
+                summary_lines.append(
+                    f"{i}. Run {finding.run}, Turn {finding.turn}: "
+                    f"{finding.vulnerability_type} (Risk {finding.risk_category}) - "
+                    f"{finding.attack_technique}"
+                )
         
         return "\n".join(summary_lines)
+    
+    def has_findings_context(self) -> bool:
+        """Whether any previous-run context exists for adaptation."""
+        return bool(self.findings or self.run_findings)
+    
+    def add_run_finding(
+        self,
+        run: int,
+        attack_category: str,
+        turns: List[Dict[str, Any]],
+        vulnerabilities_found: int,
+        adaptations_made: int,
+        timeouts: int,
+        errors: int
+    ) -> Dict[str, Any]:
+        """Store compact run-level findings for next-run prompt adaptation."""
+        total_turns = len(turns)
+        severe_turns = [turn for turn in turns if int(turn.get("risk_category", 1)) >= 3]
+        
+        vulnerability_types = sorted({
+            str(turn.get("vulnerability_type", "none"))
+            for turn in turns
+            if turn.get("vulnerability_found")
+        })
+        if "none" in vulnerability_types:
+            vulnerability_types.remove("none")
+        
+        if severe_turns:
+            top_techniques = sorted({
+                str(turn.get("attack_technique", "unknown"))
+                for turn in severe_turns
+            })
+            summary = (
+                f"{len(severe_turns)}/{total_turns} turns reached risk >=3; "
+                f"top techniques: {', '.join(top_techniques[:4])}"
+            )
+        else:
+            summary = (
+                f"No high-risk responses (risk >=3) across {total_turns} turns; "
+                f"use stronger escalation and variation."
+            )
+        
+        if vulnerability_types:
+            summary = f"{summary}. Vulnerability types: {', '.join(vulnerability_types[:5])}"
+        
+        run_finding = {
+            "run": run,
+            "attack_category": attack_category,
+            "total_turns": total_turns,
+            "vulnerabilities_found": vulnerabilities_found,
+            "adaptations_made": adaptations_made,
+            "timeouts": timeouts,
+            "errors": errors,
+            "summary": summary,
+            "timestamp": datetime.now().isoformat()
+        }
+        self.run_findings.append(run_finding)
+        return run_finding
     
     def get_by_risk_category(self, category: int) -> List[VulnerabilityFinding]:
         """Get findings by risk category."""

@@ -320,7 +320,7 @@ class AttackPlanGenerator:
         system_prompt = self.strategy_data["prompt_generation_system_prompt"]
 
         findings_context = ""
-        if previous_findings and previous_findings.findings:
+        if previous_findings and previous_findings.has_findings_context():
             findings_context = f"""
 LEARNINGS FROM PREVIOUS RUNS:
 {previous_findings.get_summary_for_next_run()[:1000]}
@@ -521,7 +521,7 @@ class ResponseAnalyzer:
         system_prompt = self.strategy_data["classification_system_prompt"]
 
         findings_context = ""
-        if previous_findings.findings:
+        if previous_findings.has_findings_context():
             findings_context = f"""
 KNOWN VULNERABILITIES:
 {previous_findings.get_summary_for_next_run()[:1000]}
@@ -1204,6 +1204,17 @@ class ThreeRunCrescendoOrchestrator:
             }
         })
         
+        run_finding = self.vulnerable_memory.add_run_finding(
+            run=run_number,
+            attack_category="standard",
+            turns=run_data["turns"],
+            vulnerabilities_found=run_vulnerabilities,
+            adaptations_made=run_adaptations,
+            timeouts=run_timeouts,
+            errors=run_errors
+        )
+        run_data["run_findings_summary"] = run_finding["summary"]
+        
         # Save to JSON file
         import os
         os.makedirs("attack_results", exist_ok=True)
@@ -1481,6 +1492,17 @@ class ThreeRunCrescendoOrchestrator:
                 "topics_completed": len(run_data["topics_completed"])
             }
         })
+        
+        run_finding = self.vulnerable_memory.add_run_finding(
+            run=run_number,
+            attack_category="standard_conversational",
+            turns=run_data["turns"],
+            vulnerabilities_found=run_vulnerabilities,
+            adaptations_made=run_adaptations,
+            timeouts=run_timeouts,
+            errors=run_errors
+        )
+        run_data["run_findings_summary"] = run_finding["summary"]
         
         # Save to JSON file
         import os

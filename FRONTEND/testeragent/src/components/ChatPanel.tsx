@@ -112,6 +112,25 @@ type ChatMessage = {
   timestamp?: string;
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  standard: "Standard",
+  crescendo: "Crescendo",
+  skeleton_key: "Skeleton Key",
+  obfuscation: "Obfuscation",
+};
+
+const CATEGORY_ORDER = ["standard", "crescendo", "skeleton_key", "obfuscation"];
+
+const sortCategories = (categories: string[]) =>
+  [...new Set(categories)].sort((a, b) => {
+    const aIndex = CATEGORY_ORDER.indexOf(a);
+    const bIndex = CATEGORY_ORDER.indexOf(b);
+    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+
 const ChatPanel: React.FC = () => {
   const classes = useStyles();
   const dispatch = useDispatch<AppDispatch>();
@@ -121,6 +140,7 @@ const ChatPanel: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [categoryTab, setCategoryTab] = useState("all");
   const [runFilter, setRunFilter] = useState<number | "all">("all");
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
@@ -157,6 +177,12 @@ const ChatPanel: React.FC = () => {
             }
           }
           setMessages(loadedMessages);
+          const detectedCategories = sortCategories(
+            loadedMessages
+              .map((message) => message.category)
+              .filter((category): category is string => Boolean(category))
+          );
+          setAvailableCategories(detectedCategories);
           setHistoryLoaded(true);
         }
       } catch (error) {
@@ -189,6 +215,17 @@ const ChatPanel: React.FC = () => {
         
         if (payload.type === "attack_started") {
           setMessages([]);
+          const data = payload.data as Record<string, unknown> | undefined;
+          const selectedStrategies = Array.isArray(data?.attack_strategies)
+            ? sortCategories(
+                data!.attack_strategies
+                  .map((item) => String(item))
+                  .filter((item) => item.length > 0)
+              )
+            : [];
+          setAvailableCategories(selectedStrategies);
+          setCategoryTab("all");
+          setRunFilter("all");
           return;
         }
 
@@ -209,6 +246,9 @@ const ChatPanel: React.FC = () => {
                 typeof data.timestamp === "string" ? data.timestamp : undefined,
             },
           ]);
+          if (typeof data.category === "string" && data.category.length > 0) {
+            setAvailableCategories((prev) => sortCategories([...prev, data.category as string]));
+          }
         } else if (payload.type === "turn_completed" && payload.data) {
           const data = payload.data as Record<string, unknown>;
           
@@ -236,6 +276,9 @@ const ChatPanel: React.FC = () => {
                 typeof data.timestamp === "string" ? data.timestamp : undefined,
             },
           ]);
+          if (typeof data.category === "string" && data.category.length > 0) {
+            setAvailableCategories((prev) => sortCategories([...prev, data.category as string]));
+          }
         }
       } catch (error) {
         console.warn("Failed to parse attack-monitor message", error);
@@ -273,6 +316,13 @@ const ChatPanel: React.FC = () => {
     }
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (categoryTab !== "all" && !availableCategories.includes(categoryTab)) {
+      setCategoryTab("all");
+      setRunFilter("all");
+    }
+  }, [availableCategories, categoryTab]);
 
   // REMOVED: Don't close socket on component unmount (tab switch)
   // The socket should remain open for other tabs/components to use
@@ -428,10 +478,14 @@ const ChatPanel: React.FC = () => {
           }}
         >
           <Tab className={classes.tab} label="All" value="all" />
-          <Tab className={classes.tab} label="Standard" value="standard" />
-          <Tab className={classes.tab} label="Crescendo" value="crescendo" />
-          <Tab className={classes.tab} label="Skeleton Key" value="skeleton_key" />
-          <Tab className={classes.tab} label="Obfuscation" value="obfuscation" />
+          {availableCategories.map((category) => (
+            <Tab
+              key={category}
+              className={classes.tab}
+              label={CATEGORY_LABELS[category] ?? category.replace(/_/g, " ")}
+              value={category}
+            />
+          ))}
         </Tabs>
       </Box>
       
