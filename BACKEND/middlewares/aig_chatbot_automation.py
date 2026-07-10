@@ -21,6 +21,7 @@ Key selectors (hardcoded from DOM inspection):
 
 import asyncio
 import json
+import os
 import time
 import sys
 import logging
@@ -37,9 +38,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+from dotenv import load_dotenv
 
 # Add BACKEND root directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # Ensure logs directory exists
 _LOG_DIR = Path(__file__).parent.parent / "logs"
@@ -65,6 +68,21 @@ CHATBOT_ICON_ID   = "ask-aig"
 INPUT_FIELD_ID    = "inputChat"
 BOT_MSG_SELECTOR  = ".bot-chat-content p.child"
 # ────────────────────────────────────────────────────────────────────────────
+
+
+def _get_response_wait_seconds() -> float:
+    raw_value = os.getenv("AIG_RESPONSE_WAIT_SECONDS", "2")
+    try:
+        return max(0.0, float(raw_value))
+    except ValueError:
+        logger.warning(
+            "[Ai.g Driver] Invalid AIG_RESPONSE_WAIT_SECONDS='%s'. Using default 2 seconds.",
+            raw_value,
+        )
+        return 2.0
+
+
+RESPONSE_WAIT_SECONDS = _get_response_wait_seconds()
 
 
 class AigChatbotDriver:
@@ -283,6 +301,11 @@ class AigChatbotDriver:
                 return len(msgs) > prev_count
 
             WebDriverWait(self.driver, 30).until(new_msg_appeared)
+            if RESPONSE_WAIT_SECONDS > 0:
+                logger.info(
+                    f"[Ai.g Driver] Waiting {RESPONSE_WAIT_SECONDS:.1f}s for UI text to finish rendering..."
+                )
+                time.sleep(RESPONSE_WAIT_SECONDS)
 
             all_msgs = self.driver.find_elements(By.CSS_SELECTOR, BOT_MSG_SELECTOR)
             response = all_msgs[-1].text.strip() if all_msgs else "[Error: No response found]"
