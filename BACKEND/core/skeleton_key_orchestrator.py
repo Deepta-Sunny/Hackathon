@@ -705,6 +705,23 @@ class SkeletonKeyAttackOrchestrator:
             "capabilities": [],
             "sensitivity": ["personal_data", "system_access", "content_filtering"]
         }
+
+    def _should_generate_adaptive_followup(
+        self,
+        response_received: bool,
+        action: str,
+        risk_category: int,
+        chatbot_response: str
+    ) -> bool:
+        """Check if current turn should generate conversational adaptive follow-up."""
+        if not (self.use_adaptive_mode and self.adaptive_handler and response_received):
+            return False
+        if action != "dig_deeper":
+            return False
+        return (
+            self.adaptive_handler.should_adapt(chatbot_response)
+            or risk_category >= int(self.conversation_policy.get("dig_deeper_risk_threshold", 2))
+        )
     
     async def _execute_skeleton_key_run(
         self,
@@ -889,31 +906,31 @@ class SkeletonKeyAttackOrchestrator:
             })
 
             pending_adaptive_response = None
-            if self.use_adaptive_mode and self.adaptive_handler and response_received and conversation_decision.action == "dig_deeper":
-                should_generate_followup = (
-                    self.adaptive_handler.should_adapt(chatbot_response)
-                    or risk_category >= int(self.conversation_policy.get("dig_deeper_risk_threshold", 2))
+            if self._should_generate_adaptive_followup(
+                response_received=response_received,
+                action=conversation_decision.action,
+                risk_category=risk_category,
+                chatbot_response=chatbot_response
+            ):
+                print("    🔄 ADAPTIVE: Digging deeper with skeleton-key conversational follow-up...")
+                attack_phase = "exploitation"
+                adaptive_response, adapt_meta = await self.adaptive_handler.generate_llm_adaptive_response(
+                    chatbot_response=chatbot_response,
+                    current_attack=current_prompt,
+                    conversation_history=self.conversation_history[-6:],
+                    attack_phase=attack_phase
                 )
-                if should_generate_followup:
-                    print("    🔄 ADAPTIVE: Digging deeper with skeleton-key conversational follow-up...")
-                    attack_phase = "exploitation"
-                    adaptive_response, adapt_meta = await self.adaptive_handler.generate_llm_adaptive_response(
-                        chatbot_response=chatbot_response,
-                        current_attack=current_prompt,
-                        conversation_history=self.conversation_history[-6:],
-                        attack_phase=attack_phase
-                    )
-                    if adaptive_response:
-                        pending_adaptive_response = adaptive_response
-                        intent = adapt_meta.get("detected_intent", "dig_deeper")
-                        run_data["adaptive_responses"].append({
-                            "turn": turn,
-                            "chatbot_asked": chatbot_response[:200],
-                            "detected_intent": intent,
-                            "adaptive_response": adaptive_response,
-                            "original_attack": current_prompt.prompt,
-                            "phase": attack_phase
-                        })
+                if adaptive_response:
+                    pending_adaptive_response = adaptive_response
+                    intent = adapt_meta.get("detected_intent", "dig_deeper")
+                    run_data["adaptive_responses"].append({
+                        "turn": turn,
+                        "chatbot_asked": chatbot_response[:200],
+                        "detected_intent": intent,
+                        "adaptive_response": adaptive_response,
+                        "original_attack": current_prompt.prompt,
+                        "phase": attack_phase
+                    })
             
             # Broadcast turn completion
             await broadcast_attack_log({

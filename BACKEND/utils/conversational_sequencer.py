@@ -573,7 +573,9 @@ class ConversationalFlowController:
     def consume_topic_switch_for(self, candidate_topic: str) -> bool:
         """
         Return True if current candidate should be skipped to enforce topic switch.
-        Clears pending switch once a new topic is reached.
+        When a switch is pending and candidate topic matches current topic,
+        this returns True to signal skipping that candidate. The pending switch
+        is cleared once a different topic is encountered.
         """
         if not self.pending_topic_switch:
             return False
