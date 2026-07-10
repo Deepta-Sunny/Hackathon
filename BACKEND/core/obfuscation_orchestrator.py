@@ -385,6 +385,19 @@ class ObfuscationAttackOrchestrator:
             self.adaptive_handler = AdaptiveResponseHandler(self.azure_client)
         else:
             self.adaptive_handler = None
+
+    @staticmethod
+    def _reset_component(component, label: str) -> str:
+        """Reset a component using either reset() or reset_conversation()."""
+        for method_name in ("reset", "reset_conversation"):
+            method = getattr(component, method_name, None)
+            if callable(method):
+                method()
+                return f"{label}.{method_name}()"
+        raise AttributeError(
+            f"{component.__class__.__name__} has no reset method. "
+            "Expected reset() or reset_conversation()."
+        )
         
     async def execute_obfuscation_assessment(self) -> Dict:
         """Execute complete Obfuscation attack assessment."""
@@ -468,7 +481,11 @@ class ObfuscationAttackOrchestrator:
         # Reset adaptive handler for new run
         if self.adaptive_handler:
             self.adaptive_handler.reset_state()
-        self.conversation_controller.reset()
+        reset_steps = [
+            self._reset_component(self.chatbot_target, "chatbot_target"),
+            self._reset_component(self.conversation_controller, "conversation_controller")
+        ]
+        print(f"   Reset state: {', '.join(reset_steps)}")
         
         # Initialize run data collection
         run_data = {

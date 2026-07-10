@@ -197,6 +197,10 @@ class ChatbotWebSocketTarget:
     def reset_conversation(self):
         """Reset conversation with new thread ID for new attack run."""
         self.thread_id = str(uuid4())
+
+    def reset(self):
+        """Backward-compatible alias used by conversational orchestrators."""
+        self.reset_conversation()
     
     def get_stats(self) -> Dict:
         """
