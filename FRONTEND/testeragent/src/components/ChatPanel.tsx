@@ -131,6 +131,9 @@ const sortCategories = (categories: string[]) =>
     return aIndex - bIndex;
   });
 
+const formatCategoryLabel = (category: string) =>
+  CATEGORY_LABELS[category] ?? category.replace(/_/g, " ");
+
 const ChatPanel: React.FC = () => {
   const classes = useStyles();
   const dispatch = useDispatch<AppDispatch>();
@@ -478,7 +481,7 @@ const ChatPanel: React.FC = () => {
             <Tab
               key={category}
               className={classes.tab}
-              label={CATEGORY_LABELS[category] ?? category.replace(/_/g, " ")}
+              label={formatCategoryLabel(category)}
               value={category}
             />
           ))}

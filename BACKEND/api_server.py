@@ -691,7 +691,10 @@ async def replay_all_results():
         return {"messages": []}
     
     messages = []
-    category_order = attack_state.get("selected_attack_strategies") or DEFAULT_ATTACK_MODES.copy()
+    if "selected_attack_strategies" in attack_state:
+        category_order = attack_state.get("selected_attack_strategies") or []
+    else:
+        category_order = DEFAULT_ATTACK_MODES.copy()
     
     for category in category_order:
         for run_number in range(1, 4):

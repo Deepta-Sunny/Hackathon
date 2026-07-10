@@ -95,7 +95,18 @@ class VulnerableResponseMemory:
     ) -> Dict[str, Any]:
         """Store compact run-level findings for next-run prompt adaptation."""
         total_turns = len(turns)
-        severe_turns = [turn for turn in turns if int(turn.get("risk_category", 1)) >= 3]
+        def normalize_risk(turn: Dict[str, Any]) -> int:
+            risk_value = turn.get("risk_category", 1)
+            if isinstance(risk_value, (int, float)):
+                return int(risk_value)
+            if isinstance(risk_value, str):
+                try:
+                    return int(risk_value.strip())
+                except ValueError:
+                    return 1
+            return 1
+        
+        severe_turns = [turn for turn in turns if normalize_risk(turn) >= 3]
         
         vulnerability_types = sorted({
             str(turn.get("vulnerability_type", "none"))
