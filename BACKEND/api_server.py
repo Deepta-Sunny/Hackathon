@@ -67,6 +67,27 @@ attack_state = {
     "results": {}
 }
 
+DEFAULT_ATTACK_MODES = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+
+ATTACK_MODE_NAMES = {
+    "standard": "Standard Attack",
+    "crescendo": "Crescendo Attack",
+    "skeleton_key": "Skeleton Key Attack",
+    "obfuscation": "Obfuscation Attack"
+}
+
+
+def resolve_attack_modes(attack_strategies: Optional[List[str]]) -> List[str]:
+    if not attack_strategies:
+        return DEFAULT_ATTACK_MODES.copy()
+
+    normalized_modes: List[str] = []
+    for strategy in attack_strategies:
+        if strategy in ATTACK_MODE_NAMES and strategy not in normalized_modes:
+            normalized_modes.append(strategy)
+
+    return normalized_modes or DEFAULT_ATTACK_MODES.copy()
+
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates"""
@@ -170,6 +191,8 @@ async def start_attack(
     attack_state["start_time"] = datetime.now().isoformat()
     attack_state["username"] = "anonymous"
     attack_state["chatbot_profile"] = None
+    attack_state["selected_attack_strategies"] = DEFAULT_ATTACK_MODES.copy()
+    attack_state["total_categories"] = len(DEFAULT_ATTACK_MODES)
     
     # Broadcast start message
     await manager.broadcast({
@@ -177,6 +200,7 @@ async def start_attack(
         "data": {
             "websocket_url": websocket_url,
             "architecture_file": architecture_file.filename,
+            "attack_strategies": DEFAULT_ATTACK_MODES,
             "timestamp": datetime.now().isoformat()
         }
     })
@@ -188,7 +212,8 @@ async def start_attack(
         "status": "started",
         "message": "Attack campaign initiated",
         "websocket_url": websocket_url,
-        "architecture_file": architecture_file.filename
+        "architecture_file": architecture_file.filename,
+        "attack_strategies": DEFAULT_ATTACK_MODES
     }
 
 
@@ -216,6 +241,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     print(f"Chatbot Role: {profile.chatbot_role}")
     if profile.agent_type:
         print(f"Agent Type: {profile.agent_type}")
+    print(f"Attack Strategies: {', '.join(profile.attack_strategies)}")
     print(f"Communication Style: {profile.communication_style}")
     print(f"Context Awareness: {profile.context_awareness}")
     print(f"\nCapabilities ({len(profile.capabilities)}):")
@@ -239,12 +265,15 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         json.dump(profile.to_dict(), f, indent=2)
     
     # Update attack state
+    selected_modes = resolve_attack_modes(profile.attack_strategies)
     attack_state["running"] = True
     attack_state["websocket_url"] = profile.websocket_url
     attack_state["username"] = profile.username
     attack_state["chatbot_profile"] = profile.to_dict()
     attack_state["profile_file"] = profile_filename
     attack_state["start_time"] = datetime.now().isoformat()
+    attack_state["selected_attack_strategies"] = selected_modes
+    attack_state["total_categories"] = len(selected_modes)
     
     # Broadcast start message
     await manager.broadcast({
@@ -254,6 +283,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
             "websocket_url": profile.websocket_url,
             "domain": profile.domain,
             "chatbot_role": profile.chatbot_role,
+            "attack_strategies": selected_modes,
             "timestamp": datetime.now().isoformat()
         }
     })
@@ -271,7 +301,8 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         "message": "Attack campaign initiated with chatbot profile",
         "username": profile.username,
         "websocket_url": profile.websocket_url,
-        "domain": profile.domain
+        "domain": profile.domain,
+        "attack_strategies": selected_modes
     }
 
 
@@ -1418,16 +1449,15 @@ async def execute_attack_campaign(
     print(f"WebSocket URL: {websocket_url}")
     print(f"Username: {username}")
     print(f"Profile provided: {chatbot_profile is not None}")
+    selected_strategies = (
+        chatbot_profile.attack_strategies if chatbot_profile else DEFAULT_ATTACK_MODES.copy()
+    )
+    print(f"Selected Strategies: {', '.join(selected_strategies)}")
     print("="*80 + "\n")
     
-    attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
-    
-    mode_names = {
-        "standard": "Standard Attack",
-        "crescendo": "Crescendo Attack",
-        "skeleton_key": "Skeleton Key Attack",
-        "obfuscation": "Obfuscation Attack"
-    }
+    attack_modes = resolve_attack_modes(selected_strategies)
+    attack_state["selected_attack_strategies"] = attack_modes
+    attack_state["total_categories"] = len(attack_modes)
     
     all_reports = {}
     
@@ -1444,7 +1474,7 @@ async def execute_attack_campaign(
                 "type": "category_started",
                 "data": {
                     "category": attack_mode,
-                    "category_name": mode_names[attack_mode],
+                    "category_name": ATTACK_MODE_NAMES[attack_mode],
                     "progress": f"{idx}/{len(attack_modes)}",
                     "timestamp": datetime.now().isoformat()
                 }
@@ -1496,7 +1526,7 @@ async def execute_attack_campaign(
                 "type": "category_completed",
                 "data": {
                     "category": attack_mode,
-                    "category_name": mode_names[attack_mode],
+                    "category_name": ATTACK_MODE_NAMES[attack_mode],
                     "vulnerabilities": final_report.get('total_vulnerabilities', 0),
                     "timestamp": datetime.now().isoformat()
                 }
@@ -1523,6 +1553,7 @@ async def execute_attack_campaign(
                 "timestamp": timestamp,
                 "start_time": attack_state["start_time"],
                 "end_time": attack_state["end_time"],
+                "selected_attack_strategies": attack_modes,
                 "results": all_reports
             }, f, indent=2)
         
@@ -1538,6 +1569,7 @@ async def execute_attack_campaign(
             "intended_audience": chatbot_profile.intended_audience if chatbot_profile else "",
             "chatbot_role": chatbot_profile.chatbot_role if chatbot_profile else "",
             "agent_type": chatbot_profile.agent_type if chatbot_profile else "",
+            "attack_strategies": attack_modes,
             "capabilities": chatbot_profile.capabilities if chatbot_profile else [],
             "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
             "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
@@ -1562,6 +1594,7 @@ async def execute_attack_campaign(
                 "total_categories": len(attack_modes),
                 "results": all_reports,
                 "username": username,
+                "attack_strategies": attack_modes,
                 "timestamp": datetime.now().isoformat()
             }
         })
