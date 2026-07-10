@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Chip } from "@mui/material";
+import { Box, Paper, Chip, FormControl, Select, MenuItem } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +43,7 @@ const useStyles = createUseStyles({
   },
   profileInfo: {
     display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: 16,
     fontFamily: "sans-serif",
   },
@@ -123,7 +123,17 @@ interface ChatbotProfile {
   boundaries: string;
   communication_style: string;
   context_awareness: string;
+  testing_strategy?: "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
 }
+
+type TestingStrategy = "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
+const TESTING_STRATEGY_OPTIONS: { value: TestingStrategy; label: string }[] = [
+  { value: "all", label: "All Strategies" },
+  { value: "standard", label: "Standard Attack" },
+  { value: "crescendo", label: "Crescendo Attack" },
+  { value: "skeleton_key", label: "Skeleton Key Attack" },
+  { value: "obfuscation", label: "Obfuscation Attack" },
+];
 
 function Home() {
   const classes = useStyles();
@@ -132,6 +142,13 @@ function Home() {
   const [profile, setProfile] = useState<ChatbotProfile | null>(null);
   const [attackStarted, setAttackStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [testingStrategy, setTestingStrategy] = useState<TestingStrategy>("all");
+  const getTestingStrategy = (savedProfile?: Partial<ChatbotProfile> | null): TestingStrategy => {
+    const strategy = savedProfile?.testing_strategy;
+    return TESTING_STRATEGY_OPTIONS.some((option) => option.value === strategy)
+      ? (strategy as TestingStrategy)
+      : "all";
+  };
 
   useEffect(() => {
     // Try to load saved dashboard state first
@@ -143,6 +160,7 @@ function Home() {
         if (data.found && data.state) {
           // Use saved state
           setProfile(data.state);
+          setTestingStrategy(getTestingStrategy(data.state));
           sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
           return;
         }
@@ -153,7 +171,9 @@ function Home() {
       // Fallback to sessionStorage
       const savedProfile = sessionStorage.getItem("chatbotProfile");
       if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+        const parsedProfile = JSON.parse(savedProfile) as ChatbotProfile;
+        setProfile(parsedProfile);
+        setTestingStrategy(getTestingStrategy(parsedProfile));
       } else {
         // Redirect to profile setup if no profile found
         navigate("/");
@@ -171,28 +191,33 @@ function Home() {
   const handleStartAttack = useCallback(
     async () => {
       if (profile) {
-        setIsStarting(true);
-        try {
-          // Save dashboard state before starting
-          await fetch('http://localhost:8080/api/dashboard/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
-          });
-        } catch (error) {
-          console.error("Failed to save dashboard state:", error);
-        }
+       const profileWithStrategy: ChatbotProfile = {
+         ...profile,
+         testing_strategy: testingStrategy,
+       };
+
+       setIsStarting(true);
+       try {
+         // Save dashboard state before starting
+         await fetch('http://localhost:8080/api/dashboard/save', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(profileWithStrategy)
+         });
+       } catch (error) {
+         console.error("Failed to save dashboard state:", error);
+       }
         
         // Open WebSocket monitor first
         await dispatch(openAttackMonitor());
 
         // Start testing with profile
-        dispatch(initiateAttack(profile));
+        dispatch(initiateAttack(profileWithStrategy));
         setAttackStarted(true);
       }
       setIsStarting(false);
     },
-    [dispatch, profile]
+    [dispatch, profile, testingStrategy]
   );
 
   const handleStopAttack = useCallback(async () => {
@@ -241,6 +266,23 @@ function Home() {
                   style={{ color: "#0f62fe", background: "#edf5ff", fontWeight: 600 }}
                 />
               </div>
+            </div>
+            <div className={classes.infoItem}>
+              <div className={classes.infoLabel}>Testing Strategy</div>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={testingStrategy}
+                  onChange={(event) => setTestingStrategy(event.target.value as TestingStrategy)}
+                  disabled={attackStarted}
+                  sx={{ fontSize: 14 }}
+                >
+                  {TESTING_STRATEGY_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel} style={{visibility: 'hidden'}}>actions</div>

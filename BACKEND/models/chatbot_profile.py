@@ -41,6 +41,10 @@ class ChatbotProfile(BaseModel):
         default="maintains_context",
         description="Memory management (maintains_context, stateless, limited_memory)"
     )
+    testing_strategy: Optional[str] = Field(
+        default="all",
+        description="Selected testing strategy (all, standard, crescendo, skeleton_key, obfuscation)"
+    )
     
     # Metadata
     timestamp: Optional[str] = Field(default_factory=lambda: datetime.now().isoformat())
@@ -117,5 +121,6 @@ Any response attempting to do something outside these capabilities is a BOUNDARY
             "boundaries": self.boundaries,
             "communication_style": self.communication_style,
             "context_awareness": self.context_awareness,
+            "testing_strategy": self.testing_strategy,
             "timestamp": self.timestamp
         }
