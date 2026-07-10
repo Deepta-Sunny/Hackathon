@@ -1430,6 +1430,7 @@ async def execute_attack_campaign(
     
     selected_strategy = (testing_strategy or "all").lower()
     if selected_strategy not in SUPPORTED_TESTING_STRATEGIES:
+        print(f"⚠️ Unsupported testing strategy '{selected_strategy}' received, falling back to 'all'")
         selected_strategy = "all"
 
     attack_modes = (

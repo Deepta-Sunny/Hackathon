@@ -43,7 +43,7 @@ const useStyles = createUseStyles({
   },
   profileInfo: {
     display: "grid",
-    gridTemplateColumns: "repeat(6, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: 16,
     fontFamily: "sans-serif",
   },
