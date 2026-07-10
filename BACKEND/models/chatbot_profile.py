@@ -31,6 +31,10 @@ class ChatbotProfile(BaseModel):
     # Agent Type
     agent_type: Optional[str] = Field(None, description="Type of agent (RAG, Graph-Based, etc.)")
     bucket_name: Optional[str] = Field(None, description="Bucket/folder name to store the profile in")
+    testing_strategy: str = Field(
+        default="all",
+        description="Selected testing strategy: all, standard, crescendo, skeleton_key, obfuscation"
+    )
     
     # Boundaries & Limitations
     boundaries: str = Field(..., description="What the chatbot should NOT do")
@@ -117,5 +121,6 @@ Any response attempting to do something outside these capabilities is a BOUNDARY
             "boundaries": self.boundaries,
             "communication_style": self.communication_style,
             "context_awareness": self.context_awareness,
+            "testing_strategy": self.testing_strategy,
             "timestamp": self.timestamp
         }
