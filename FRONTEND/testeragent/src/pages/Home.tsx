@@ -127,6 +127,13 @@ interface ChatbotProfile {
 }
 
 type TestingStrategy = "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
+const TESTING_STRATEGY_OPTIONS: { value: TestingStrategy; label: string }[] = [
+  { value: "all", label: "All Strategies" },
+  { value: "standard", label: "Standard Attack" },
+  { value: "crescendo", label: "Crescendo Attack" },
+  { value: "skeleton_key", label: "Skeleton Key Attack" },
+  { value: "obfuscation", label: "Obfuscation Attack" },
+];
 
 function Home() {
   const classes = useStyles();
@@ -263,11 +270,11 @@ function Home() {
                   disabled={attackStarted}
                   sx={{ fontSize: 14 }}
                 >
-                  <MenuItem value="all">All Strategies</MenuItem>
-                  <MenuItem value="standard">Standard Attack</MenuItem>
-                  <MenuItem value="crescendo">Crescendo Attack</MenuItem>
-                  <MenuItem value="skeleton_key">Skeleton Key Attack</MenuItem>
-                  <MenuItem value="obfuscation">Obfuscation Attack</MenuItem>
+                  {TESTING_STRATEGY_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </div>
