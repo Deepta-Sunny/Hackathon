@@ -77,16 +77,21 @@ ATTACK_MODE_NAMES = {
 }
 
 
-def resolve_attack_modes(attack_strategies: Optional[List[str]]) -> List[str]:
+def resolve_attack_modes(
+    attack_strategies: Optional[List[str]],
+    fallback_to_default: bool = True
+) -> List[str]:
     if not attack_strategies:
-        return DEFAULT_ATTACK_MODES.copy()
+        return DEFAULT_ATTACK_MODES.copy() if fallback_to_default else []
 
     normalized_modes: List[str] = []
     for strategy in attack_strategies:
         if strategy in ATTACK_MODE_NAMES and strategy not in normalized_modes:
             normalized_modes.append(strategy)
 
-    return normalized_modes or DEFAULT_ATTACK_MODES.copy()
+    if normalized_modes:
+        return normalized_modes
+    return DEFAULT_ATTACK_MODES.copy() if fallback_to_default else []
 
 
 class ConnectionManager:
@@ -265,7 +270,9 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         json.dump(profile.to_dict(), f, indent=2)
     
     # Update attack state
-    selected_modes = resolve_attack_modes(profile.attack_strategies)
+    selected_modes = resolve_attack_modes(profile.attack_strategies, fallback_to_default=False)
+    if not selected_modes:
+        raise HTTPException(status_code=400, detail="At least one valid attack strategy must be selected")
     attack_state["running"] = True
     attack_state["websocket_url"] = profile.websocket_url
     attack_state["username"] = profile.username
@@ -684,7 +691,10 @@ async def replay_all_results():
         return {"messages": []}
     
     messages = []
-    category_order = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+    if "selected_attack_strategies" in attack_state:
+        category_order = attack_state.get("selected_attack_strategies") or []
+    else:
+        category_order = DEFAULT_ATTACK_MODES.copy()
     
     for category in category_order:
         for run_number in range(1, 4):
@@ -1455,7 +1465,12 @@ async def execute_attack_campaign(
     print(f"Selected Strategies: {', '.join(selected_strategies)}")
     print("="*80 + "\n")
     
-    attack_modes = resolve_attack_modes(selected_strategies)
+    attack_modes = resolve_attack_modes(
+        selected_strategies,
+        fallback_to_default=chatbot_profile is None
+    )
+    if not attack_modes:
+        raise ValueError("No valid attack strategies selected for this campaign")
     attack_state["selected_attack_strategies"] = attack_modes
     attack_state["total_categories"] = len(attack_modes)
     
@@ -1480,57 +1495,75 @@ async def execute_attack_campaign(
                 }
             })
             
-            # Create orchestrator (pass either architecture_file or chatbot_profile)
-            if attack_mode == "obfuscation":
-                from config.settings import OBFUSCATION_RUNS, OBFUSCATION_TURNS_PER_RUN
-                orchestrator = ObfuscationAttackOrchestrator(
-                    websocket_url=websocket_url,
-                    architecture_file=architecture_file,
-                    chatbot_profile=chatbot_profile,
-                    total_runs=OBFUSCATION_RUNS,
-                    turns_per_run=OBFUSCATION_TURNS_PER_RUN
-                )
-                final_report = await orchestrator.execute_obfuscation_assessment()
-            elif attack_mode == "skeleton_key":
-                from config.settings import SKELETON_KEY_RUNS, SKELETON_KEY_TURNS_PER_RUN
-                orchestrator = SkeletonKeyAttackOrchestrator(
-                    websocket_url=websocket_url,
-                    architecture_file=architecture_file,
-                    chatbot_profile=chatbot_profile,
-                    total_runs=SKELETON_KEY_RUNS,
-                    turns_per_run=SKELETON_KEY_TURNS_PER_RUN
-                )
-                final_report = await orchestrator.execute_skeleton_key_assessment()
-            elif attack_mode == "crescendo":
-                from config.settings import CRESCENDO_RUNS, CRESCENDO_TURNS_PER_RUN
-                orchestrator = CrescendoAttackOrchestrator(
-                    websocket_url=websocket_url,
-                    architecture_file=architecture_file,
-                    chatbot_profile=chatbot_profile,
-                    total_runs=CRESCENDO_RUNS,
-                    turns_per_run=CRESCENDO_TURNS_PER_RUN
-                )
-                final_report = await orchestrator.execute_crescendo_assessment()
-            else:
-                orchestrator = ThreeRunCrescendoOrchestrator(
-                    websocket_url=websocket_url,
-                    architecture_file=architecture_file,
-                    chatbot_profile=chatbot_profile
-                )
-                final_report = await orchestrator.execute_full_assessment()
-            
-            all_reports[attack_mode] = final_report
-            
-            # Broadcast category completion
-            await manager.broadcast({
-                "type": "category_completed",
-                "data": {
-                    "category": attack_mode,
-                    "category_name": ATTACK_MODE_NAMES[attack_mode],
-                    "vulnerabilities": final_report.get('total_vulnerabilities', 0),
-                    "timestamp": datetime.now().isoformat()
+            try:
+                # Create orchestrator (pass either architecture_file or chatbot_profile)
+                if attack_mode == "obfuscation":
+                    from config.settings import OBFUSCATION_RUNS, OBFUSCATION_TURNS_PER_RUN
+                    orchestrator = ObfuscationAttackOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile,
+                        total_runs=OBFUSCATION_RUNS,
+                        turns_per_run=OBFUSCATION_TURNS_PER_RUN
+                    )
+                    final_report = await orchestrator.execute_obfuscation_assessment()
+                elif attack_mode == "skeleton_key":
+                    from config.settings import SKELETON_KEY_RUNS, SKELETON_KEY_TURNS_PER_RUN
+                    orchestrator = SkeletonKeyAttackOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile,
+                        total_runs=SKELETON_KEY_RUNS,
+                        turns_per_run=SKELETON_KEY_TURNS_PER_RUN
+                    )
+                    final_report = await orchestrator.execute_skeleton_key_assessment()
+                elif attack_mode == "crescendo":
+                    from config.settings import CRESCENDO_RUNS, CRESCENDO_TURNS_PER_RUN
+                    orchestrator = CrescendoAttackOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile,
+                        total_runs=CRESCENDO_RUNS,
+                        turns_per_run=CRESCENDO_TURNS_PER_RUN
+                    )
+                    final_report = await orchestrator.execute_crescendo_assessment()
+                else:
+                    orchestrator = ThreeRunCrescendoOrchestrator(
+                        websocket_url=websocket_url,
+                        architecture_file=architecture_file,
+                        chatbot_profile=chatbot_profile
+                    )
+                    final_report = await orchestrator.execute_full_assessment()
+                
+                all_reports[attack_mode] = final_report
+                
+                # Broadcast category completion
+                await manager.broadcast({
+                    "type": "category_completed",
+                    "data": {
+                        "category": attack_mode,
+                        "category_name": ATTACK_MODE_NAMES[attack_mode],
+                        "vulnerabilities": final_report.get('total_vulnerabilities', 0),
+                        "timestamp": datetime.now().isoformat()
+                    }
+                })
+            except Exception as category_error:
+                error_message = str(category_error)
+                print(f"❌ Category '{attack_mode}' failed: {error_message}")
+                all_reports[attack_mode] = {
+                    "status": "failed",
+                    "error": error_message,
+                    "total_vulnerabilities": 0
                 }
-            })
+                await manager.broadcast({
+                    "type": "category_failed",
+                    "data": {
+                        "category": attack_mode,
+                        "category_name": ATTACK_MODE_NAMES[attack_mode],
+                        "error": error_message,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                })
         
         # Campaign complete - Save comprehensive report with username and chatbot profile
         attack_state["running"] = False
