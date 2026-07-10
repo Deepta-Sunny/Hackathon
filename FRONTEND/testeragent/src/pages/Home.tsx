@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Chip } from "@mui/material";
+import { Box, Paper, Chip, FormControl, Select, MenuItem } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +43,7 @@ const useStyles = createUseStyles({
   },
   profileInfo: {
     display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
+    gridTemplateColumns: "repeat(6, 1fr)",
     gap: 16,
     fontFamily: "sans-serif",
   },
@@ -123,7 +123,10 @@ interface ChatbotProfile {
   boundaries: string;
   communication_style: string;
   context_awareness: string;
+  testing_strategy?: "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
 }
+
+type TestingStrategy = "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
 
 function Home() {
   const classes = useStyles();
@@ -132,6 +135,7 @@ function Home() {
   const [profile, setProfile] = useState<ChatbotProfile | null>(null);
   const [attackStarted, setAttackStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [testingStrategy, setTestingStrategy] = useState<TestingStrategy>("all");
 
   useEffect(() => {
     // Try to load saved dashboard state first
@@ -143,6 +147,7 @@ function Home() {
         if (data.found && data.state) {
           // Use saved state
           setProfile(data.state);
+          setTestingStrategy(data.state.testing_strategy || "all");
           sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
           return;
         }
@@ -153,7 +158,9 @@ function Home() {
       // Fallback to sessionStorage
       const savedProfile = sessionStorage.getItem("chatbotProfile");
       if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+        const parsedProfile = JSON.parse(savedProfile) as ChatbotProfile;
+        setProfile(parsedProfile);
+        setTestingStrategy(parsedProfile.testing_strategy || "all");
       } else {
         // Redirect to profile setup if no profile found
         navigate("/");
@@ -171,28 +178,33 @@ function Home() {
   const handleStartAttack = useCallback(
     async () => {
       if (profile) {
-        setIsStarting(true);
-        try {
-          // Save dashboard state before starting
-          await fetch('http://localhost:8080/api/dashboard/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
-          });
-        } catch (error) {
-          console.error("Failed to save dashboard state:", error);
-        }
+       const profileWithStrategy: ChatbotProfile = {
+         ...profile,
+         testing_strategy: testingStrategy,
+       };
+
+       setIsStarting(true);
+       try {
+         // Save dashboard state before starting
+         await fetch('http://localhost:8080/api/dashboard/save', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(profileWithStrategy)
+         });
+       } catch (error) {
+         console.error("Failed to save dashboard state:", error);
+       }
         
         // Open WebSocket monitor first
         await dispatch(openAttackMonitor());
 
         // Start testing with profile
-        dispatch(initiateAttack(profile));
+        dispatch(initiateAttack(profileWithStrategy));
         setAttackStarted(true);
       }
       setIsStarting(false);
     },
-    [dispatch, profile]
+    [dispatch, profile, testingStrategy]
   );
 
   const handleStopAttack = useCallback(async () => {
@@ -241,6 +253,23 @@ function Home() {
                   style={{ color: "#0f62fe", background: "#edf5ff", fontWeight: 600 }}
                 />
               </div>
+            </div>
+            <div className={classes.infoItem}>
+              <div className={classes.infoLabel}>Testing Strategy</div>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={testingStrategy}
+                  onChange={(event) => setTestingStrategy(event.target.value as TestingStrategy)}
+                  disabled={attackStarted}
+                  sx={{ fontSize: 14 }}
+                >
+                  <MenuItem value="all">All Strategies</MenuItem>
+                  <MenuItem value="standard">Standard Attack</MenuItem>
+                  <MenuItem value="crescendo">Crescendo Attack</MenuItem>
+                  <MenuItem value="skeleton_key">Skeleton Key Attack</MenuItem>
+                  <MenuItem value="obfuscation">Obfuscation Attack</MenuItem>
+                </Select>
+              </FormControl>
             </div>
             <div className={classes.infoItem}>
               <div className={classes.infoLabel} style={{visibility: 'hidden'}}>actions</div>

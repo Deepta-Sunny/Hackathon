@@ -67,6 +67,8 @@ attack_state = {
     "results": {}
 }
 
+SUPPORTED_TESTING_STRATEGIES = {"all", "standard", "crescendo", "skeleton_key", "obfuscation"}
+
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates"""
@@ -218,6 +220,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         print(f"Agent Type: {profile.agent_type}")
     print(f"Communication Style: {profile.communication_style}")
     print(f"Context Awareness: {profile.context_awareness}")
+    print(f"Testing Strategy: {profile.testing_strategy or 'all'}")
     print(f"\nCapabilities ({len(profile.capabilities)}):")
     for i, cap in enumerate(profile.capabilities, 1):
         print(f"  {i}. {cap}")
@@ -243,6 +246,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     attack_state["websocket_url"] = profile.websocket_url
     attack_state["username"] = profile.username
     attack_state["chatbot_profile"] = profile.to_dict()
+    attack_state["testing_strategy"] = profile.testing_strategy or "all"
     attack_state["profile_file"] = profile_filename
     attack_state["start_time"] = datetime.now().isoformat()
     
@@ -254,6 +258,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
             "websocket_url": profile.websocket_url,
             "domain": profile.domain,
             "chatbot_role": profile.chatbot_role,
+            "testing_strategy": profile.testing_strategy or "all",
             "timestamp": datetime.now().isoformat()
         }
     })
@@ -263,7 +268,8 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         profile.websocket_url, 
         None,  # No .md file
         profile,
-        profile.username
+        profile.username,
+        profile.testing_strategy or "all"
     ))
     
     return {
@@ -271,7 +277,8 @@ async def start_attack_with_profile(profile: ChatbotProfile):
         "message": "Attack campaign initiated with chatbot profile",
         "username": profile.username,
         "websocket_url": profile.websocket_url,
-        "domain": profile.domain
+        "domain": profile.domain,
+        "testing_strategy": profile.testing_strategy or "all"
     }
 
 
@@ -1408,7 +1415,8 @@ async def execute_attack_campaign(
     websocket_url: str, 
     architecture_file: Optional[str] = None,
     chatbot_profile: Optional[ChatbotProfile] = None,
-    username: str = "anonymous"
+    username: str = "anonymous",
+    testing_strategy: str = "all"
 ):
     """Execute the full multi-category attack campaign with real-time updates"""
     
@@ -1420,7 +1428,15 @@ async def execute_attack_campaign(
     print(f"Profile provided: {chatbot_profile is not None}")
     print("="*80 + "\n")
     
-    attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+    selected_strategy = (testing_strategy or "all").lower()
+    if selected_strategy not in SUPPORTED_TESTING_STRATEGIES:
+        selected_strategy = "all"
+
+    attack_modes = (
+        ["standard", "crescendo", "skeleton_key", "obfuscation"]
+        if selected_strategy == "all"
+        else [selected_strategy]
+    )
     
     mode_names = {
         "standard": "Standard Attack",
@@ -1542,6 +1558,7 @@ async def execute_attack_campaign(
             "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
             "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
             "context_awareness": chatbot_profile.context_awareness if chatbot_profile else "",
+            "testing_strategy": selected_strategy,
             "timestamp": timestamp,
             "last_test_date": datetime.now().isoformat(),
             "test_report_file": str(test_report_file)
@@ -1562,6 +1579,7 @@ async def execute_attack_campaign(
                 "total_categories": len(attack_modes),
                 "results": all_reports,
                 "username": username,
+                "testing_strategy": selected_strategy,
                 "timestamp": datetime.now().isoformat()
             }
         })
