@@ -109,6 +109,21 @@ const useStyles = createUseStyles({
       borderColor: "#0f62fe !important",
     },
   },
+  strategySelect: {
+    height: 40,
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    color: "#222",
+    padding: "0 10px",
+    fontSize: 14,
+    minWidth: 170,
+    fontFamily: "sans-serif",
+    "&:disabled": {
+      background: "#f3f4f6",
+      color: "#6b7280",
+    },
+  },
 });
 
 interface ChatbotProfile {
@@ -148,8 +163,8 @@ function Home() {
           sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
           return;
         }
-      } catch {
-        console.log("No saved dashboard state found, checking sessionStorage");
+      } catch (error) {
+        console.log("No saved dashboard state found, checking sessionStorage", error);
       }
       
       // Fallback to sessionStorage
@@ -267,19 +282,10 @@ function Home() {
                   Edit
                 </Button>
                 <select
+                  className={classes.strategySelect}
                   value={testingStrategy}
                   onChange={(e) => setTestingStrategy(e.target.value)}
                   disabled={attackStarted || isStarting}
-                  style={{
-                    height: "40px",
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    background: "#fff",
-                    color: "#222",
-                    padding: "0 10px",
-                    fontSize: "14px",
-                    minWidth: "170px"
-                  }}
                 >
                   <option value="all">All Strategies</option>
                   <option value="standard">Standard</option>

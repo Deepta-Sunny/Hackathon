@@ -1428,12 +1428,9 @@ async def execute_attack_campaign(
     print("="*80 + "\n")
     
     available_attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
-    normalized_strategy = (testing_strategy or "all").strip().lower()
-    selected_strategy = (
-        normalized_strategy
-        if normalized_strategy == "all" or normalized_strategy in available_attack_modes
-        else "all"
-    )
+    selected_strategy = (testing_strategy or "all").strip().lower()
+    if selected_strategy != "all" and selected_strategy not in available_attack_modes:
+        selected_strategy = "all"
     attack_modes = (
         available_attack_modes
         if selected_strategy == "all"
