@@ -1432,9 +1432,11 @@ async def execute_attack_campaign(
 
     # Determine which attack modes to run based on testing_strategy
     strategy = (chatbot_profile.testing_strategy or "all") if chatbot_profile else "all"
-    if strategy and strategy != "all" and strategy in all_attack_modes:
+    if strategy != "all" and strategy in all_attack_modes:
         attack_modes = [strategy]
     else:
+        if strategy != "all" and strategy not in all_attack_modes:
+            print(f"⚠️  WARNING: Unknown testing_strategy '{strategy}'. Falling back to all attack modes.")
         attack_modes = all_attack_modes
     
     all_reports = {}
