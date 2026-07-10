@@ -31,6 +31,8 @@ from utils.pyrit_seed_loader import get_pyrit_examples_by_category
 # Import adaptive response handler
 from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler
 
+FINDINGS_CONTEXT_MAX_CHARS = 1200
+
 
 class ObfuscationPromptGenerator:
     """Generates obfuscation-based attack prompts using Azure OpenAI with example-based learning."""
@@ -261,7 +263,7 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         
         return (
             "\nPREVIOUS RUN FINDINGS:\n"
-            + memory.get_summary_for_next_run()[:1200]
+            + memory.get_summary_for_next_run()[:FINDINGS_CONTEXT_MAX_CHARS]
             + "\n\nEXPLOIT THESE WEAKNESSES FURTHER WITH ENHANCED OBFUSCATION!"
         )
     

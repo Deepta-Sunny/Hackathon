@@ -41,6 +41,8 @@ from utils.pyrit_seed_loader import (
     get_pyrit_examples_by_category
 )
 
+FINDINGS_CONTEXT_MAX_CHARS = 1200
+
 # Architecture loader for domain detection
 try:
     from utils.architecture_loader import ArchitectureLoader
@@ -291,7 +293,7 @@ Generate EXACTLY {turns} prompts. Return ONLY the JSON array."""
         successful_context = self._format_successful_prompts_for_evolution(sorted_prompts[:7])
         findings_context = ""
         if previous_findings and previous_findings.has_findings_context():
-            findings_context = previous_findings.get_summary_for_next_run()[:1200]
+            findings_context = previous_findings.get_summary_for_next_run()[:FINDINGS_CONTEXT_MAX_CHARS]
         
         # Few-shot examples showing HOW to evolve prompts
         few_shot_examples = """
@@ -541,7 +543,7 @@ Generate EXACTLY {turns} evolved prompts. Return ONLY the JSON array."""
         
         return (
             "\nPREVIOUS RUN FINDINGS:\n"
-            + findings.get_summary_for_next_run()[:1200]
+            + findings.get_summary_for_next_run()[:FINDINGS_CONTEXT_MAX_CHARS]
             + "\n\nADAPT SKELETON KEY PROMPTS TO EXPLOIT THESE WEAKNESSES!"
         )
     

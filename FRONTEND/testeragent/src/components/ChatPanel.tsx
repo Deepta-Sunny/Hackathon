@@ -219,7 +219,7 @@ const ChatPanel: React.FC = () => {
           const data = payload.data as Record<string, unknown> | undefined;
           const selectedStrategies = Array.isArray(data?.attack_strategies)
             ? sortCategories(
-                data!.attack_strategies
+                data.attack_strategies
                   .map((item) => String(item))
                   .filter((item) => item.length > 0)
               )

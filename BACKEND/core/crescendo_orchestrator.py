@@ -30,6 +30,8 @@ from utils.pyrit_seed_loader import get_pyrit_examples_by_category
 from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler, ChatbotIntent
 from attack_strategies.strategy_data_loader import StrategyDataLoader
 
+FINDINGS_CONTEXT_MAX_CHARS = 1200
+
 
 class CrescendoPersonality:
     """Defines attack personas for different chatbot domains."""
@@ -290,7 +292,7 @@ REQUIREMENTS:
         
         return (
             "\nPREVIOUS RUN FINDINGS:\n"
-            + findings.get_summary_for_next_run()[:1200]
+            + findings.get_summary_for_next_run()[:FINDINGS_CONTEXT_MAX_CHARS]
             + "\n\nEXPLOIT THESE WEAKNESSES FURTHER!"
         )
     

@@ -12,6 +12,10 @@ from pyrit.models import SeedPrompt
 from config import DUCKDB_PATH
 from models import VulnerabilityFinding, GeneralizedPattern
 
+HIGH_RISK_THRESHOLD = 3
+MAX_TECHNIQUES_IN_SUMMARY = 4
+MAX_VULN_TYPES_IN_SUMMARY = 5
+
 
 class VulnerableResponseMemory:
     """
@@ -106,7 +110,7 @@ class VulnerableResponseMemory:
                     return 1
             return 1
         
-        severe_turns = [turn for turn in turns if normalize_risk(turn) >= 3]
+        severe_turns = [turn for turn in turns if normalize_risk(turn) >= HIGH_RISK_THRESHOLD]
         
         vulnerability_types = sorted({
             str(turn.get("vulnerability_type", "none"))
@@ -123,7 +127,7 @@ class VulnerableResponseMemory:
             })
             summary = (
                 f"{len(severe_turns)}/{total_turns} turns reached risk >=3; "
-                f"top techniques: {', '.join(top_techniques[:4])}"
+                f"top techniques: {', '.join(top_techniques[:MAX_TECHNIQUES_IN_SUMMARY])}"
             )
         else:
             summary = (
@@ -132,7 +136,7 @@ class VulnerableResponseMemory:
             )
         
         if vulnerability_types:
-            summary = f"{summary}. Vulnerability types: {', '.join(vulnerability_types[:5])}"
+            summary = f"{summary}. Vulnerability types: {', '.join(vulnerability_types[:MAX_VULN_TYPES_IN_SUMMARY])}"
         
         run_finding = {
             "run": run,
