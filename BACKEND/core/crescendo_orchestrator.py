@@ -440,7 +440,6 @@ class CrescendoAttackOrchestrator:
         # Initialize components
         self.azure_client = AzureOpenAIClient()
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url)
-        self.conversation_controller = self.chatbot_target
         self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
         self.prompt_generator = CrescendoPromptGenerator(self.azure_client, self.db_manager)
         self.vulnerable_memory = VulnerableResponseMemory()
@@ -450,6 +449,14 @@ class CrescendoAttackOrchestrator:
         # Adaptive response handling
         self.use_adaptive_mode = use_adaptive_mode
         self.adaptive_handler = AdaptiveResponseHandler(azure_client=self.azure_client) if use_adaptive_mode else None
+
+    @property
+    def conversation_controller(self):
+        """Backward-compatible alias for chatbot_target.
+        
+        Returns the chatbot target instance used for conversation interactions.
+        """
+        return self.chatbot_target
         
     async def execute_crescendo_assessment(self) -> Dict:
         """Execute complete Crescendo attack assessment."""
