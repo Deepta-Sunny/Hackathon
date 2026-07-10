@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Chip } from "@mui/material";
+import { Box, Paper, Chip } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -109,6 +109,21 @@ const useStyles = createUseStyles({
       borderColor: "#0f62fe !important",
     },
   },
+  strategySelect: {
+    height: 40,
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    color: "#222",
+    padding: "0 10px",
+    fontSize: 14,
+    minWidth: 170,
+    fontFamily: "sans-serif",
+    "&:disabled": {
+      background: "#f3f4f6",
+      color: "#6b7280",
+    },
+  },
 });
 
 interface ChatbotProfile {
@@ -123,6 +138,7 @@ interface ChatbotProfile {
   boundaries: string;
   communication_style: string;
   context_awareness: string;
+  testing_strategy?: string;
 }
 
 function Home() {
@@ -132,6 +148,7 @@ function Home() {
   const [profile, setProfile] = useState<ChatbotProfile | null>(null);
   const [attackStarted, setAttackStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [testingStrategy, setTestingStrategy] = useState("all");
 
   useEffect(() => {
     // Try to load saved dashboard state first
@@ -147,7 +164,7 @@ function Home() {
           return;
         }
       } catch (error) {
-        console.log("No saved dashboard state found, checking sessionStorage");
+        console.log("No saved dashboard state found, checking sessionStorage", error);
       }
       
       // Fallback to sessionStorage
@@ -163,6 +180,12 @@ function Home() {
     loadDashboardState();
   }, [navigate]);
 
+  useEffect(() => {
+    if (profile) {
+      setTestingStrategy(profile.testing_strategy || "all");
+    }
+  }, [profile]);
+
   // Open WebSocket monitor when component mounts
   useEffect(() => {
     dispatch(openAttackMonitor());
@@ -172,12 +195,16 @@ function Home() {
     async () => {
       if (profile) {
         setIsStarting(true);
+        const profileWithTestingStrategy = {
+          ...profile,
+          testing_strategy: testingStrategy,
+        };
         try {
           // Save dashboard state before starting
           await fetch('http://localhost:8080/api/dashboard/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
+            body: JSON.stringify(profileWithTestingStrategy)
           });
         } catch (error) {
           console.error("Failed to save dashboard state:", error);
@@ -187,12 +214,12 @@ function Home() {
         await dispatch(openAttackMonitor());
 
         // Start testing with profile
-        dispatch(initiateAttack(profile));
+        dispatch(initiateAttack(profileWithTestingStrategy));
         setAttackStarted(true);
       }
       setIsStarting(false);
     },
-    [dispatch, profile]
+    [dispatch, profile, testingStrategy]
   );
 
   const handleStopAttack = useCallback(async () => {
@@ -254,6 +281,18 @@ function Home() {
                 >
                   Edit
                 </Button>
+                <select
+                  className={classes.strategySelect}
+                  value={testingStrategy}
+                  onChange={(e) => setTestingStrategy(e.target.value)}
+                  disabled={attackStarted || isStarting}
+                >
+                  <option value="all">All Strategies</option>
+                  <option value="standard">Standard</option>
+                  <option value="crescendo">Crescendo</option>
+                  <option value="skeleton_key">Skeleton Key</option>
+                  <option value="obfuscation">Obfuscation</option>
+                </select>
                 {!attackStarted ? (
                   <Button
                     variant="solid"

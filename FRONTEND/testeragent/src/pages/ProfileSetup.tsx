@@ -16,6 +16,7 @@ interface ChatbotProfile {
   backend_integration?: string;
   training_context?: string;
   bucket_name?: string;
+  testing_strategy?: string;
 }
 
 const ProfileSetup = () => {
@@ -235,7 +236,8 @@ const ProfileSetup = () => {
       boundaries,
       communication_style: communicationStyle,
       context_awareness: "maintains_context",
-      bucket_name: selectedBucket // Save to selected bucket if any
+      bucket_name: selectedBucket, // Save to selected bucket if any
+      testing_strategy: "all"
     };
 
     // Save profile to sessionStorage for dashboard
