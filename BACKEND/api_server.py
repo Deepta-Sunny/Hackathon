@@ -1430,7 +1430,7 @@ async def execute_attack_campaign(
     available_attack_modes = ["standard", "crescendo", "skeleton_key", "obfuscation"]
     selected_strategy = (testing_strategy or "all").strip().lower()
     if selected_strategy != "all" and selected_strategy not in available_attack_modes:
-        print(f"⚠️ Invalid testing strategy '{testing_strategy}', defaulting to 'all'")
+        print(f"⚠️ Invalid testing strategy '{selected_strategy}', defaulting to 'all'")
         selected_strategy = "all"
     attack_modes = (
         available_attack_modes
