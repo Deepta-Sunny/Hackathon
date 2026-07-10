@@ -143,6 +143,12 @@ function Home() {
   const [attackStarted, setAttackStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [testingStrategy, setTestingStrategy] = useState<TestingStrategy>("all");
+  const getTestingStrategy = (savedProfile?: Partial<ChatbotProfile> | null): TestingStrategy => {
+    const strategy = savedProfile?.testing_strategy;
+    return TESTING_STRATEGY_OPTIONS.some((option) => option.value === strategy)
+      ? (strategy as TestingStrategy)
+      : "all";
+  };
 
   useEffect(() => {
     // Try to load saved dashboard state first
@@ -154,7 +160,7 @@ function Home() {
         if (data.found && data.state) {
           // Use saved state
           setProfile(data.state);
-          setTestingStrategy(data.state.testing_strategy || "all");
+          setTestingStrategy(getTestingStrategy(data.state));
           sessionStorage.setItem("chatbotProfile", JSON.stringify(data.state));
           return;
         }
@@ -167,7 +173,7 @@ function Home() {
       if (savedProfile) {
         const parsedProfile = JSON.parse(savedProfile) as ChatbotProfile;
         setProfile(parsedProfile);
-        setTestingStrategy(parsedProfile.testing_strategy || "all");
+        setTestingStrategy(getTestingStrategy(parsedProfile));
       } else {
         // Redirect to profile setup if no profile found
         navigate("/");

@@ -68,6 +68,7 @@ attack_state = {
 }
 
 SUPPORTED_TESTING_STRATEGIES = {"all", "standard", "crescendo", "skeleton_key", "obfuscation"}
+SUPPORTED_TESTING_STRATEGIES_DISPLAY = ", ".join(sorted(SUPPORTED_TESTING_STRATEGIES))
 
 
 class ConnectionManager:
@@ -1428,12 +1429,11 @@ async def execute_attack_campaign(
     print(f"Profile provided: {chatbot_profile is not None}")
     print("="*80 + "\n")
     
-    selected_strategy = (testing_strategy or "all").lower()
+    selected_strategy = (testing_strategy.strip() if testing_strategy and testing_strategy.strip() else "all").lower()
     if selected_strategy not in SUPPORTED_TESTING_STRATEGIES:
-        supported_strategies = ", ".join(sorted(SUPPORTED_TESTING_STRATEGIES))
         print(
             f"⚠️ Unsupported testing strategy '{selected_strategy}' received. "
-            f"Supported strategies: {supported_strategies}. Falling back to 'all'."
+            f"Supported strategies: {SUPPORTED_TESTING_STRATEGIES_DISPLAY}. Falling back to 'all'."
         )
         selected_strategy = "all"
 
