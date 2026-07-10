@@ -440,6 +440,7 @@ class CrescendoAttackOrchestrator:
         # Initialize components
         self.azure_client = AzureOpenAIClient()
         self.chatbot_target = ChatbotWebSocketTarget(url=websocket_url)
+        self.conversation_controller = self.chatbot_target
         self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
         self.prompt_generator = CrescendoPromptGenerator(self.azure_client, self.db_manager)
         self.vulnerable_memory = VulnerableResponseMemory()
