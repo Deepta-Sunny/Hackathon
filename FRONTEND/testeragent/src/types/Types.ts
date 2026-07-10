@@ -48,6 +48,7 @@ export interface ChatbotProfile {
   boundaries: string;
   communication_style: string;
   context_awareness: string;
+  testing_strategy?: string;
 }
 
 export interface LegacyAttackPayload {
