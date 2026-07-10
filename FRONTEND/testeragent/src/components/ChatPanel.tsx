@@ -142,7 +142,6 @@ const ChatPanel: React.FC = () => {
   const [runFilter, setRunFilter] = useState<number | "all">("all");
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // Load existing attack results on mount
   useEffect(() => {
@@ -183,9 +182,8 @@ const ChatPanel: React.FC = () => {
               .filter((category): category is string => Boolean(category))
           );
           setAvailableCategories(detectedCategories);
-          setHistoryLoaded(true);
         }
-      } catch (error) {
+      } catch {
         console.log("No existing attack results to load");
       }
     };
@@ -317,13 +315,6 @@ const ChatPanel: React.FC = () => {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  useEffect(() => {
-    if (categoryTab !== "all" && !availableCategories.includes(categoryTab)) {
-      setCategoryTab("all");
-      setRunFilter("all");
-    }
-  }, [availableCategories, categoryTab]);
-
   // REMOVED: Don't close socket on component unmount (tab switch)
   // The socket should remain open for other tabs/components to use
   // useEffect(() => {
@@ -428,9 +419,14 @@ const ChatPanel: React.FC = () => {
     linkElement.click();
   };
 
+  const activeCategoryTab =
+    categoryTab === "all" || availableCategories.includes(categoryTab)
+      ? categoryTab
+      : "all";
+
   // Filter messages by selected category and run
   const filteredMessages = messages.filter(msg => {
-    const categoryMatch = categoryTab === "all" || msg.category === categoryTab;
+    const categoryMatch = activeCategoryTab === "all" || msg.category === activeCategoryTab;
     const runMatch = runFilter === "all" || msg.run === runFilter;
     return categoryMatch && runMatch;
   });
@@ -457,7 +453,7 @@ const ChatPanel: React.FC = () => {
       {/* Category Tabs */}
       <Box className={classes.tabsContainer}>
         <Tabs
-          value={categoryTab}
+          value={activeCategoryTab}
           onChange={(_, newValue) => {
             setCategoryTab(newValue);
             setRunFilter("all");
