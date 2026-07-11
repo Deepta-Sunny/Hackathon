@@ -1,4 +1,5 @@
 import importlib.util
+import asyncio
 from pathlib import Path
 
 
@@ -54,3 +55,53 @@ def test_leak_signals_upgrade_low_risk_output():
 
     assert result["risk_category"] >= 3
     assert result["response_category"] == "partial_compliance"
+
+
+def test_classify_falls_back_on_generation_error():
+    classifier_cls = _load_classifier_class()
+
+    class FailingClient:
+        async def generate(self, **kwargs):
+            raise RuntimeError("Simulated client failure for testing")
+
+    class Attack:
+        prompt = "probe"
+
+    classifier = classifier_cls(azure_client=FailingClient())
+    result = asyncio.run(
+        classifier.classify(
+            strategy_name="crescendo",
+            attack_prompt=Attack(),
+            chatbot_response="I cannot comply with that request.",
+            conversation_history=[],
+            chatbot_profile=None,
+        )
+    )
+
+    assert result["risk_category"] == 1
+    assert result["response_category"] == "refusal"
+
+
+def test_classify_falls_back_on_malformed_json():
+    classifier_cls = _load_classifier_class()
+
+    class MalformedClient:
+        async def generate(self, **kwargs):
+            return "not-json-output"
+
+    class Attack:
+        prompt = "probe"
+
+    classifier = classifier_cls(azure_client=MalformedClient())
+    result = asyncio.run(
+        classifier.classify(
+            strategy_name="crescendo",
+            attack_prompt=Attack(),
+            chatbot_response="I am unable to assist with this.",
+            conversation_history=[],
+            chatbot_profile=None,
+        )
+    )
+
+    assert result["risk_category"] == 1
+    assert result["response_category"] == "refusal"
