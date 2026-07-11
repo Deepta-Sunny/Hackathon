@@ -54,6 +54,7 @@ async def save_final_report(
             "primary_objective": chatbot_profile.primary_objective,
             "intended_audience": chatbot_profile.intended_audience,
             "chatbot_role": chatbot_profile.chatbot_role,
+            "attack_strategies": chatbot_profile.attack_strategies,
             "capabilities": chatbot_profile.capabilities,
             "boundaries": chatbot_profile.boundaries,
             "communication_style": chatbot_profile.communication_style,

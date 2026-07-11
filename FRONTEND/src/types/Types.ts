@@ -36,6 +36,13 @@ export interface AttackResultsResponse {
   results: AttackSummary[];
 }
 
+export type AttackStrategy =
+  | "all"
+  | "standard"
+  | "crescendo"
+  | "skeleton_key"
+  | "obfuscation";
+
 export interface ChatbotProfile {
   username: string;
   websocket_url: string;
@@ -48,6 +55,8 @@ export interface ChatbotProfile {
   boundaries: string;
   communication_style: string;
   context_awareness: string;
+  attack_strategy?: AttackStrategy;
+  attack_strategies?: Exclude<AttackStrategy, "all">[];
 }
 
 export interface LegacyAttackPayload {

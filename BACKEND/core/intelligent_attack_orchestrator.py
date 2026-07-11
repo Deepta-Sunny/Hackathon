@@ -74,20 +74,14 @@ Extract in JSON format:
 }}
 """
 
-            response = self.client.chat.completions.create(
-                model=self.deployment,
+            response = self._create_chat_completion(
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 max_tokens=1000
             )
 
             result = response.choices[0].message.content.strip()
-            if "```json" in result:
-                result = result.split("```json")[1].split("```")[0].strip()
-            elif "```" in result:
-                result = result.split("```")[1].split("```")[0].strip()
-
-            behavior = json.loads(result)
+            behavior = self._extract_json_payload(result)
             self.expected_behavior = behavior
             print(f"✅ Behavior extracted: {behavior.get('primary_purpose', 'Unknown')[:60]}...")
             return behavior
@@ -95,8 +89,8 @@ Extract in JSON format:
         except Exception as e:
             print(f"⚠️ Error: {e}")
             return {
-                "primary_purpose": "E-commerce assistant",
-                "allowed_functionalities": ["product search", "order tracking"],
+                "primary_purpose": "Target assistant described in architecture",
+                "allowed_functionalities": ["documented in-domain support", "user assistance"],
                 "restricted_areas": ["admin access", "system info"],
                 "security_boundaries": ["authentication", "authorization"],
                 "vulnerability_indicators": ["input validation", "access control"]
@@ -126,8 +120,7 @@ Respond with ONLY the attack prompt text.
 """
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.deployment,
+            response = self._create_chat_completion(
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.9,
                 max_tokens=150
@@ -158,20 +151,14 @@ Respond in JSON:
 """
 
         try:
-            resp = self.client.chat.completions.create(
-                model=self.deployment,
+            resp = self._create_chat_completion(
                 messages=[{"role": "user", "content": validation_prompt}],
                 temperature=0.2,
                 max_tokens=300
             )
             
             result = resp.choices[0].message.content.strip()
-            if "```json" in result:
-                result = result.split("```json")[1].split("```")[0].strip()
-            elif "```" in result:
-                result = result.split("```")[1].split("```")[0].strip()
-
-            return json.loads(result)
+            return self._extract_json_payload(result)
         except Exception as e:
             return {
                 "stays_in_scope": True,
@@ -181,6 +168,41 @@ Respond in JSON:
                 "explanation": f"Validation error: {e}",
                 "attack_category_success": None
             }
+
+    @staticmethod
+    def _extract_json_payload(text: str) -> Dict[str, Any]:
+        """Extract and parse the first valid JSON object from model output."""
+        decoder = json.JSONDecoder()
+        start = text.find("{")
+        while start != -1:
+            try:
+                obj, end_idx = decoder.raw_decode(text[start:])
+                if isinstance(obj, dict):
+                    return obj
+                raise ValueError("Expected JSON dictionary, got different JSON type")
+            except json.JSONDecodeError:
+                start = text.find("{", start + 1)
+        raise ValueError("No valid JSON object found in model output")
+
+    def _create_chat_completion(self, messages: List[Dict[str, str]], temperature: float, max_tokens: int):
+        """Create chat completion with reasoning enabled and graceful fallback."""
+        try:
+            return self.client.chat.completions.create(
+                model=self.deployment,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                reasoning={"effort": "high"}
+            )
+        except Exception as e:
+            if "reasoning" in str(e).lower():
+                return self.client.chat.completions.create(
+                    model=self.deployment,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+            raise
 
     async def store_successful_attack(self, attack_data: Dict[str, Any]):
         """Store successful attack in database."""

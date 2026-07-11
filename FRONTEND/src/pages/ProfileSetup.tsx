@@ -1,6 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+type AttackStrategy = "all" | "standard" | "crescendo" | "skeleton_key" | "obfuscation";
+type AttackMode = Exclude<AttackStrategy, "all">;
+
+const ATTACK_STRATEGY_OPTIONS: { value: AttackMode; label: string }[] = [
+  { value: "standard", label: "Standard" },
+  { value: "crescendo", label: "Crescendo" },
+  { value: "skeleton_key", label: "Skeleton Key" },
+  { value: "obfuscation", label: "Obfuscation" },
+];
+
+const DEFAULT_ATTACK_STRATEGIES: AttackMode[] = ATTACK_STRATEGY_OPTIONS.map(
+  (option) => option.value
+);
+
 interface ChatbotProfile {
   username: string;
   websocket_url: string;
@@ -16,6 +30,8 @@ interface ChatbotProfile {
   backend_integration?: string;
   training_context?: string;
   bucket_name?: string;
+  attack_strategy?: AttackStrategy;
+  attack_strategies?: AttackMode[];
 }
 
 const ProfileSetup = () => {
@@ -38,6 +54,9 @@ const ProfileSetup = () => {
   const [newCapability, setNewCapability] = useState("");
   const [boundaries, setBoundaries] = useState("");
   const [communicationStyle, setCommunicationStyle] = useState("");
+  const [attackStrategies, setAttackStrategies] = useState<AttackMode[]>(
+    DEFAULT_ATTACK_STRATEGIES
+  );
 
   // Bucket State
   const [showLibrary, setShowLibrary] = useState(false);
@@ -51,6 +70,25 @@ const ProfileSetup = () => {
   const [moveTargetBucket, setMoveTargetBucket] = useState<string>("");
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+  const normalizeAttackStrategies = (profile: Partial<ChatbotProfile>): AttackMode[] => {
+    const validOptions = new Set<AttackMode>(DEFAULT_ATTACK_STRATEGIES);
+    const listBasedStrategies = Array.isArray(profile.attack_strategies)
+      ? profile.attack_strategies.filter(
+          (strategy): strategy is AttackMode => validOptions.has(strategy as AttackMode)
+        )
+      : [];
+
+    if (listBasedStrategies.length > 0) {
+      return Array.from(new Set(listBasedStrategies));
+    }
+
+    if (profile.attack_strategy && profile.attack_strategy !== "all") {
+      return [profile.attack_strategy];
+    }
+
+    return [...DEFAULT_ATTACK_STRATEGIES];
+  };
 
   const fetchBuckets = async () => {
     try {
@@ -107,6 +145,7 @@ const ProfileSetup = () => {
             setCapabilities(profile.capabilities || [""]);
             setBoundaries(profile.boundaries || "");
             setCommunicationStyle(profile.communication_style || "");
+            setAttackStrategies(normalizeAttackStrategies(profile));
             setShowLibrary(false);
       }
     } catch (e) {
@@ -186,6 +225,16 @@ const ProfileSetup = () => {
     setCapabilities(capabilities.filter((_, i) => i !== index));
   };
 
+  const toggleAttackStrategy = (strategy: AttackMode) => {
+    setAttackStrategies((currentStrategies) => {
+      const isSelected = currentStrategies.includes(strategy);
+      const nextStrategies = isSelected
+        ? currentStrategies.filter((value) => value !== strategy)
+        : [...currentStrategies, strategy];
+      return nextStrategies.length > 0 ? nextStrategies : currentStrategies;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -222,6 +271,10 @@ const ProfileSetup = () => {
       alert("Please enter a Live Connection Endpoint");
       return;
     }
+    if (attackStrategies.length === 0) {
+      alert("Please select at least one Testing Strategy");
+      return;
+    }
 
     const profile: ChatbotProfile = {
       username,
@@ -235,7 +288,8 @@ const ProfileSetup = () => {
       boundaries,
       communication_style: communicationStyle,
       context_awareness: "maintains_context",
-      bucket_name: selectedBucket // Save to selected bucket if any
+      bucket_name: selectedBucket, // Save to selected bucket if any
+      attack_strategies: attackStrategies,
     };
 
     // Save profile to sessionStorage for dashboard
@@ -645,6 +699,29 @@ const ProfileSetup = () => {
                         <option value="Other">Other</option>
                       </select>
                       
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-left text-black text-base font-semibold ">Attack Strategy</label>
+                    <div className="flex flex-wrap gap-2">
+                      {ATTACK_STRATEGY_OPTIONS.map((option) => {
+                        const selected = attackStrategies.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => toggleAttackStrategy(option.value)}
+                            className={`px-3 py-1.5 rounded-full text-base border transition-all ${
+                              selected
+                                ? "bg-[#0f62fe] text-white border-transparent"
+                                : "bg-[#f3f4f6] text-gray-700 border-gray-200"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

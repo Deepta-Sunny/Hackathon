@@ -48,6 +48,22 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 _LOG_DIR = Path(__file__).parent.parent / "logs"
 _LOG_DIR.mkdir(exist_ok=True)
 
+# Windows consoles often default to cp1252; force UTF-8 streams for emoji-safe logs.
+def _configure_console_streams():
+    for stream in (sys.stdout, sys.stderr):
+        if not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            try:
+                stream.reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
+_configure_console_streams()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -55,7 +71,8 @@ logging.basicConfig(
     handlers=[
         logging.StreamHandler(sys.stdout),
         logging.FileHandler(
-            str(_LOG_DIR / f"aig_middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+            str(_LOG_DIR / f"aig_middleware_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"),
+            encoding="utf-8",
         ),
     ],
 )
@@ -378,7 +395,7 @@ class AigChatbotMiddleware:
     async def initialise(self) -> bool:
         """Start the browser and open the Ai.g chatbot."""
         logger.info("=" * 80)
-        logger.info("🌐 INITIALISING AI.G CHATBOT CONNECTION")
+        logger.info("--- INITIALISING AI.G CHATBOT CONNECTION ---")
         logger.info("=" * 80)
         logger.info(f"Target : {AIRINDIA_URL}")
         logger.info(f"Headless: {self.headless}")

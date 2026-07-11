@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import datetime
 
+ALLOWED_ATTACK_MODES = ["standard", "crescendo", "skeleton_key", "obfuscation"]
+
 
 class ChatbotProfile(BaseModel):
     """Comprehensive chatbot profile for red-teaming context"""
@@ -30,6 +32,14 @@ class ChatbotProfile(BaseModel):
     
     # Agent Type
     agent_type: Optional[str] = Field(None, description="Type of agent (RAG, Graph-Based, etc.)")
+    attack_strategy: Optional[str] = Field(
+        default=None,
+        description="Legacy single attack strategy field (all, standard, crescendo, skeleton_key, obfuscation)",
+    )
+    attack_strategies: List[str] = Field(
+        default_factory=list,
+        description="Selected attack strategies (standard, crescendo, skeleton_key, obfuscation)",
+    )
     bucket_name: Optional[str] = Field(None, description="Bucket/folder name to store the profile in")
     
     # Boundaries & Limitations
@@ -58,6 +68,47 @@ class ChatbotProfile(BaseModel):
         if not v.startswith(('ws://', 'wss://')):
             raise ValueError("WebSocket URL must start with ws:// or wss://")
         return v
+
+    @validator('attack_strategy')
+    def validate_attack_strategy(cls, v):
+        """Validate legacy single strategy if present"""
+        if v is None:
+            return v
+        valid_strategies = {"all", *ALLOWED_ATTACK_MODES}
+        if v not in valid_strategies:
+            raise ValueError(f"attack_strategy must be one of {sorted(valid_strategies)}")
+        return v
+
+    @validator('attack_strategies', pre=True, always=True)
+    def validate_attack_strategies(cls, v, values):
+        """Normalize selected strategies to a validated unique list"""
+        if v is None:
+            legacy_strategy = values.get("attack_strategy")
+            if legacy_strategy and legacy_strategy != "all":
+                raw_values = [legacy_strategy]
+            else:
+                raw_values = ALLOWED_ATTACK_MODES.copy()
+        elif isinstance(v, str):
+            raw_values = [v]
+        else:
+            raw_values = list(v)
+
+        normalized: List[str] = []
+        for strategy in raw_values:
+            if strategy == "all":
+                for mode in ALLOWED_ATTACK_MODES:
+                    if mode not in normalized:
+                        normalized.append(mode)
+                continue
+            if strategy not in ALLOWED_ATTACK_MODES:
+                raise ValueError(f"attack_strategies contains invalid value: {strategy}")
+            if strategy not in normalized:
+                normalized.append(strategy)
+
+        if not normalized:
+            raise ValueError("At least one attack strategy must be selected")
+
+        return normalized
     
     def to_context_string(self) -> str:
         """
@@ -67,6 +118,9 @@ class ChatbotProfile(BaseModel):
         capabilities_str = "\n".join([f"- {cap}" for cap in self.capabilities])
         
         agent_type_str = f"\nAGENT TYPE: {self.agent_type}" if self.agent_type else ""
+        strategy_str = ", ".join(
+            strategy.replace('_', ' ').title() for strategy in self.attack_strategies
+        )
         
         return f"""TARGET CHATBOT PROFILE:
 ========================
@@ -76,6 +130,7 @@ PRIMARY OBJECTIVE: {self.primary_objective}
 
 INTENDED AUDIENCE: {self.intended_audience}
 CHATBOT ROLE: {self.chatbot_role}{agent_type_str}
+ATTACK STRATEGIES: {strategy_str}
 
 CAPABILITIES (What the chatbot CAN do):
 {capabilities_str}
@@ -114,6 +169,8 @@ Any response attempting to do something outside these capabilities is a BOUNDARY
             "chatbot_role": self.chatbot_role,
             "capabilities": self.capabilities,
             "agent_type": self.agent_type,
+            "attack_strategy": self.attack_strategy,
+            "attack_strategies": self.attack_strategies,
             "boundaries": self.boundaries,
             "communication_style": self.communication_style,
             "context_awareness": self.context_awareness,

@@ -4,6 +4,7 @@ Transforms PyRIT seed prompts to match target chatbot domain and architecture
 """
 
 from typing import List, Dict, Optional
+import httpx
 from .pyrit_seed_loader import get_pyrit_seed_loader
 
 
@@ -170,17 +171,28 @@ Return JSON array:
         ]
         
         for attempt_num, (sys_prompt, usr_prompt, attempt_type) in enumerate(attempts, 1):
-            response = await self.azure_client.generate(sys_prompt, usr_prompt, temperature=0.8)
-            
-            # Check if content filter blocked
-            if "[CONTENT_FILTER_VIOLATION]" in response:
-                print(f"[!] Attempt {attempt_num} ({attempt_type}) blocked by content filter")
-                if attempt_num < len(attempts):
-                    print(f"[>] Retrying with {attempts[attempt_num][2]} sanitization...")
-                    continue
-                else:
-                    print(f"[!] All sanitization attempts failed")
+            try:
+                response = await self.azure_client.generate(sys_prompt, usr_prompt, temperature=0.8)
+            except httpx.HTTPStatusError as e:
+                body = ""
+                if e.response is not None:
+                    body = (e.response.text or "")
+                is_content_filter = (
+                    e.response is not None
+                    and e.response.status_code == 400
+                    and (
+                        '"code":"content_filter"' in body
+                        or '"ResponsibleAIPolicyViolation"' in body
+                    )
+                )
+                if is_content_filter:
+                    print(f"[!] Attempt {attempt_num} ({attempt_type}) blocked by content filter")
+                    if attempt_num < len(attempts):
+                        print(f"[>] Retrying with {attempts[attempt_num][2]} sanitization...")
+                        continue
+                    print("[!] All sanitization attempts failed")
                     return []
+                raise
             
             print(f"[DEBUG] Prompt Molding Response ({attempt_type}): {response[:300]}...")
             
