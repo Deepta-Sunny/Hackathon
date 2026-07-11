@@ -66,7 +66,10 @@ class ObfuscationPromptGenerator:
     def _load_strategy_data(self) -> Dict:
         """Load and validate obfuscation strategy-data configuration."""
         data = StrategyDataLoader.load("obfuscation")
-        missing = [key for key in self.REQUIRED_STRATEGY_KEYS if not str(data.get(key, "")).strip()]
+        missing = [
+            key for key in self.REQUIRED_STRATEGY_KEYS
+            if key not in data or not isinstance(data[key], str) or not data[key].strip()
+        ]
         if missing:
             raise ValueError(
                 "Obfuscation strategy-data is missing required keys: "
@@ -463,8 +466,15 @@ class ObfuscationAttackOrchestrator:
         Build chatbot profile for obfuscation prompt generation.
         """
         if self.chatbot_profile:
-            domain = getattr(self.chatbot_profile, "domain", "").strip() or "general"
-            capabilities = list(getattr(self.chatbot_profile, "capabilities", []))
+            if isinstance(self.chatbot_profile, dict):
+                raw_domain = self.chatbot_profile.get("domain", "")
+                raw_capabilities = self.chatbot_profile.get("capabilities", [])
+            else:
+                raw_domain = getattr(self.chatbot_profile, "domain", "")
+                raw_capabilities = getattr(self.chatbot_profile, "capabilities", [])
+
+            domain = str(raw_domain).strip() or "general"
+            capabilities = list(raw_capabilities or [])
             return {
                 "domain": domain,
                 "capabilities": capabilities,
