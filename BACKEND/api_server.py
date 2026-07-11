@@ -1662,7 +1662,7 @@ if __name__ == "__main__":
     print("""
     ╔════════════════════════════════════════════════════════════════════╗
     ║                                                                    ║
-    ║   RED TEAM ATTACK ORCHESTRATOR - FastAPI Backend                  ║
+    ║   RED TEAM ATTACK ORCHESTRATOR - FastAPI Backend                   ║
     ║                                                                    ║
     ║   Real-time WebSocket Monitoring                                   ║
     ║   RESTful API for Attack Control                                   ║

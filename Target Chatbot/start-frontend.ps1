@@ -33,10 +33,10 @@ Write-Host "====================================================================
 Write-Host "  ✅ Frontend Starting!" -ForegroundColor Green
 Write-Host "=====================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "🌐 Frontend UI: http://localhost:5173" -ForegroundColor Cyan
+Write-Host "🌐 Frontend UI: http://localhost:3000" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "⚙️  Configuration:" -ForegroundColor Yellow
-Write-Host "   Backend WebSocket: ws://localhost:8001/ws" -ForegroundColor Gray
+Write-Host "   Backend WebSocket: ws://localhost:8005/ws" -ForegroundColor Gray
 Write-Host ""
 Write-Host "   💡 Update the WebSocket URL in app.jsx if backend is on different host" -ForegroundColor Cyan
 Write-Host ""
