@@ -645,7 +645,8 @@ class ObfuscationAttackOrchestrator:
                 "topic_depth": conversation_decision.topic_depth,
                 "blocked_streak": conversation_decision.blocked_streak,
                 "low_risk_streak": conversation_decision.low_risk_streak,
-                "successful_probing_streak": conversation_decision.successful_probing_streak,
+                "successful_probing_streak": conversation_decision.promising_streak,
+                "promising_streak": conversation_decision.promising_streak,
                 "risk_category": conversation_decision.risk_category,
                 "should_switch_topic": conversation_decision.should_switch_topic,
                 "response_evaluation": conversation_decision.response_evaluation,
@@ -704,7 +705,8 @@ class ObfuscationAttackOrchestrator:
                     "topic_switch_requested": conversation_decision.should_switch_topic,
                     "response_evaluation": conversation_decision.response_evaluation,
                     "blocked_streak": conversation_decision.blocked_streak,
-                    "successful_probing_streak": conversation_decision.successful_probing_streak,
+                    "successful_probing_streak": conversation_decision.promising_streak,
+                    "promising_streak": conversation_decision.promising_streak,
                     "conversation_depth": conversation_decision.conversation_depth,
                     "timestamp": datetime.now().isoformat()
                 }
@@ -754,7 +756,8 @@ class ObfuscationAttackOrchestrator:
                 "topic_depth": conversation_decision.topic_depth,
                 "topic_switch_requested": conversation_decision.should_switch_topic,
                 "blocked_streak": conversation_decision.blocked_streak,
-                "successful_probing_streak": conversation_decision.successful_probing_streak,
+                "successful_probing_streak": conversation_decision.promising_streak,
+                "promising_streak": conversation_decision.promising_streak,
                 "response_evaluation": conversation_decision.response_evaluation,
                 "decision_timestamp": conversation_decision.decision_timestamp,
                 "timestamp": datetime.now().isoformat()

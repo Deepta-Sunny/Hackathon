@@ -14,13 +14,24 @@ load_dotenv()
 def _env_int(name: str, default: str, fallback_name: str = None) -> int:
     """Read integer env var with optional fallback env var."""
     if fallback_name:
-        return int(os.getenv(name, os.getenv(fallback_name, default)))
-    return int(os.getenv(name, default))
+        raw_value = os.getenv(name, os.getenv(fallback_name, default))
+    else:
+        raw_value = os.getenv(name, default)
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Environment variable '{name}' must be an integer (got: {raw_value!r})") from exc
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
     """Read boolean env var with true/false parsing."""
-    return os.getenv(name, str(default).lower()).strip().lower() in {"1", "true", "yes", "on"}
+    raw_value = os.getenv(name, str(default).lower())
+    if raw_value is None:
+        return bool(default)
+    normalized = raw_value.strip().lower()
+    if not normalized:
+        raise ValueError(f"Environment variable '{name}' must not be empty when provided")
+    return normalized in {"1", "true", "yes", "on"}
 
 # =========================================================================
 # AZURE OPENAI CONFIGURATION
