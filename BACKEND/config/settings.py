@@ -30,7 +30,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
         return bool(default)
     normalized = raw_value.strip().lower()
     if not normalized:
-        raise ValueError(f"Environment variable '{name}' must not be empty or contain only whitespace")
+        raise ValueError(f"Environment variable '{name}' is empty or contains only whitespace")
     return normalized in {"1", "true", "yes", "on"}
 
 # =========================================================================

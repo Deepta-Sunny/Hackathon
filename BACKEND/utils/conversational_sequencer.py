@@ -10,7 +10,7 @@ This module implements conversation-based attack flows where:
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Tuple
 from openai import AzureOpenAI
 import os
@@ -666,6 +666,10 @@ class ConversationalFlowController:
             return int(self.policy.get(fallback_key))
         return int(default)
 
+    @staticmethod
+    def _now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
     def observe_turn(
         self,
         topic: str,
@@ -687,7 +691,7 @@ class ConversationalFlowController:
                     "from_topic": self.current_topic,
                     "to_topic": normalized_topic,
                     "turn": self.turn_index,
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": self._now_iso(),
                     "reason": "topic_changed"
                 })
             self.current_topic = normalized_topic
@@ -759,7 +763,7 @@ class ConversationalFlowController:
                 topic_switch_flag=True,
                 adaptive_reasoning=adaptive_reasoning or {},
                 conversation_depth=self.conversation_depth,
-                decision_timestamp=datetime.now().isoformat()
+                decision_timestamp=self._now_iso()
             )
             self._record_turn(prompt, chatbot_response, decision)
             return decision
@@ -785,7 +789,7 @@ class ConversationalFlowController:
             topic_switch_flag=False,
             adaptive_reasoning=adaptive_reasoning or {},
             conversation_depth=self.conversation_depth,
-            decision_timestamp=datetime.now().isoformat()
+            decision_timestamp=self._now_iso()
         )
         self._record_turn(prompt, chatbot_response, decision)
         return decision
@@ -806,7 +810,7 @@ class ConversationalFlowController:
             "from_topic": self.current_topic,
             "to_topic": normalized_candidate,
             "turn": self.turn_index,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._now_iso(),
             "reason": "orchestrator_switch_topic"
         })
         self.pending_topic_switch = False
