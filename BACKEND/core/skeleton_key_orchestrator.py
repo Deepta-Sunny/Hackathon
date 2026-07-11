@@ -979,7 +979,6 @@ class SkeletonKeyAttackOrchestrator:
                     "conversation_reason": conversation_decision.reason,
                     "topic_depth": conversation_decision.topic_depth,
                     "topic_switch_requested": conversation_decision.should_switch_topic,
-                    "decision_reason": conversation_decision.reason,
                     "response_evaluation": conversation_decision.response_evaluation,
                     "blocked_streak": conversation_decision.blocked_streak,
                     "successful_probing_streak": conversation_decision.successful_probing_streak,

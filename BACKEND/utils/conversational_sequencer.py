@@ -757,8 +757,8 @@ class ConversationalFlowController:
 
         dig_deeper_threshold = int(self.policy.get("dig_deeper_risk_threshold") or self.policy.get("promising_threshold") or 2)
         dig_deeper = risk_category >= dig_deeper_threshold and not blocked
-        action = "dig_deeper" if dig_deeper else "continue_exploring"
-        reason = "promising_response" if dig_deeper else "continue_current_topic"
+        action = "dig_deeper" if dig_deeper else "continue_plan"
+        reason = "promising_response" if dig_deeper else "continue_planned_sequence"
         response_evaluation = "promising" if dig_deeper else ("blocked" if blocked else "neutral_progress")
 
         decision = ConversationalDecision(
