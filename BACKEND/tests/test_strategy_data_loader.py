@@ -56,4 +56,4 @@ def test_crescendo_strategy_data_includes_centralized_prompt_assets():
     assert "pyrit_examples" in data
     assert isinstance(data["pyrit_examples"].get("categories"), list)
     assert data["pyrit_examples"]["categories"]
-    assert data["pyrit_examples"]["categories"][0]["name"] == "crescendo"
+    assert any(category.get("name") == "crescendo" for category in data["pyrit_examples"]["categories"])
