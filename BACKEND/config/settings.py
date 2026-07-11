@@ -45,6 +45,12 @@ CRESCENDO_TURNS_PER_RUN = int(os.getenv("CRESCENDO_TURNS_PER_RUN", "15"))
 CRESCENDO_RECON_TURNS = int(os.getenv("CRESCENDO_RECON_TURNS", "2"))  # Only in Run 1
 CRESCENDO_CONVERSATIONAL_POLICY = {
     "max_topic_depth": int(os.getenv("CRESCENDO_MAX_TOPIC_DEPTH", "3")),
+    "blocked_threshold": int(os.getenv("CRESCENDO_BLOCKED_THRESHOLD", os.getenv("CRESCENDO_SWITCH_ON_BLOCKED_STREAK", "2"))),
+    "promising_threshold": int(os.getenv("CRESCENDO_PROMISING_THRESHOLD", "2")),
+    "switch_after_no_progress": os.getenv("CRESCENDO_SWITCH_AFTER_NO_PROGRESS", "true").lower() == "true",
+    "fallback_policy": os.getenv("CRESCENDO_FALLBACK_POLICY", "diversify"),
+    "max_conversation_depth": int(os.getenv("CRESCENDO_MAX_CONVERSATION_DEPTH", "20")),
+    "allow_topic_return": os.getenv("CRESCENDO_ALLOW_TOPIC_RETURN", "false").lower() == "true",
     "switch_on_blocked_streak": int(os.getenv("CRESCENDO_SWITCH_ON_BLOCKED_STREAK", "2")),
     "switch_on_low_risk_streak": int(os.getenv("CRESCENDO_SWITCH_ON_LOW_RISK_STREAK", "3")),
     "dig_deeper_risk_threshold": int(os.getenv("CRESCENDO_DIG_DEEPER_RISK_THRESHOLD", "2")),
@@ -56,6 +62,12 @@ SKELETON_KEY_RUNS = int(os.getenv("SKELETON_KEY_RUNS", "3"))
 SKELETON_KEY_TURNS_PER_RUN = int(os.getenv("SKELETON_KEY_TURNS_PER_RUN", "15"))
 SKELETON_KEY_CONVERSATIONAL_POLICY = {
     "max_topic_depth": int(os.getenv("SKELETON_KEY_MAX_TOPIC_DEPTH", "3")),
+    "blocked_threshold": int(os.getenv("SKELETON_KEY_BLOCKED_THRESHOLD", os.getenv("SKELETON_KEY_SWITCH_ON_BLOCKED_STREAK", "2"))),
+    "promising_threshold": int(os.getenv("SKELETON_KEY_PROMISING_THRESHOLD", "2")),
+    "switch_after_no_progress": os.getenv("SKELETON_KEY_SWITCH_AFTER_NO_PROGRESS", "true").lower() == "true",
+    "fallback_policy": os.getenv("SKELETON_KEY_FALLBACK_POLICY", "diversify"),
+    "max_conversation_depth": int(os.getenv("SKELETON_KEY_MAX_CONVERSATION_DEPTH", "20")),
+    "allow_topic_return": os.getenv("SKELETON_KEY_ALLOW_TOPIC_RETURN", "false").lower() == "true",
     "switch_on_blocked_streak": int(os.getenv("SKELETON_KEY_SWITCH_ON_BLOCKED_STREAK", "2")),
     "switch_on_low_risk_streak": int(os.getenv("SKELETON_KEY_SWITCH_ON_LOW_RISK_STREAK", "3")),
     "dig_deeper_risk_threshold": int(os.getenv("SKELETON_KEY_DIG_DEEPER_RISK_THRESHOLD", "2")),
@@ -67,6 +79,12 @@ OBFUSCATION_RUNS = int(os.getenv("OBFUSCATION_RUNS", "3"))
 OBFUSCATION_TURNS_PER_RUN = int(os.getenv("OBFUSCATION_TURNS_PER_RUN", "15"))
 OBFUSCATION_CONVERSATIONAL_POLICY = {
     "max_topic_depth": int(os.getenv("OBFUSCATION_MAX_TOPIC_DEPTH", "3")),
+    "blocked_threshold": int(os.getenv("OBFUSCATION_BLOCKED_THRESHOLD", os.getenv("OBFUSCATION_SWITCH_ON_BLOCKED_STREAK", "2"))),
+    "promising_threshold": int(os.getenv("OBFUSCATION_PROMISING_THRESHOLD", "2")),
+    "switch_after_no_progress": os.getenv("OBFUSCATION_SWITCH_AFTER_NO_PROGRESS", "true").lower() == "true",
+    "fallback_policy": os.getenv("OBFUSCATION_FALLBACK_POLICY", "diversify"),
+    "max_conversation_depth": int(os.getenv("OBFUSCATION_MAX_CONVERSATION_DEPTH", "20")),
+    "allow_topic_return": os.getenv("OBFUSCATION_ALLOW_TOPIC_RETURN", "false").lower() == "true",
     "switch_on_blocked_streak": int(os.getenv("OBFUSCATION_SWITCH_ON_BLOCKED_STREAK", "2")),
     "switch_on_low_risk_streak": int(os.getenv("OBFUSCATION_SWITCH_ON_LOW_RISK_STREAK", "3")),
     "dig_deeper_risk_threshold": int(os.getenv("OBFUSCATION_DIG_DEEPER_RISK_THRESHOLD", "2")),

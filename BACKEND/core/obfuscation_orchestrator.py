@@ -498,6 +498,7 @@ class ObfuscationAttackOrchestrator:
             "turns": [],
             "adaptive_responses": [],
             "conversational_decisions": [],
+            "conversation_timeline": [],
             "vulnerabilities_found": 0,
             "adaptations_made": 0,
             "timeouts": 0,
@@ -631,8 +632,11 @@ class ObfuscationAttackOrchestrator:
                 topic=current_prompt.attack_technique,
                 risk_category=risk_category,
                 chatbot_response=chatbot_response,
-                response_received=response_received
+                response_received=response_received,
+                prompt=current_prompt.prompt,
+                objective=current_prompt.expected_outcome
             )
+            conversation_state = self.conversation_controller.get_state_snapshot()
             run_data["conversational_decisions"].append({
                 "turn": turn,
                 "topic": conversation_decision.topic,
@@ -641,9 +645,16 @@ class ObfuscationAttackOrchestrator:
                 "topic_depth": conversation_decision.topic_depth,
                 "blocked_streak": conversation_decision.blocked_streak,
                 "low_risk_streak": conversation_decision.low_risk_streak,
+                "successful_probing_streak": conversation_decision.successful_probing_streak,
                 "risk_category": conversation_decision.risk_category,
-                "should_switch_topic": conversation_decision.should_switch_topic
+                "should_switch_topic": conversation_decision.should_switch_topic,
+                "response_evaluation": conversation_decision.response_evaluation,
+                "current_objective": conversation_decision.current_objective,
+                "conversation_depth": conversation_decision.conversation_depth,
+                "decision_timestamp": conversation_decision.decision_timestamp,
+                "state_snapshot": conversation_state.__dict__
             })
+            run_data["conversation_timeline"] = self.conversation_controller.get_metrics()["conversation_timeline"]
 
             pending_adaptive_response = None
             if self.use_adaptive_mode and self.adaptive_handler and response_received and conversation_decision.action == "dig_deeper":
@@ -691,6 +702,11 @@ class ObfuscationAttackOrchestrator:
                     "conversation_reason": conversation_decision.reason,
                     "topic_depth": conversation_decision.topic_depth,
                     "topic_switch_requested": conversation_decision.should_switch_topic,
+                    "decision_reason": conversation_decision.reason,
+                    "response_evaluation": conversation_decision.response_evaluation,
+                    "blocked_streak": conversation_decision.blocked_streak,
+                    "successful_probing_streak": conversation_decision.successful_probing_streak,
+                    "conversation_depth": conversation_decision.conversation_depth,
                     "timestamp": datetime.now().isoformat()
                 }
             })
@@ -738,6 +754,10 @@ class ObfuscationAttackOrchestrator:
                 "conversation_reason": conversation_decision.reason,
                 "topic_depth": conversation_decision.topic_depth,
                 "topic_switch_requested": conversation_decision.should_switch_topic,
+                "blocked_streak": conversation_decision.blocked_streak,
+                "successful_probing_streak": conversation_decision.successful_probing_streak,
+                "response_evaluation": conversation_decision.response_evaluation,
+                "decision_timestamp": conversation_decision.decision_timestamp,
                 "timestamp": datetime.now().isoformat()
             }
             run_data["turns"].append(turn_data)
@@ -751,6 +771,7 @@ class ObfuscationAttackOrchestrator:
             "adaptations_made": run_adaptations,
             "timeouts": run_timeouts,
             "errors": run_errors,
+            "conversation_metrics": self.conversation_controller.get_metrics(),
             "techniques_used": self.techniques_used,
             "run_statistics": {
                 "run": run_number,
@@ -977,6 +998,7 @@ Return ONLY valid JSON with risk_category and owasp_category:
         # Calculate statistics
         total_vulnerabilities = len(self.vulnerable_memory.findings)
         category_counts = self.vulnerable_memory.get_count_by_category()
+        conversation_metrics = self.conversation_controller.get_metrics()
         
         # Generalize patterns
         generalized_patterns = await self._generalize_obfuscation_patterns()
@@ -1006,6 +1028,7 @@ Return ONLY valid JSON with risk_category and owasp_category:
                 for stat in self.run_stats
             ],
             "generalized_patterns": generalized_patterns,
+            "conversation_metrics": conversation_metrics,
             "timestamp": datetime.now().isoformat()
         }
         

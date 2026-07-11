@@ -779,6 +779,7 @@ class SkeletonKeyAttackOrchestrator:
             "turns": [],
             "adaptive_responses": [],
             "conversational_decisions": [],
+            "conversation_timeline": [],
             "vulnerabilities_found": 0,
             "adaptations_made": 0,
             "timeouts": 0,
@@ -908,8 +909,11 @@ class SkeletonKeyAttackOrchestrator:
                 topic=current_prompt.attack_technique,
                 risk_category=risk_category,
                 chatbot_response=chatbot_response,
-                response_received=response_received
+                response_received=response_received,
+                prompt=current_prompt.prompt,
+                objective=current_prompt.expected_outcome
             )
+            conversation_state = self.conversation_controller.get_state_snapshot()
             run_data["conversational_decisions"].append({
                 "turn": turn,
                 "topic": conversation_decision.topic,
@@ -918,9 +922,16 @@ class SkeletonKeyAttackOrchestrator:
                 "topic_depth": conversation_decision.topic_depth,
                 "blocked_streak": conversation_decision.blocked_streak,
                 "low_risk_streak": conversation_decision.low_risk_streak,
+                "successful_probing_streak": conversation_decision.successful_probing_streak,
                 "risk_category": conversation_decision.risk_category,
-                "should_switch_topic": conversation_decision.should_switch_topic
+                "should_switch_topic": conversation_decision.should_switch_topic,
+                "response_evaluation": conversation_decision.response_evaluation,
+                "current_objective": conversation_decision.current_objective,
+                "conversation_depth": conversation_decision.conversation_depth,
+                "decision_timestamp": conversation_decision.decision_timestamp,
+                "state_snapshot": conversation_state.__dict__
             })
+            run_data["conversation_timeline"] = self.conversation_controller.get_metrics()["conversation_timeline"]
 
             pending_adaptive_response = None
             if self._should_generate_adaptive_followup(
@@ -968,6 +979,11 @@ class SkeletonKeyAttackOrchestrator:
                     "conversation_reason": conversation_decision.reason,
                     "topic_depth": conversation_decision.topic_depth,
                     "topic_switch_requested": conversation_decision.should_switch_topic,
+                    "decision_reason": conversation_decision.reason,
+                    "response_evaluation": conversation_decision.response_evaluation,
+                    "blocked_streak": conversation_decision.blocked_streak,
+                    "successful_probing_streak": conversation_decision.successful_probing_streak,
+                    "conversation_depth": conversation_decision.conversation_depth,
                     "timestamp": datetime.now().isoformat()
                 }
             })
@@ -1031,6 +1047,10 @@ class SkeletonKeyAttackOrchestrator:
                 "conversation_reason": conversation_decision.reason,
                 "topic_depth": conversation_decision.topic_depth,
                 "topic_switch_requested": conversation_decision.should_switch_topic,
+                "blocked_streak": conversation_decision.blocked_streak,
+                "successful_probing_streak": conversation_decision.successful_probing_streak,
+                "response_evaluation": conversation_decision.response_evaluation,
+                "decision_timestamp": conversation_decision.decision_timestamp,
                 "timestamp": datetime.now().isoformat()
             }
             run_data["turns"].append(turn_data)
@@ -1044,6 +1064,7 @@ class SkeletonKeyAttackOrchestrator:
             "adaptations_made": run_adaptations,
             "timeouts": run_timeouts,
             "errors": run_errors,
+            "conversation_metrics": self.conversation_controller.get_metrics(),
             "successful_prompts_count": len([p for p in self.successful_prompts if p['run_number'] == run_number]),
             "run_statistics": {
                 "run": run_number,
@@ -1467,6 +1488,7 @@ Return ONLY valid JSON with risk_category, response_category, explanation, and o
         
         # Calculate summary
         total_vulnerabilities = sum(stat.vulnerabilities_found for stat in self.run_stats)
+        conversation_metrics = self.conversation_controller.get_metrics()
         
         # Print summary
         print(f"\n📊 SKELETON KEY ATTACK REPORT")
@@ -1485,7 +1507,8 @@ Return ONLY valid JSON with risk_category, response_category, explanation, and o
             "total_vulnerabilities": total_vulnerabilities,
             "run_statistics": [stat.__dict__ for stat in self.run_stats],
             "generalized_patterns": [p.__dict__ for p in generalized_patterns],
-            "vulnerability_findings": [f.__dict__ for f in self.vulnerable_memory.findings]
+            "vulnerability_findings": [f.__dict__ for f in self.vulnerable_memory.findings],
+            "conversation_metrics": conversation_metrics
         }
     
     async def _generalize_skeleton_key_patterns(self, chatbot_profile: Dict) -> List[GeneralizedPattern]:
