@@ -115,6 +115,7 @@ class PyRITSeedLoader:
             'harmful': ['harmbench', 'advbench'],
             'sensitive': ['forbidden', 'tdc23'],
             'adversarial': ['advbench', 'many_shot', 'harmbench'],
+            'crescendo': ['forbidden', 'tdc23', 'many_shot'],
             'skeleton_key': ['many_shot', 'harmbench', 'advbench']  # Skeleton key uses jailbreak-style prompts
         }
         

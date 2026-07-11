@@ -44,3 +44,16 @@ def test_obfuscation_strategy_data_includes_expected_principles():
 
     for section in expected_sections:
         assert section in prompt
+
+
+def test_crescendo_strategy_data_includes_centralized_prompt_assets():
+    loader_cls = _load_strategy_data_loader_class()
+    data = loader_cls.load("crescendo")
+
+    assert "generation_prompt" in data
+    assert "user_prompt_template" in data["generation_prompt"]
+    assert "mission_template" in data["generation_prompt"]
+    assert "pyrit_examples" in data
+    assert isinstance(data["pyrit_examples"].get("categories"), list)
+    assert data["pyrit_examples"]["categories"]
+    assert data["pyrit_examples"]["categories"][0]["name"] == "crescendo"
