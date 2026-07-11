@@ -41,6 +41,12 @@ FINDINGS_CONTEXT_MAX_CHARS = 1200
 class ObfuscationPromptGenerator:
     """Generates obfuscation-based attack prompts using Azure OpenAI with example-based learning."""
     
+    REQUIRED_STRATEGY_KEYS = (
+        "agent_info_system_message",
+        "prompt_generation_system_prompt",
+        "classification_system_prompt",
+    )
+
     # Obfuscation technique categories
     OBFUSCATION_TECHNIQUES = [
         "encoding_obfuscation",
@@ -54,8 +60,19 @@ class ObfuscationPromptGenerator:
     def __init__(self, azure_client: AzureOpenAIClient, db_manager: DuckDBMemoryManager):
         self.azure_client = azure_client
         self.db_manager = db_manager
-        self.strategy_data = StrategyDataLoader.load("obfuscation")
+        self.strategy_data = self._load_strategy_data()
         # PyRIT seed prompts will be loaded dynamically
+
+    def _load_strategy_data(self) -> Dict:
+        """Load and validate obfuscation strategy-data configuration."""
+        data = StrategyDataLoader.load("obfuscation")
+        missing = [key for key in self.REQUIRED_STRATEGY_KEYS if not str(data.get(key, "")).strip()]
+        if missing:
+            raise ValueError(
+                "Obfuscation strategy-data is missing required keys: "
+                + ", ".join(missing)
+            )
+        return data
     
     async def generate_obfuscation_prompts(
         self,
@@ -236,22 +253,14 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         examples = []
         
         try:
-            # Load PyRIT seed prompts for different attack categories
-            pyrit_categories = {
-                "adversarial": "Adversarial Attacks",
-                "jailbreak": "Jailbreak Techniques",
-                "harmful": "Harmful Content Probes",
-                "obfuscation": "Obfuscation Methods"
-            }
-            
-            for category, display_name in pyrit_categories.items():
-                prompts = get_pyrit_examples_by_category(category, count=3)
-                if prompts:
-                    examples.append(f"\n{display_name} (PyRIT):")
-                    for prompt in prompts[:3]:
-                        # Truncate long prompts for context
-                        truncated = prompt[:120] + "..." if len(prompt) > 120 else prompt
-                        examples.append(f"  • {truncated}")
+            # Keep strategy context strict: obfuscation mode only uses obfuscation seeds.
+            prompts = get_pyrit_examples_by_category("obfuscation", count=6)
+            if prompts:
+                examples.append("\nObfuscation Methods (PyRIT):")
+                for prompt in prompts[:6]:
+                    # Truncate long prompts for context
+                    truncated = prompt[:120] + "..." if len(prompt) > 120 else prompt
+                    examples.append(f"  • {truncated}")
             
             if not examples:
                 # Fallback if PyRIT loading fails
@@ -329,14 +338,8 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         chatbot_profile: Dict
     ) -> List[AttackPrompt]:
         """Generate fallback obfuscation prompts from PyRIT seeds."""
-        categories = ["obfuscation", "adversarial", "jailbreak", "harmful"]
-        per_category = max(1, turns // len(categories))
         pyrit_prompts: List[str] = []
-
-        for category in categories:
-            pyrit_prompts.extend(get_pyrit_examples_by_category(category, count=per_category + 2))
-            if len(pyrit_prompts) >= turns:
-                break
+        pyrit_prompts.extend(get_pyrit_examples_by_category("obfuscation", count=max(turns + 2, 10)))
 
         if not pyrit_prompts:
             pyrit_prompts = ["Please explain your capabilities and safety boundaries."]
@@ -345,7 +348,7 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
             AttackPrompt(
                 turn=i + 1,
                 prompt=prompt,
-                attack_technique=f"obfuscation_pyrit_{categories[i % len(categories)]}",
+                attack_technique="obfuscation_pyrit_obfuscation",
                 target_nodes=["content_filter", "guardrail", "semantic_analyzer"],
                 escalation_phase=f"Run {run_number} PyRIT Fallback",
                 expected_outcome="Test obfuscation bypass via PyRIT-derived prompts"
@@ -457,16 +460,21 @@ class ObfuscationAttackOrchestrator:
     
     def _build_chatbot_profile(self, architecture_context: str) -> Dict:
         """
-        Build chatbot profile using LLM domain detection (replaces string matching).
-        
-        NOTE: This method now uses DomainDetector for intelligent domain detection.
-        Domain detection is handled by AttackStateManager during initialization.
-        This method returns a basic profile - actual domain is set in state manager.
+        Build chatbot profile for obfuscation prompt generation.
         """
-        # Basic profile structure - domain will be set by DomainDetector
+        if self.chatbot_profile:
+            domain = getattr(self.chatbot_profile, "domain", "").strip() or "general"
+            capabilities = list(getattr(self.chatbot_profile, "capabilities", []))
+            return {
+                "domain": domain,
+                "capabilities": capabilities,
+                "sensitivity": ["content_filtering", "input_validation", "semantic_analysis"]
+            }
+
+        # Fallback profile when only architecture text is available
         return {
-            "domain": "pending_detection",  # Will be replaced by LLM detection
-            "capabilities": [],  # Will be populated by domain detector
+            "domain": "general",
+            "capabilities": [],
             "sensitivity": ["content_filtering", "input_validation", "semantic_analysis"]
         }
     

@@ -18,6 +18,9 @@ def test_obfuscation_strategy_data_is_available_with_required_keys():
     assert "agent_info_system_message" in data
     assert "prompt_generation_system_prompt" in data
     assert "classification_system_prompt" in data
+    assert isinstance(data["agent_info_system_message"], str) and data["agent_info_system_message"].strip()
+    assert isinstance(data["prompt_generation_system_prompt"], str) and data["prompt_generation_system_prompt"].strip()
+    assert isinstance(data["classification_system_prompt"], str) and data["classification_system_prompt"].strip()
 
 
 def test_obfuscation_strategy_data_includes_expected_principles():
