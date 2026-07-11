@@ -567,7 +567,7 @@ class ConversationalDecision:
     topic_depth: int
     blocked_streak: int
     low_risk_streak: int
-    promising_streak: int
+    successful_probing_streak: int
     risk_category: int
     should_switch_topic: bool
     current_objective: str
@@ -585,7 +585,7 @@ class ConversationalStateSnapshot:
     topic_depth: int
     conversation_depth: int
     blocked_streak: int
-    promising_streak: int
+    successful_probing_streak: int
     current_objective: str
     previous_decisions: List[Dict[str, Any]]
     topic_transition_history: List[Dict[str, Any]]
@@ -634,7 +634,7 @@ class ConversationalFlowController:
         self.topic_depth = 0
         self.conversation_depth = 0
         self.blocked_streak = 0
-        self.promising_streak = 0
+        self.successful_probing_streak = 0
         self.low_risk_streak = 0
         self.pending_topic_switch = False
         self.current_objective = ""
@@ -707,9 +707,9 @@ class ConversationalFlowController:
             self.blocked_streak = 0
 
         if promising:
-            self.promising_streak += 1
+            self.successful_probing_streak += 1
         else:
-            self.promising_streak = 0
+            self.successful_probing_streak = 0
 
         if risk_category <= 1:
             self.low_risk_streak += 1
@@ -751,7 +751,7 @@ class ConversationalFlowController:
                 topic_depth=self.topic_depth,
                 blocked_streak=self.blocked_streak,
                 low_risk_streak=self.low_risk_streak,
-                promising_streak=self.promising_streak,
+                successful_probing_streak=self.successful_probing_streak,
                 risk_category=risk_category,
                 should_switch_topic=True,
                 current_objective=self.current_objective,
@@ -777,7 +777,7 @@ class ConversationalFlowController:
             topic_depth=self.topic_depth,
             blocked_streak=self.blocked_streak,
             low_risk_streak=self.low_risk_streak,
-            promising_streak=self.promising_streak,
+            successful_probing_streak=self.successful_probing_streak,
             risk_category=risk_category,
             should_switch_topic=False,
             current_objective=self.current_objective,
@@ -827,8 +827,7 @@ class ConversationalFlowController:
             "adaptive_reasoning": decision.adaptive_reasoning,
             "current_objective": decision.current_objective,
             "blocked_streak": decision.blocked_streak,
-            "promising_streak": decision.promising_streak,
-            "successful_probing_streak": decision.promising_streak,
+            "successful_probing_streak": decision.successful_probing_streak,
             "timestamp": decision.decision_timestamp
         }
         self.conversation_history.append(turn_record)
@@ -848,7 +847,7 @@ class ConversationalFlowController:
             topic_depth=self.topic_depth,
             conversation_depth=self.conversation_depth,
             blocked_streak=self.blocked_streak,
-            promising_streak=self.promising_streak,
+            successful_probing_streak=self.successful_probing_streak,
             current_objective=self.current_objective,
             previous_decisions=self.previous_decisions[-self.SNAPSHOT_DECISION_LIMIT:],
             topic_transition_history=self.topic_transition_history[-self.SNAPSHOT_TRANSITION_LIMIT:],
@@ -865,7 +864,6 @@ class ConversationalFlowController:
                 "orchestrator_decisions": [],
                 "decision_reasons": [],
                 "blocked_streak_max": 0,
-                "promising_streak_max": 0,
                 "successful_probing_streak_max": 0,
                 "diversion_events": [],
                 "conversation_timeline": []
@@ -883,7 +881,6 @@ class ConversationalFlowController:
             "orchestrator_decisions": orchestrator_decisions,
             "decision_reasons": decision_reasons,
             "blocked_streak_max": max(entry["blocked_streak"] for entry in decisions),
-            "promising_streak_max": max(entry["promising_streak"] for entry in decisions),
             "successful_probing_streak_max": max(entry["successful_probing_streak"] for entry in decisions),
             "diversion_events": diversion_events,
             "conversation_timeline": decisions
