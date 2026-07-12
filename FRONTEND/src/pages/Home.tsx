@@ -216,7 +216,7 @@ function Home() {
           sessionStorage.setItem("chatbotProfile", JSON.stringify(normalizedProfile));
           return;
         }
-      } catch (error) {
+      } catch {
         console.log("No saved dashboard state found, checking sessionStorage");
       }
       

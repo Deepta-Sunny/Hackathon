@@ -114,6 +114,13 @@ type RunKey = "run1" | "run2" | "run3";
 type CategoryKey = "standard" | "crescendo" | "skeleton_key" | "obfuscation";
 type RunStats = Record<RunKey, RiskCounts>;
 type VulnerabilityStats = Record<CategoryKey, RunStats>;
+type ChartDataPoint = {
+  category: string;
+  critical: number;
+  high: number;
+  medium: number;
+  safe: number;
+};
 
 const CATEGORY_KEYS: CategoryKey[] = ["standard", "crescendo", "skeleton_key", "obfuscation"];
 
@@ -197,7 +204,7 @@ const ReportsPanel: React.FC = () => {
           setTotalRiskDistribution(riskDist);
           setTotalTurns(turns);
         }
-      } catch (error) {
+      } catch {
         console.log("No existing attack results to load for reports");
       }
     };
@@ -305,7 +312,7 @@ const ReportsPanel: React.FC = () => {
 
   // Flatten chart data to show 3 bars per category (one for each run)
   // Maintain execution order: Standard, Crescendo, Skeleton Key, Obfuscation
-  const chartData: any[] = [];
+  const chartData: ChartDataPoint[] = [];
   
   CATEGORY_KEYS.forEach((categoryKey) => {
     const runs = vulnerabilityStats[categoryKey as keyof typeof vulnerabilityStats];

@@ -113,6 +113,16 @@ type ChatMessage = {
   timestamp?: string;
 };
 
+type ExportRow = {
+  request: string;
+  response: string;
+  risk_category: string;
+  category: string;
+  run: number;
+  turn: number;
+  timestamp: string | undefined;
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
   standard: "Standard",
   crescendo: "Crescendo",
@@ -380,7 +390,7 @@ const ChatPanel: React.FC = () => {
 
   // Function to export chat data as JSON
   const exportChatData = () => {
-    const chatData: any[] = [];
+    const chatData: ExportRow[] = [];
     const messageMap = new Map<string, { agent?: ChatMessage; ai?: ChatMessage }>();
 
     // Group messages by category-run-turn
