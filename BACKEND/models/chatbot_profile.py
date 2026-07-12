@@ -126,6 +126,15 @@ class ChatbotProfile(BaseModel):
         boundaries = values.get("boundaries")
         security_constraints = values.get("security_compliance_constraints")
 
+        if primary_objective and business_purpose and primary_objective != business_purpose:
+            raise ValueError(
+                "primary_objective and business_purpose must match when both are provided"
+            )
+        if boundaries and security_constraints and boundaries != security_constraints:
+            raise ValueError(
+                "boundaries and security_compliance_constraints must match when both are provided"
+            )
+
         if not primary_objective and business_purpose:
             values["primary_objective"] = business_purpose
         if not business_purpose and primary_objective:

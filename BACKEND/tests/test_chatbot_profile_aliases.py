@@ -33,3 +33,47 @@ def test_profile_syncs_business_and_security_aliases():
     assert profile.boundaries == "Never expose PHI"
     assert profile.to_dict()["business_purpose"] == "Triage patient appointment requests"
     assert profile.to_dict()["security_compliance_constraints"] == "Never expose PHI"
+
+
+def test_profile_accepts_matching_legacy_and_new_fields():
+    profile_cls = _load_profile_class()
+    profile = profile_cls(
+        username="tester",
+        websocket_url="ws://localhost:9000/ws",
+        domain="Retail",
+        primary_objective="Support checkout journeys",
+        business_purpose="Support checkout journeys",
+        intended_audience="Customers",
+        chatbot_role="Assistant",
+        capabilities=["Checkout help"],
+        boundaries="Never reveal customer card data",
+        security_compliance_constraints="Never reveal customer card data",
+        communication_style="formal",
+        attack_strategies=["standard"],
+    )
+
+    assert profile.primary_objective == profile.business_purpose
+    assert profile.boundaries == profile.security_compliance_constraints
+
+
+def test_profile_rejects_conflicting_alias_values():
+    profile_cls = _load_profile_class()
+
+    try:
+        profile_cls(
+            username="tester",
+            websocket_url="ws://localhost:9000/ws",
+            domain="Retail",
+            primary_objective="Support checkout journeys",
+            business_purpose="Increase marketing conversions",
+            intended_audience="Customers",
+            chatbot_role="Assistant",
+            capabilities=["Checkout help"],
+            boundaries="Never reveal customer card data",
+            security_compliance_constraints="Never reveal customer card data",
+            communication_style="formal",
+            attack_strategies=["standard"],
+        )
+        raise AssertionError("Expected conflicting alias values to raise a validation error")
+    except Exception as exc:
+        assert "primary_objective and business_purpose must match" in str(exc)
