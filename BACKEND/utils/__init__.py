@@ -6,14 +6,11 @@ from .architecture_utils import (
     format_risk_category
 )
 from .pyrit_seed_loader import get_pyrit_seed_loader, PyRITSeedLoader
-from .architecture_loader import ArchitectureLoader, load_architecture_from_file
 
 __all__ = [
     "extract_chatbot_architecture_context",
     "get_turn_guidance",
     "format_risk_category",
     "get_pyrit_seed_loader",
-    "PyRITSeedLoader",
-    "ArchitectureLoader",
-    "load_architecture_from_file"
+    "PyRITSeedLoader"
 ]

@@ -172,55 +172,12 @@ async def start_attack(
     architecture_file: UploadFile = File(...)
 ):
     """
-    Start automated multi-category attack campaign (Legacy .md file upload)
-    
-    Args:
-        websocket_url: Target chatbot WebSocket URL
-        architecture_file: Architecture .md file describing target system
+    Legacy endpoint retained for backward compatibility.
     """
-    
-    if attack_state["running"]:
-        raise HTTPException(status_code=400, detail="Attack already running")
-    
-    # Save uploaded architecture file
-    arch_filename = f"uploads/architecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-    os.makedirs("uploads", exist_ok=True)
-    
-    with open(arch_filename, "wb") as f:
-        content = await architecture_file.read()
-        f.write(content)
-    
-    # Update attack state
-    attack_state["running"] = True
-    attack_state["websocket_url"] = websocket_url
-    attack_state["architecture_file"] = arch_filename
-    attack_state["start_time"] = datetime.now().isoformat()
-    attack_state["username"] = "anonymous"
-    attack_state["chatbot_profile"] = None
-    attack_state["selected_attack_strategies"] = DEFAULT_ATTACK_MODES.copy()
-    attack_state["total_categories"] = len(DEFAULT_ATTACK_MODES)
-    
-    # Broadcast start message
-    await manager.broadcast({
-        "type": "attack_started",
-        "data": {
-            "websocket_url": websocket_url,
-            "architecture_file": architecture_file.filename,
-            "attack_strategies": DEFAULT_ATTACK_MODES,
-            "timestamp": datetime.now().isoformat()
-        }
-    })
-    
-    # Start attack in background
-    asyncio.create_task(execute_attack_campaign(websocket_url, arch_filename, None, "anonymous"))
-    
-    return {
-        "status": "started",
-        "message": "Attack campaign initiated",
-        "websocket_url": websocket_url,
-        "architecture_file": architecture_file.filename,
-        "attack_strategies": DEFAULT_ATTACK_MODES
-    }
+    raise HTTPException(
+        status_code=400,
+        detail="This endpoint is deprecated. Use /api/attack/start-with-profile with frontend chatbot profile data."
+    )
 
 
 @app.post("/api/attack/start-with-profile")
@@ -1453,6 +1410,8 @@ async def execute_attack_campaign(
     username: str = "anonymous"
 ):
     """Execute the full multi-category attack campaign with real-time updates"""
+    if chatbot_profile is None:
+        raise ValueError("chatbot_profile is required. Domain and target info must come from frontend UI.")
     
     print("\n" + "="*80)
     print("🚀 STARTING ATTACK CAMPAIGN EXECUTION")

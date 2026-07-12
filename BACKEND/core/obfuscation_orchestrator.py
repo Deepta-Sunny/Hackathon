@@ -433,16 +433,9 @@ class ObfuscationAttackOrchestrator:
         print(f"   • INTRA-RUN ADAPTIVE MODE: {'Enabled' if self.use_adaptive_mode else 'Disabled'}")
         print("="*70)
         
-        # Load architecture from chatbot profile or MD file
-        if self.chatbot_profile:
-            # Use chatbot profile from frontend form
-            architecture_context = self.chatbot_profile.to_context_string()
-        elif self.architecture_file:
-            # Use architecture MD file upload
-            from utils import extract_chatbot_architecture_context
-            architecture_context = extract_chatbot_architecture_context(self.architecture_file)
-        else:
-            raise ValueError("Either chatbot_profile or architecture_file must be provided")
+        if not self.chatbot_profile:
+            raise ValueError("chatbot_profile is required. Use frontend onboarding data.")
+        architecture_context = self.chatbot_profile.to_context_string()
         
         # Build chatbot profile
         chatbot_profile = self._build_chatbot_profile(architecture_context)
@@ -474,26 +467,20 @@ class ObfuscationAttackOrchestrator:
         """
         Build chatbot profile for obfuscation prompt generation.
         """
-        if self.chatbot_profile:
-            if isinstance(self.chatbot_profile, dict):
-                raw_domain = self.chatbot_profile.get("domain", "")
-                raw_capabilities = self.chatbot_profile.get("capabilities", [])
-            else:
-                raw_domain = getattr(self.chatbot_profile, "domain", "")
-                raw_capabilities = getattr(self.chatbot_profile, "capabilities", [])
+        if not self.chatbot_profile:
+            raise ValueError("chatbot_profile is required. Domain must come from frontend UI.")
+        if isinstance(self.chatbot_profile, dict):
+            raw_domain = self.chatbot_profile.get("domain", "")
+            raw_capabilities = self.chatbot_profile.get("capabilities", [])
+        else:
+            raw_domain = getattr(self.chatbot_profile, "domain", "")
+            raw_capabilities = getattr(self.chatbot_profile, "capabilities", [])
 
-            domain = str(raw_domain).strip() or "general"
-            capabilities = list(raw_capabilities or [])
-            return {
-                "domain": domain,
-                "capabilities": capabilities,
-                "sensitivity": ["content_filtering", "input_validation", "semantic_analysis"]
-            }
-
-        # Fallback profile when only architecture text is available
+        domain = str(raw_domain).strip() or "general"
+        capabilities = list(raw_capabilities or [])
         return {
-            "domain": "general",
-            "capabilities": [],
+            "domain": domain,
+            "capabilities": capabilities,
             "sensitivity": ["content_filtering", "input_validation", "semantic_analysis"]
         }
     

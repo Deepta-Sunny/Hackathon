@@ -47,17 +47,6 @@ from utils.pyrit_seed_loader import (
 
 FINDINGS_CONTEXT_MAX_CHARS = 1200
 
-# Architecture loader for domain detection
-try:
-    from utils.architecture_loader import ArchitectureLoader
-    ARCHITECTURE_LOADER_AVAILABLE = True
-except ImportError:
-    ARCHITECTURE_LOADER_AVAILABLE = False
-    class ArchitectureLoader:
-        def __init__(self, *args, **kwargs): pass
-        def load_architecture(self): return ""
-
-
 class SkeletonKeyPromptTransformer:
     """
     Transforms PyRIT seed prompts into chatbot-specific Skeleton Key attacks.
@@ -666,16 +655,9 @@ class SkeletonKeyAttackOrchestrator:
         print(f"   • Self-Learning: Enabled")
         print("="*70)
         
-        # Load architecture from chatbot profile or MD file
-        if self.chatbot_profile:
-            # Use chatbot profile from frontend form
-            architecture_context = self.chatbot_profile.to_context_string()
-        elif self.architecture_file:
-            # Use architecture MD file upload
-            from utils import extract_chatbot_architecture_context
-            architecture_context = extract_chatbot_architecture_context(self.architecture_file)
-        else:
-            raise ValueError("Either chatbot_profile or architecture_file must be provided")
+        if not self.chatbot_profile:
+            raise ValueError("chatbot_profile is required. Use frontend onboarding data.")
+        architecture_context = self.chatbot_profile.to_context_string()
         
         # Build chatbot profile
         chatbot_profile = await self._build_chatbot_profile(architecture_context)
@@ -713,16 +695,11 @@ class SkeletonKeyAttackOrchestrator:
         """
         Build chatbot profile from onboarding data when available.
         """
-        if self.chatbot_profile:
-            return {
-                "domain": self.chatbot_profile.domain,
-                "capabilities": self.chatbot_profile.capabilities or [],
-                "sensitivity": ["personal_data", "system_access", "content_filtering"]
-            }
-
+        if not self.chatbot_profile:
+            raise ValueError("chatbot_profile is required. Domain must come from frontend UI.")
         return {
-            "domain": "general",
-            "capabilities": [],
+            "domain": self.chatbot_profile.domain,
+            "capabilities": self.chatbot_profile.capabilities or [],
             "sensitivity": ["personal_data", "system_access", "content_filtering"]
         }
 

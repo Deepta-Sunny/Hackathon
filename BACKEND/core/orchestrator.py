@@ -35,10 +35,8 @@ from core.websocket_target import ChatbotWebSocketTarget
 from core.memory_manager import VulnerableResponseMemory, DuckDBMemoryManager
 from core.enhanced_conversation_memory import EnhancedConversationMemory, ConversationPhase
 from utils import (
-    extract_chatbot_architecture_context,
     get_turn_guidance,
-    format_risk_category,
-    ArchitectureLoader
+    format_risk_category
 )
 from utils.conversational_sequencer import ConversationalAttackSequencer
 from utils.pyrit_seed_loader import get_pyrit_examples_by_category, set_active_testing_category
@@ -120,12 +118,10 @@ class ConversationContext:
 class AttackPlanGenerator:
     """Generates attack plans using strategy-aligned PyRIT seed context."""
     
-    def __init__(self, azure_client: AzureOpenAIClient, db_manager: DuckDBMemoryManager = None, md_file_path: Optional[str] = None, chatbot_profile = None):
+    def __init__(self, azure_client: AzureOpenAIClient, db_manager: DuckDBMemoryManager = None, chatbot_profile = None):
         self.azure_client = azure_client
         self.db_manager = db_manager
         self.strategy_orchestrator = None
-        # Only create ArchitectureLoader if we have an MD file path (not using chatbot_profile)
-        self.architecture_loader = ArchitectureLoader(md_file_path) if md_file_path else None
         self.cached_architecture = None
         self.chatbot_profile = chatbot_profile
         self.strategy_data = StrategyDataLoader.load("standard")
@@ -162,21 +158,18 @@ class AttackPlanGenerator:
         
         Args:
             run_number: Current attack run number
-            architecture_context: Optional architecture context (if None, loads from MD file or chatbot_profile)
+            architecture_context: Optional architecture context (if None, loads from chatbot_profile)
             previous_findings: Previous vulnerability findings for adaptation
         """
         
-        # Load architecture from MD file or chatbot profile if not provided
+        # Load architecture context from chatbot profile if not provided
         if architecture_context is None:
             if self.cached_architecture is None:
                 if self.chatbot_profile:
                     print(f"[+] Using chatbot profile for architecture context...")
                     self.cached_architecture = self.chatbot_profile.to_context_string()
-                elif self.architecture_loader:
-                    print(f"[+] Loading architecture from MD file...")
-                    self.cached_architecture = self.architecture_loader.load_architecture()
                 else:
-                    raise ValueError("No architecture context available. Provide either md_file_path or chatbot_profile.")
+                    raise ValueError("No chatbot profile available. Frontend onboarding profile is required.")
             architecture_context = self.cached_architecture
         
         print(f"[>] Generating attack plan using strategy-scoped PyRIT context...")
@@ -775,7 +768,7 @@ class ThreeRunCrescendoOrchestrator:
         self.vulnerable_memory = VulnerableResponseMemory()
         self.context = ConversationContext()
         self.db_manager = DuckDBMemoryManager(azure_client=self.azure_client)
-        self.attack_planner = AttackPlanGenerator(self.azure_client, self.db_manager, md_file_path=architecture_file, chatbot_profile=chatbot_profile)
+        self.attack_planner = AttackPlanGenerator(self.azure_client, self.db_manager, chatbot_profile=chatbot_profile)
         self.response_analyzer = ResponseAnalyzer(self.azure_client, chatbot_profile=chatbot_profile)
         self.report_generator = ReportGenerator()
         self.run_stats: List[RunStatistics] = []
