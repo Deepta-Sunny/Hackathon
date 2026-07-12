@@ -199,7 +199,7 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     print(f"Username: {profile.username}")
     print(f"WebSocket URL: {profile.websocket_url}")
     print(f"Domain: {profile.domain}")
-    print(f"Primary Objective: {profile.primary_objective}")
+    print(f"Business Purpose: {profile.get_business_purpose()}")
     print(f"Intended Audience: {profile.intended_audience}")
     print(f"Chatbot Role: {profile.chatbot_role}")
     if profile.agent_type:
@@ -210,7 +210,10 @@ async def start_attack_with_profile(profile: ChatbotProfile):
     print(f"\nCapabilities ({len(profile.capabilities)}):")
     for i, cap in enumerate(profile.capabilities, 1):
         print(f"  {i}. {cap}")
-    print(f"\nBoundaries/Guardrails:\n{profile.boundaries}")
+    print(
+        f"\nSecurity & Compliance Constraints:\n"
+        f"{profile.get_security_constraints()}"
+    )
     print("="*80 + "\n")
     # ===================================================
     
@@ -1560,12 +1563,14 @@ async def execute_attack_campaign(
             "websocket_url": websocket_url,
             "domain": chatbot_profile.domain if chatbot_profile else "Unknown",
             "primary_objective": chatbot_profile.primary_objective if chatbot_profile else "",
+            "business_purpose": chatbot_profile.get_business_purpose() if chatbot_profile else "",
             "intended_audience": chatbot_profile.intended_audience if chatbot_profile else "",
             "chatbot_role": chatbot_profile.chatbot_role if chatbot_profile else "",
             "agent_type": chatbot_profile.agent_type if chatbot_profile else "",
             "attack_strategies": attack_modes,
             "capabilities": chatbot_profile.capabilities if chatbot_profile else [],
             "boundaries": chatbot_profile.boundaries if chatbot_profile else "",
+            "security_compliance_constraints": chatbot_profile.get_security_constraints() if chatbot_profile else "",
             "communication_style": chatbot_profile.communication_style if chatbot_profile else "",
             "context_awareness": chatbot_profile.context_awareness if chatbot_profile else "",
             "timestamp": timestamp,
