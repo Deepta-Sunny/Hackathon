@@ -205,7 +205,7 @@ function Home() {
 
   useEffect(() => {
     // Try to load saved dashboard state first
-    const loadDashboardState = async () => {
+    const loadState = async () => {
       try {
         const data = await loadDashboardState();
         
@@ -230,7 +230,7 @@ function Home() {
       }
     };
     
-    loadDashboardState();
+    loadState();
   }, [navigate]);
 
   // Open WebSocket monitor when component mounts

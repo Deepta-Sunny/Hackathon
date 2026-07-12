@@ -109,16 +109,6 @@ const useStyles = createUseStyles({
   },
 });
 
-interface VulnerabilityData {
-  category: string;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-  safe: number;
-  total: number;
-}
-
 type RiskCounts = { critical: number; high: number; medium: number; safe: number };
 type RunKey = "run1" | "run2" | "run3";
 type CategoryKey = "standard" | "crescendo" | "skeleton_key" | "obfuscation";
