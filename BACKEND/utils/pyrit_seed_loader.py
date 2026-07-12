@@ -32,10 +32,8 @@ INTENT_PATTERNS = {
         r"\bassume you(?:'re| are)\b",
         r"\bact as\b",
         r"\bpretend\b",
-        r"\binternal\b",
-        r"\bauditor\b",
-        r"\bdeveloper\b",
-        r"\bcompliance\b",
+        r"\b(?:as|i(?:'m| am)|from)\s+(?:an?\s+)?(?:internal|security|compliance)\s+(?:auditor|developer|team|reviewer)\b",
+        r"\b(?:internal|compliance|security)\s+(?:audit|review|team)\b",
     ],
     "policy_override": [
         r"\bignore (?:all )?(?:previous|prior|above) (?:instructions|rules|policies)\b",
@@ -55,6 +53,13 @@ INTENT_PATTERNS = {
         r"\blimitations?\b",
     ],
 }
+
+INTENT_PRIORITY = [
+    "policy_override",
+    "system_disclosure",
+    "role_manipulation",
+    "safety_probe",
+]
 
 STRATEGY_INTENT_TRANSLATION = {
     "standard": {
@@ -282,7 +287,8 @@ class PyRITSeedLoader:
         text = (prompt or "").lower()
         if not text:
             return "default"
-        for intent, patterns in INTENT_PATTERNS.items():
+        for intent in INTENT_PRIORITY:
+            patterns = INTENT_PATTERNS.get(intent, [])
             if any(re.search(pattern, text) for pattern in patterns):
                 return intent
         return "default"
