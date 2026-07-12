@@ -119,7 +119,7 @@ class ChatbotProfile(BaseModel):
         return normalized
 
     @root_validator(pre=True)
-    def validate_and_sync_field_aliases(cls, values):
+    def sync_field_aliases(cls, values):
         """Validate and synchronize onboarding aliases with legacy field names."""
         def _sync_pair(primary_key: str, alias_key: str):
             primary_value = values.get(primary_key)
@@ -137,7 +137,7 @@ class ChatbotProfile(BaseModel):
 
             if primary_value is None and alias_value is not None:
                 values[primary_key] = alias_value
-            if alias_value is None and primary_value is not None:
+            elif alias_value is None and primary_value is not None:
                 values[alias_key] = primary_value
 
         _sync_pair("primary_objective", "business_purpose")
@@ -147,11 +147,11 @@ class ChatbotProfile(BaseModel):
 
     def get_business_purpose(self) -> str:
         """Return normalized business purpose value."""
-        return self.business_purpose or self.primary_objective
+        return str(self.business_purpose or self.primary_objective)
 
     def get_security_constraints(self) -> str:
         """Return normalized security/compliance constraints value."""
-        return self.security_compliance_constraints or self.boundaries
+        return str(self.security_compliance_constraints or self.boundaries)
     
     def to_context_string(self) -> str:
         """

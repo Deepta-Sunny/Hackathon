@@ -96,20 +96,20 @@ Rules:
         if not chatbot_profile:
             return ""
         capabilities = ", ".join(getattr(chatbot_profile, "capabilities", []) or [])
-        business_purpose_getter = getattr(chatbot_profile, "get_business_purpose", None)
-        security_constraints_getter = getattr(chatbot_profile, "get_security_constraints", None)
-        business_purpose = (
-            business_purpose_getter()
-            if callable(business_purpose_getter)
-            else getattr(chatbot_profile, "business_purpose", None)
-            or getattr(chatbot_profile, "primary_objective", "unknown")
-        )
-        security_constraints = (
-            security_constraints_getter()
-            if callable(security_constraints_getter)
-            else getattr(chatbot_profile, "security_compliance_constraints", None)
-            or getattr(chatbot_profile, "boundaries", "unknown")
-        )
+        if hasattr(chatbot_profile, "get_business_purpose") and hasattr(
+            chatbot_profile, "get_security_constraints"
+        ):
+            business_purpose = chatbot_profile.get_business_purpose()
+            security_constraints = chatbot_profile.get_security_constraints()
+        else:
+            business_purpose = (
+                getattr(chatbot_profile, "business_purpose", None)
+                or getattr(chatbot_profile, "primary_objective", "unknown")
+            )
+            security_constraints = (
+                getattr(chatbot_profile, "security_compliance_constraints", None)
+                or getattr(chatbot_profile, "boundaries", "unknown")
+            )
         return (
             "Target profile:\n"
             f"- Domain: {getattr(chatbot_profile, 'domain', 'unknown')}\n"
