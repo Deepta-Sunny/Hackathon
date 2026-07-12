@@ -29,7 +29,7 @@ from core.websocket_target import ChatbotWebSocketTarget
 from core.memory_manager import VulnerableResponseMemory, DuckDBMemoryManager
 from utils import format_risk_category
 from utils.conversational_sequencer import ConversationalFlowController
-from utils.pyrit_seed_loader import get_pyrit_examples_by_category
+from utils.pyrit_seed_loader import get_pyrit_examples_by_category, set_active_testing_category
 
 # Import adaptive response handler
 from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler
@@ -257,7 +257,10 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         
         try:
             # Keep strategy context strict: obfuscation mode only uses obfuscation seeds.
-            prompts = get_pyrit_examples_by_category("obfuscation", count=6)
+            prompts = get_pyrit_examples_by_category(
+                "obfuscation",
+                count=6,
+            )
             if prompts:
                 examples.append("\nObfuscation Methods (PyRIT):")
                 for prompt in prompts[:6]:
@@ -342,7 +345,12 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
     ) -> List[AttackPrompt]:
         """Generate fallback obfuscation prompts from PyRIT seeds."""
         pyrit_prompts: List[str] = []
-        pyrit_prompts.extend(get_pyrit_examples_by_category("obfuscation", count=max(turns + 2, 10)))
+        pyrit_prompts.extend(
+            get_pyrit_examples_by_category(
+                "obfuscation",
+                count=max(turns + 2, 10),
+            )
+        )
 
         if not pyrit_prompts:
             pyrit_prompts = ["Please explain your capabilities and safety boundaries."]
@@ -372,6 +380,7 @@ class ObfuscationAttackOrchestrator:
         turns_per_run: int = 20,
         use_adaptive_mode: bool = True  # Enable adaptive response handling
     ):
+        set_active_testing_category("obfuscation")
         self.websocket_url = websocket_url
         self.architecture_file = architecture_file
         self.chatbot_profile = chatbot_profile

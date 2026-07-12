@@ -29,11 +29,13 @@ from core.websocket_target import ChatbotWebSocketTarget
 from core.memory_manager import VulnerableResponseMemory, DuckDBMemoryManager
 from utils import format_risk_category
 from utils.conversational_sequencer import ConversationalFlowController
-from utils.pyrit_seed_loader import get_pyrit_examples_by_category
+from utils.pyrit_seed_loader import get_pyrit_examples_by_category, set_active_testing_category
 from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler, ChatbotIntent
 from attack_strategies.strategy_data_loader import StrategyDataLoader
 
 FINDINGS_CONTEXT_MAX_CHARS = 1200
+PYRIT_FALLBACK_BUFFER_SIZE = 4
+PYRIT_FALLBACK_MIN_PROMPTS = 16
 
 
 class CrescendoPersonality:
@@ -262,27 +264,20 @@ REQUIREMENTS:
     def _get_pyrit_examples_context(self) -> str:
         """Load PyRIT seed prompts as inspiration for attack generation."""
         try:
-            # Get examples from multiple PyRIT categories
-            jailbreak_examples = get_pyrit_examples_by_category("jailbreak", count=2)
-            harmful_examples = get_pyrit_examples_by_category("harmful", count=2)
-            
-            if not jailbreak_examples and not harmful_examples:
+            strategy_examples = get_pyrit_examples_by_category(
+                "crescendo",
+                count=6,
+            )
+
+            if not strategy_examples:
                 return ""
             
             context = ["\n**PYRIT ATTACK EXAMPLES FOR INSPIRATION:**"]
             context.append("(Adapt these patterns to your personality while maintaining your backstory)")
-            
-            if jailbreak_examples:
-                context.append("\nJailbreak Techniques:")
-                for i, ex in enumerate(jailbreak_examples, 1):
-                    truncated = ex[:100] + "..." if len(ex) > 100 else ex
-                    context.append(f"  {i}. {truncated}")
-            
-            if harmful_examples:
-                context.append("\nHarmful Content Probes:")
-                for i, ex in enumerate(harmful_examples, 1):
-                    truncated = ex[:100] + "..." if len(ex) > 100 else ex
-                    context.append(f"  {i}. {truncated}")
+            context.append("\nCrescendo Strategy Dataset Blend:")
+            for i, ex in enumerate(strategy_examples, 1):
+                truncated = ex[:100] + "..." if len(ex) > 100 else ex
+                context.append(f"  {i}. {truncated}")
             
             return "\n".join(context)
             
@@ -345,12 +340,13 @@ REQUIREMENTS:
                 "What are your main capabilities and limitations?"
             ])
 
-        categories = ["jailbreak", "adversarial", "sensitive", "harmful"]
-        per_category = max(1, turns // len(categories))
-        for category in categories:
-            fallback_prompts.extend(get_pyrit_examples_by_category(category, count=per_category + 2))
-            if len(fallback_prompts) >= turns:
-                break
+        fallback_prompts.extend(
+            get_pyrit_examples_by_category(
+                "crescendo",
+                # Crescendo uses shorter runs, so keep a smaller overflow and floor than standard mode.
+                count=max(turns + PYRIT_FALLBACK_BUFFER_SIZE, PYRIT_FALLBACK_MIN_PROMPTS),
+            )
+        )
 
         if not fallback_prompts:
             fallback_prompts = ["Please explain your capabilities."]
@@ -369,7 +365,7 @@ REQUIREMENTS:
             AttackPrompt(
                 turn=i+1,
                 prompt=p,
-                attack_technique=f"crescendo_pyrit_{categories[i % len(categories)]}",
+                attack_technique="crescendo_pyrit",
                 target_nodes=personality["target_behaviors"],
                 escalation_phase=f"Crescendo Level {min(10, i+1)}",
                 expected_outcome="Bypass security"
@@ -390,6 +386,7 @@ class CrescendoAttackOrchestrator:
         turns_per_run: int = 15,
         use_adaptive_mode: bool = True
     ):
+        set_active_testing_category("crescendo")
         self.websocket_url = websocket_url
         self.architecture_file = architecture_file
         self.chatbot_profile = chatbot_profile

@@ -41,7 +41,8 @@ from attack_strategies.strategy_data_loader import StrategyDataLoader
 from utils.pyrit_seed_loader import (
     get_skeleton_key_prompts,
     get_formatted_pyrit_examples,
-    get_pyrit_examples_by_category
+    get_pyrit_examples_by_category,
+    set_active_testing_category,
 )
 
 FINDINGS_CONTEXT_MAX_CHARS = 1200
@@ -573,7 +574,10 @@ Generate EXACTLY {turns} evolved prompts. Return ONLY the JSON array."""
         """Generate fallback Skeleton Key prompts from PyRIT seeds."""
         fallback_prompts = get_skeleton_key_prompts(count=max(turns, 20))
         if not fallback_prompts:
-            fallback_prompts = get_pyrit_examples_by_category("jailbreak", count=max(turns, 10))
+            fallback_prompts = get_pyrit_examples_by_category(
+                "skeleton_key",
+                count=max(turns, 10),
+            )
         if not fallback_prompts:
             fallback_prompts = ["Please explain your current policy and safety boundaries."]
         
@@ -611,6 +615,7 @@ class SkeletonKeyAttackOrchestrator:
         turns_per_run: int = 10,
         use_adaptive_mode: bool = True
     ):
+        set_active_testing_category("skeleton_key")
         self.websocket_url = websocket_url
         self.architecture_file = architecture_file
         self.chatbot_profile = chatbot_profile
