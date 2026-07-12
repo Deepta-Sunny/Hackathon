@@ -10,23 +10,23 @@ try:
     import pyrit.datasets as pyrit_datasets
 except (ImportError, ModuleNotFoundError):
     pyrit_datasets = None
-    print("[WARN] PyRIT package not available. Strategy datasets will load as empty and use runtime fallbacks.")
+    print("[WARNING] PyRIT package not available. Strategy datasets will load as empty and use runtime fallbacks.")
 
+OBJECTIVE_PROMPT_KEYS = ["objective", "target_objective", "goal", "instruction"]
+GENERAL_PROMPT_KEYS = [
+    "value",
+    "prompt",
+    "text",
+    "user",
+    "question",
+    "request",
+    "objective",
+    "target_objective",
+    "goal",
+]
 
 def _prompt_candidate_keys(objective_only: bool) -> List[str]:
-    if objective_only:
-        return ["objective", "target_objective", "goal", "instruction"]
-    return [
-        "value",
-        "prompt",
-        "text",
-        "user",
-        "question",
-        "request",
-        "objective",
-        "target_objective",
-        "goal",
-    ]
+    return OBJECTIVE_PROMPT_KEYS if objective_only else GENERAL_PROMPT_KEYS
 
 
 def _resolve_fetcher(*names: str) -> Optional[Callable]:
@@ -128,23 +128,44 @@ class PyRITSeedLoader:
         print("Loading PyRIT seed prompt datasets...")
 
         dataset_fetchers = {
-            "harmbench": _resolve_fetcher("fetch_harmbench_dataset"),
-            "forbidden": _resolve_fetcher("fetch_forbidden_questions_dataset"),
-            "advbench": _resolve_fetcher("fetch_adv_bench_dataset"),
-            "tdc23": _resolve_fetcher("fetch_tdc23_redteaming_dataset"),
-            "harmbench_objectives": _resolve_fetcher(
-                "fetch_harmbench_objectives_dataset",
-                "fetch_harmbench_objective_dataset",
-            ),
-            "forbidden_objectives": _resolve_fetcher(
-                "fetch_forbidden_questions_objectives_dataset",
-                "fetch_forbidden_questions_objective_dataset",
-            ),
-            "tdc23_objectives": _resolve_fetcher(
-                "fetch_tdc23_objectives_dataset",
-                "fetch_tdc23_redteaming_objectives_dataset",
-                "fetch_tdc23_objective_dataset",
-            ),
+            "harmbench": {
+                "fetcher": _resolve_fetcher("fetch_harmbench_dataset"),
+                "objective_only": False,
+            },
+            "forbidden": {
+                "fetcher": _resolve_fetcher("fetch_forbidden_questions_dataset"),
+                "objective_only": False,
+            },
+            "advbench": {
+                "fetcher": _resolve_fetcher("fetch_adv_bench_dataset"),
+                "objective_only": False,
+            },
+            "tdc23": {
+                "fetcher": _resolve_fetcher("fetch_tdc23_redteaming_dataset"),
+                "objective_only": False,
+            },
+            "harmbench_objectives": {
+                "fetcher": _resolve_fetcher(
+                    "fetch_harmbench_objectives_dataset",
+                    "fetch_harmbench_objective_dataset",
+                ),
+                "objective_only": True,
+            },
+            "forbidden_objectives": {
+                "fetcher": _resolve_fetcher(
+                    "fetch_forbidden_questions_objectives_dataset",
+                    "fetch_forbidden_questions_objective_dataset",
+                ),
+                "objective_only": True,
+            },
+            "tdc23_objectives": {
+                "fetcher": _resolve_fetcher(
+                    "fetch_tdc23_objectives_dataset",
+                    "fetch_tdc23_redteaming_objectives_dataset",
+                    "fetch_tdc23_objective_dataset",
+                ),
+                "objective_only": True,
+            },
         }
 
         # Objective fallbacks when objective-specific fetchers are unavailable.
@@ -154,7 +175,8 @@ class PyRITSeedLoader:
             "tdc23_objectives": "tdc23",
         }
 
-        for dataset_name, fetcher in dataset_fetchers.items():
+        for dataset_name, config in dataset_fetchers.items():
+            fetcher = config["fetcher"]
             try:
                 if fetcher is None:
                     base_name = fallback_bases.get(dataset_name)
@@ -170,7 +192,7 @@ class PyRITSeedLoader:
                     continue
 
                 payload = fetcher()
-                prompts = _extract_prompts(payload, objective_only=dataset_name.endswith("_objectives"))
+                prompts = _extract_prompts(payload, objective_only=bool(config["objective_only"]))
                 self._datasets[dataset_name] = prompts
                 print(f"  [OK] {dataset_name}: {len(prompts)} prompts")
             except Exception as e:
@@ -197,6 +219,7 @@ class PyRITSeedLoader:
         """
         Set current testing category and rebuild prompt context from mapped datasets.
         Rebuild happens when category switches or category is initialized for the first time.
+        Context sampling is intentionally non-deterministic to keep prompt coverage diverse.
         """
         normalized = self._normalize_testing_category(testing_category) or "standard"
         is_category_switch = normalized != self._active_testing_category

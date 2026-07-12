@@ -34,6 +34,8 @@ from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler,
 from attack_strategies.strategy_data_loader import StrategyDataLoader
 
 FINDINGS_CONTEXT_MAX_CHARS = 1200
+PYRIT_FALLBACK_BUFFER_SIZE = 4
+PYRIT_FALLBACK_MIN_PROMPTS = 16
 
 
 class CrescendoPersonality:
@@ -341,9 +343,8 @@ REQUIREMENTS:
         fallback_prompts.extend(
             get_pyrit_examples_by_category(
                 "crescendo",
-                # Add a small overflow buffer (+4) and a baseline floor (16)
-                # so Crescendo fallback retains variety across turns/runs.
-                count=max(turns + 4, 16),
+                # Crescendo uses shorter runs, so keep a smaller overflow and floor than standard mode.
+                count=max(turns + PYRIT_FALLBACK_BUFFER_SIZE, PYRIT_FALLBACK_MIN_PROMPTS),
             )
         )
 

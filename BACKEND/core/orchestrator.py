@@ -46,6 +46,8 @@ from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler,
 from attack_strategies.strategy_data_loader import StrategyDataLoader
 
 PYRIT_CONTEXT_SAMPLE_SIZE = 10
+PYRIT_FALLBACK_BUFFER_SIZE = 8
+PYRIT_FALLBACK_MIN_PROMPTS = 24
 
 
 class ConversationContext:
@@ -374,8 +376,7 @@ IMPORTANT: Return ONLY the JSON array, no additional text or explanation."""
         collected = get_pyrit_examples_by_category(
             "standard",
             # Buffer prompts above per-run turns to preserve diversity after dedupe/sampling.
-            # Minimum 24 keeps fallback generation resilient for shorter turn configurations.
-            count=max(TURNS_PER_RUN + 8, 24),
+            count=max(TURNS_PER_RUN + PYRIT_FALLBACK_BUFFER_SIZE, PYRIT_FALLBACK_MIN_PROMPTS),
             testing_category="standard",
         )
 
