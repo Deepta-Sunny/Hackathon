@@ -3,7 +3,7 @@ PyRIT Seed Prompt Loader
 Loads and manages PyRIT datasets by active chatbot testing strategy.
 """
 
-from typing import Dict, List, Optional, Iterable, Callable
+from typing import Dict, List, Optional, Iterable, Callable, Any
 import random
 
 try:
@@ -77,7 +77,7 @@ def _extract_prompts(payload, objective_only: bool = False) -> List[str]:
 
         return None
 
-    entries: Iterable = []
+    entries: Iterable[Any] = []
     if payload is None:
         entries = []
     elif isinstance(payload, list):
@@ -207,10 +207,12 @@ class PyRITSeedLoader:
     def set_active_testing_category(self, testing_category: str, context_size: int = 60) -> List[str]:
         """
         Set current testing category and rebuild prompt context from mapped datasets.
-        Rebuild always happens when category changes or context is empty.
+        Rebuild happens when category switches or category is initialized for the first time.
         """
         normalized = self._normalize_testing_category(testing_category) or "standard"
-        needs_rebuild = normalized != self._active_testing_category or not self._active_context
+        is_category_switch = normalized != self._active_testing_category
+        is_first_initialization = self._active_testing_category is None
+        needs_rebuild = is_category_switch or is_first_initialization
 
         if needs_rebuild:
             full_context = self._build_context_for_strategy(normalized)

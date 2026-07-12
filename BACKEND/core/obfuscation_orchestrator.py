@@ -260,7 +260,6 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
             prompts = get_pyrit_examples_by_category(
                 "obfuscation",
                 count=6,
-                testing_category="obfuscation",
             )
             if prompts:
                 examples.append("\nObfuscation Methods (PyRIT):")
@@ -350,7 +349,6 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
             get_pyrit_examples_by_category(
                 "obfuscation",
                 count=max(turns + 2, 10),
-                testing_category="obfuscation",
             )
         )
 

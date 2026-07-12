@@ -265,7 +265,6 @@ REQUIREMENTS:
             strategy_examples = get_pyrit_examples_by_category(
                 "crescendo",
                 count=6,
-                testing_category="crescendo",
             )
 
             if not strategy_examples:
@@ -343,7 +342,6 @@ REQUIREMENTS:
             get_pyrit_examples_by_category(
                 "crescendo",
                 count=max(turns + 4, 16),
-                testing_category="crescendo",
             )
         )
 

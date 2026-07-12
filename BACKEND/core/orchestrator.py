@@ -213,7 +213,7 @@ BUILD ON SUCCESSFUL TECHNIQUES FROM PREVIOUS RUNS!
 """
 
         pyrit_seed_context = ""
-        pyrit_examples = get_pyrit_examples_by_category("standard", count=10, testing_category="standard")
+        pyrit_examples = get_pyrit_examples_by_category("standard", count=10)
         if pyrit_examples:
             pyrit_seed_context = "\nPYRIT DATASET CONTEXT (STANDARD STRATEGY):\n" + "\n".join(
                 f"- {example[:180]}{'...' if len(example) > 180 else ''}"
@@ -368,7 +368,6 @@ IMPORTANT: Return ONLY the JSON array, no additional text or explanation."""
         collected = get_pyrit_examples_by_category(
             "standard",
             count=max(TURNS_PER_RUN + 8, 24),
-            testing_category="standard",
         )
 
         if not collected:
