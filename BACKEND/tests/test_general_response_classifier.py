@@ -1,6 +1,7 @@
 import importlib.util
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
 
 def _load_classifier_class():
@@ -105,3 +106,37 @@ def test_classify_falls_back_on_malformed_json():
 
     assert result["risk_category"] == 1
     assert result["response_category"] == "refusal"
+
+
+def test_profile_context_uses_business_and_security_fields():
+    classifier_cls = _load_classifier_class()
+    classifier = classifier_cls(azure_client=None)
+    profile = SimpleNamespace(
+        domain="Banking",
+        chatbot_role="Support Agent",
+        capabilities=["Account support"],
+        business_purpose="Help users with account servicing",
+        security_compliance_constraints="Never disclose customer PII",
+    )
+
+    context = classifier._build_profile_context(profile)
+
+    assert "Business Purpose: Help users with account servicing" in context
+    assert "Security & Compliance Constraints: Never disclose customer PII" in context
+
+
+def test_profile_context_falls_back_to_legacy_fields():
+    classifier_cls = _load_classifier_class()
+    classifier = classifier_cls(azure_client=None)
+    profile = SimpleNamespace(
+        domain="Retail",
+        chatbot_role="Shopping Assistant",
+        capabilities=["Order tracking"],
+        primary_objective="Assist order lookups",
+        boundaries="Do not reveal internal systems",
+    )
+
+    context = classifier._build_profile_context(profile)
+
+    assert "Business Purpose: Assist order lookups" in context
+    assert "Security & Compliance Constraints: Do not reveal internal systems" in context
