@@ -125,7 +125,11 @@ class ChatbotProfile(BaseModel):
             primary_value = values.get(primary_key)
             alias_value = values.get(alias_key)
 
-            if primary_value and alias_value and primary_value != alias_value:
+            if (
+                primary_value is not None
+                and alias_value is not None
+                and primary_value != alias_value
+            ):
                 raise ValueError(
                     f"{primary_key} ({primary_value!r}) and {alias_key} ({alias_value!r}) "
                     "must match when both are provided"

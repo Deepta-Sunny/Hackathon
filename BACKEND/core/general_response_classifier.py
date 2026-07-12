@@ -96,12 +96,18 @@ Rules:
         if not chatbot_profile:
             return ""
         capabilities = ", ".join(getattr(chatbot_profile, "capabilities", []) or [])
+        business_purpose_getter = getattr(chatbot_profile, "get_business_purpose", None)
+        security_constraints_getter = getattr(chatbot_profile, "get_security_constraints", None)
         business_purpose = (
-            getattr(chatbot_profile, "business_purpose", None)
+            business_purpose_getter()
+            if callable(business_purpose_getter)
+            else getattr(chatbot_profile, "business_purpose", None)
             or getattr(chatbot_profile, "primary_objective", "unknown")
         )
         security_constraints = (
-            getattr(chatbot_profile, "security_compliance_constraints", None)
+            security_constraints_getter()
+            if callable(security_constraints_getter)
+            else getattr(chatbot_profile, "security_compliance_constraints", None)
             or getattr(chatbot_profile, "boundaries", "unknown")
         )
         return (

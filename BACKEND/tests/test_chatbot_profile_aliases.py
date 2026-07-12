@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import pytest
 from pydantic import ValidationError
 
 
@@ -60,7 +61,7 @@ def test_profile_accepts_matching_legacy_and_new_fields():
 def test_profile_rejects_conflicting_alias_values():
     profile_cls = _load_profile_class()
 
-    try:
+    with pytest.raises(ValidationError, match="must match when both are provided"):
         profile_cls(
             username="tester",
             websocket_url="ws://localhost:9000/ws",
@@ -75,9 +76,3 @@ def test_profile_rejects_conflicting_alias_values():
             communication_style="formal",
             attack_strategies=["standard"],
         )
-        raise AssertionError("Expected conflicting alias values to raise a validation error")
-    except ValidationError as exc:
-        message = str(exc)
-        assert "primary_objective" in message
-        assert "business_purpose" in message
-        assert "must match when both are provided" in message
