@@ -26,6 +26,7 @@ def test_profile_syncs_business_and_security_aliases():
         capabilities=["Book appointment"],
         security_compliance_constraints="Never expose PHI",
         communication_style="formal",
+        attack_strategies=["standard"],
     )
 
     assert profile.primary_objective == "Triage patient appointment requests"
