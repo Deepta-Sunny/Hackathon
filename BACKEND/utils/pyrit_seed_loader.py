@@ -8,8 +8,24 @@ import random
 
 try:
     import pyrit.datasets as pyrit_datasets
-except Exception:
+except (ImportError, ModuleNotFoundError):
     pyrit_datasets = None
+
+
+def _prompt_candidate_keys(objective_only: bool) -> List[str]:
+    if objective_only:
+        return ["objective", "target_objective", "goal", "instruction"]
+    return [
+        "value",
+        "prompt",
+        "text",
+        "user",
+        "question",
+        "request",
+        "objective",
+        "target_objective",
+        "goal",
+    ]
 
 
 def _resolve_fetcher(*names: str) -> Optional[Callable]:
@@ -33,43 +49,15 @@ def _extract_prompts(payload, objective_only: bool = False) -> List[str]:
         if isinstance(item, str):
             return item.strip() or None
 
+        keys = _prompt_candidate_keys(objective_only)
+
         if isinstance(item, dict):
-            keys = (
-                ["objective", "target_objective", "goal", "instruction"]
-                if objective_only
-                else [
-                    "value",
-                    "prompt",
-                    "text",
-                    "user",
-                    "question",
-                    "request",
-                    "objective",
-                    "target_objective",
-                    "goal",
-                ]
-            )
             for key in keys:
                 value = item.get(key)
                 if isinstance(value, str) and value.strip():
                     return value.strip()
             return None
 
-        keys = (
-            ["objective", "target_objective", "goal", "instruction"]
-            if objective_only
-            else [
-                "value",
-                "prompt",
-                "text",
-                "user",
-                "question",
-                "request",
-                "objective",
-                "target_objective",
-                "goal",
-            ]
-        )
         for key in keys:
             value = getattr(item, key, None)
             if isinstance(value, str) and value.strip():
@@ -87,7 +75,7 @@ def _extract_prompts(payload, objective_only: bool = False) -> List[str]:
     elif hasattr(payload, "items") and callable(getattr(payload, "items")):
         try:
             entries = list(payload.values())
-        except Exception:
+        except (AttributeError, TypeError):
             entries = []
     else:
         entries = [payload]

@@ -45,6 +45,8 @@ from utils.pyrit_seed_loader import get_pyrit_examples_by_category, set_active_t
 from attack_strategies.adaptive_response_handler import AdaptiveResponseHandler, ChatbotIntent
 from attack_strategies.strategy_data_loader import StrategyDataLoader
 
+PYRIT_CONTEXT_SAMPLE_SIZE = 10
+
 
 class ConversationContext:
     """Maintains sliding window of conversation history."""
@@ -213,7 +215,7 @@ BUILD ON SUCCESSFUL TECHNIQUES FROM PREVIOUS RUNS!
 """
 
         pyrit_seed_context = ""
-        pyrit_examples = get_pyrit_examples_by_category("standard", count=10)
+        pyrit_examples = get_pyrit_examples_by_category("standard", count=PYRIT_CONTEXT_SAMPLE_SIZE)
         if pyrit_examples:
             pyrit_seed_context = "\nPYRIT DATASET CONTEXT (STANDARD STRATEGY):\n" + "\n".join(
                 f"- {example[:180]}{'...' if len(example) > 180 else ''}"
