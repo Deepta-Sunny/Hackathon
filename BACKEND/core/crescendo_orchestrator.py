@@ -259,7 +259,7 @@ REQUIREMENTS:
             print(f"[!] Failed to load Crescendo history: {e}")
             return ""
     
-    def _get_pyrit_examples_context(self, category: str = "crescendo") -> str:
+    def _get_pyrit_examples_context(self, category: str) -> str:
         """Load category-specific PyRIT seed prompts as style references."""
         try:
             examples = get_pyrit_examples_by_category(category, count=4)
@@ -268,10 +268,8 @@ REQUIREMENTS:
                 return ""
             
             context = ["\n**PYRIT ATTACK EXAMPLES FOR INSPIRATION:**"]
-            context.append(
-                f"(These are {category} style references. Translate their pattern into your current Crescendo style "
-                "while maintaining backstory, and do not switch to other attack categories.)"
-            )
+            context.append(f"""(These are {category} style references. Translate their pattern into your current
+Crescendo style while maintaining backstory, and do not switch to other attack categories.)""")
             context.append(f"\n{category.title()} Techniques:")
             for i, ex in enumerate(examples, 1):
                 truncated = ex[:100] + "..." if len(ex) > 100 else ex

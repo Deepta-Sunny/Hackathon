@@ -3,7 +3,7 @@ PyRIT Seed Prompt Loader
 Loads and manages seed prompts from PyRIT datasets for red teaming attacks
 """
 
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional, Callable, Any
 import random
 from pyrit.datasets import (
     fetch_harmbench_dataset,
@@ -28,7 +28,7 @@ class PyRITSeedLoader:
         'crescendo': ['many_shot', 'harmbench']
     }
 
-    DATASET_FETCHERS: Dict[str, Callable] = {
+    DATASET_FETCHERS: Dict[str, Callable[[], Any]] = {
         'harmbench': fetch_harmbench_dataset,
         'many_shot': fetch_many_shot_jailbreaking_dataset,
         'forbidden': fetch_forbidden_questions_dataset,
@@ -40,11 +40,19 @@ class PyRITSeedLoader:
         self._datasets = {}
         self._loaded_dataset_names = set()
     
-    def _normalize_prompts(self, dataset_name: str, dataset_obj) -> List[str]:
+    def _normalize_prompts(self, dataset_name: str, dataset_obj: Any) -> List[str]:
         """Normalize various PyRIT dataset formats into prompt string lists."""
         if dataset_name == 'many_shot':
             return [item['user'] for item in dataset_obj if isinstance(item, dict) and 'user' in item]
-        return [p.value for p in dataset_obj.prompts]
+        prompts = getattr(dataset_obj, "prompts", None)
+        if not prompts:
+            return []
+        normalized = []
+        for prompt in prompts:
+            value = getattr(prompt, "value", None)
+            if isinstance(value, str) and value:
+                normalized.append(value)
+        return normalized
 
     def _load_single_dataset(self, dataset_name: str) -> None:
         """Load one PyRIT dataset into cache if not already loaded."""
@@ -69,7 +77,7 @@ class PyRITSeedLoader:
             self._loaded_dataset_names.add(dataset_name)
 
     def _load_datasets(self, dataset_names: Optional[List[str]] = None):
-        """Load only requested PyRIT datasets (or all when omitted)."""
+        """Load requested datasets, or every registered fetcher when no list is provided."""
         requested = dataset_names or list(self.DATASET_FETCHERS.keys())
         for dataset_name in requested:
             self._load_single_dataset(dataset_name)
@@ -139,7 +147,7 @@ class PyRITSeedLoader:
         self._load_datasets()
         return sum(len(prompts) for prompts in self._datasets.values())
     
-    def get_formatted_examples(self, dataset_name: str = None, count: int = 3) -> str:
+    def get_formatted_examples(self, dataset_name: Optional[str] = None, count: int = 3) -> str:
         """
         Get formatted examples for inclusion in LLM prompts
         
