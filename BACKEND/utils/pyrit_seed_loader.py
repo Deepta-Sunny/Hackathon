@@ -10,6 +10,7 @@ try:
     import pyrit.datasets as pyrit_datasets
 except (ImportError, ModuleNotFoundError):
     pyrit_datasets = None
+    print("[WARN] PyRIT package not available. Strategy datasets will load as empty and use runtime fallbacks.")
 
 
 def _prompt_candidate_keys(objective_only: bool) -> List[str]:
@@ -204,7 +205,9 @@ class PyRITSeedLoader:
 
         if needs_rebuild:
             full_context = self._build_context_for_strategy(normalized)
-            if context_size > 0 and len(full_context) > context_size:
+            if not full_context:
+                self._active_context = []
+            elif context_size > 0 and len(full_context) > context_size:
                 self._active_context = random.sample(full_context, context_size)
             else:
                 self._active_context = full_context
@@ -248,7 +251,9 @@ class PyRITSeedLoader:
         - Legacy internal categories remain supported for compatibility.
         - If testing_category is provided (multi-selection scenarios), it takes precedence.
         """
-        effective_category = self._normalize_testing_category(testing_category) or self._normalize_testing_category(category)
+        normalized_testing_category = self._normalize_testing_category(testing_category)
+        normalized_category = self._normalize_testing_category(category)
+        effective_category = normalized_testing_category or normalized_category
 
         if effective_category in self.STRATEGY_DATASET_MAP:
             context = self.set_active_testing_category(effective_category)
@@ -256,7 +261,7 @@ class PyRITSeedLoader:
                 return []
             return random.sample(context, min(count, len(context)))
 
-        legacy_datasets = self.LEGACY_CATEGORY_MAP.get(self._normalize_testing_category(category) or "", [])
+        legacy_datasets = self.LEGACY_CATEGORY_MAP.get(normalized_category or "", [])
         prompts: List[str] = []
         for dataset_name in legacy_datasets:
             prompts.extend(self._datasets.get(dataset_name, []))
@@ -285,7 +290,9 @@ class PyRITSeedLoader:
 
     def get_formatted_examples(self, category: str = None, count: int = 3) -> str:
         """Get formatted examples for inclusion in LLM prompts."""
-        selected_category = category or self._active_testing_category or "standard"
+        selected_category = self._normalize_testing_category(
+            category or self._active_testing_category or "standard"
+        ) or "standard"
         prompts = self.get_prompts_by_category(selected_category, count=count)
 
         if not prompts:

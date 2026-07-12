@@ -341,6 +341,8 @@ REQUIREMENTS:
         fallback_prompts.extend(
             get_pyrit_examples_by_category(
                 "crescendo",
+                # Add a small overflow buffer (+4) and a baseline floor (16)
+                # so Crescendo fallback retains variety across turns/runs.
                 count=max(turns + 4, 16),
             )
         )

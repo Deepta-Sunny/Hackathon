@@ -215,7 +215,11 @@ BUILD ON SUCCESSFUL TECHNIQUES FROM PREVIOUS RUNS!
 """
 
         pyrit_seed_context = ""
-        pyrit_examples = get_pyrit_examples_by_category("standard", count=PYRIT_CONTEXT_SAMPLE_SIZE)
+        pyrit_examples = get_pyrit_examples_by_category(
+            "standard",
+            count=PYRIT_CONTEXT_SAMPLE_SIZE,
+            testing_category="standard",
+        )
         if pyrit_examples:
             pyrit_seed_context = "\nPYRIT DATASET CONTEXT (STANDARD STRATEGY):\n" + "\n".join(
                 f"- {example[:180]}{'...' if len(example) > 180 else ''}"
@@ -369,7 +373,10 @@ IMPORTANT: Return ONLY the JSON array, no additional text or explanation."""
         """Generate fallback prompts from PyRIT seeds without hardcoded domain prompts."""
         collected = get_pyrit_examples_by_category(
             "standard",
+            # Buffer prompts above per-run turns to preserve diversity after dedupe/sampling.
+            # Minimum 24 keeps fallback generation resilient for shorter turn configurations.
             count=max(TURNS_PER_RUN + 8, 24),
+            testing_category="standard",
         )
 
         if not collected:
