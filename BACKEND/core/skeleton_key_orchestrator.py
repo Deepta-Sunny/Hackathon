@@ -2,7 +2,7 @@
 Skeleton Key Attack Orchestrator
 
 Implements PyRIT-style Skeleton Key attack with adaptive prompt transformation,
-memory-based learning, and multi-run escalation across 3 runs × 10 turns.
+memory-based learning, and multi-run escalation across 3 runs × 35 turns.
 Enhanced with real-time adaptive response handling.
 """
 

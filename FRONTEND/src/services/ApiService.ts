@@ -6,7 +6,7 @@ import type {
   StatusResponse,
 } from "../types/Types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -75,6 +75,21 @@ export async function getRunResult(category: string, runNumber: number) {
 
 export async function replayAllResults() {
   const response = await apiClient.get("/api/results/replay-all");
+  return response.data;
+}
+
+export async function loadDashboardState() {
+  const response = await apiClient.get("/api/dashboard/load");
+  return response.data;
+}
+
+export async function saveDashboardState(payload: unknown) {
+  const response = await apiClient.post("/api/dashboard/save", payload);
+  return response.data;
+}
+
+export async function getOwaspReport() {
+  const response = await apiClient.get("/api/owasp/report");
   return response.data;
 }
 

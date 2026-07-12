@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import type { RootState } from "../store/Store";
 import OwaspComplianceReport from "./OwaspComplianceReport";
+import { replayAllResults } from "../services/ApiService";
 
 const useStyles = createUseStyles({
   container: {
@@ -118,6 +119,29 @@ interface VulnerabilityData {
   total: number;
 }
 
+type RiskCounts = { critical: number; high: number; medium: number; safe: number };
+type RunKey = "run1" | "run2" | "run3";
+type CategoryKey = "standard" | "crescendo" | "skeleton_key" | "obfuscation";
+type RunStats = Record<RunKey, RiskCounts>;
+type VulnerabilityStats = Record<CategoryKey, RunStats>;
+
+const CATEGORY_KEYS: CategoryKey[] = ["standard", "crescendo", "skeleton_key", "obfuscation"];
+
+const createEmptyRiskCounts = (): RiskCounts => ({ critical: 0, high: 0, medium: 0, safe: 0 });
+
+const createEmptyRunStats = (): RunStats => ({
+  run1: createEmptyRiskCounts(),
+  run2: createEmptyRiskCounts(),
+  run3: createEmptyRiskCounts(),
+});
+
+const createEmptyVulnerabilityStats = (): VulnerabilityStats => ({
+  standard: createEmptyRunStats(),
+  crescendo: createEmptyRunStats(),
+  skeleton_key: createEmptyRunStats(),
+  obfuscation: createEmptyRunStats(),
+});
+
 const ReportsPanel: React.FC = () => {
   const classes = useStyles();
   const { monitorSocket } = useSelector((state: RootState) => state.api);
@@ -126,48 +150,9 @@ const ReportsPanel: React.FC = () => {
   const [activeView, setActiveView] = useState<'overall' | 'owasp'>('overall');
   
   // Track vulnerabilities by category, run, and risk level
-  const [vulnerabilityStats, setVulnerabilityStats] = useState<{
-    crescendo: { 
-      run1: { critical: number; high: number; medium: number; safe: number };
-      run2: { critical: number; high: number; medium: number; safe: number };
-      run3: { critical: number; high: number; medium: number; safe: number };
-    };
-    skeleton_key: { 
-      run1: { critical: number; high: number; medium: number; safe: number };
-      run2: { critical: number; high: number; medium: number; safe: number };
-      run3: { critical: number; high: number; medium: number; safe: number };
-    };
-    obfuscation: { 
-      run1: { critical: number; high: number; medium: number; safe: number };
-      run2: { critical: number; high: number; medium: number; safe: number };
-      run3: { critical: number; high: number; medium: number; safe: number };
-    };
-    standard: { 
-      run1: { critical: number; high: number; medium: number; safe: number };
-      run2: { critical: number; high: number; medium: number; safe: number };
-      run3: { critical: number; high: number; medium: number; safe: number };
-    };
-  }>({crescendo: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    skeleton_key: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    obfuscation: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    },
-    standard: { 
-      run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-      run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-    }
-  });
+  const [vulnerabilityStats, setVulnerabilityStats] = useState<VulnerabilityStats>(
+    createEmptyVulnerabilityStats()
+  );
   
   // Track total risk distribution across all categories
   const [totalRiskDistribution, setTotalRiskDistribution] = useState({
@@ -184,31 +169,9 @@ const ReportsPanel: React.FC = () => {
   useEffect(() => {
     const loadExistingResults = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/results/replay-all');
-        const data = await response.json();
+        const data = await replayAllResults();
         if (data.messages && data.messages.length > 0) {
-          const stats = {
-            crescendo: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            skeleton_key: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            obfuscation: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            standard: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            }
-          };
+          const stats = createEmptyVulnerabilityStats();
           const riskDist = { critical: 0, high: 0, medium: 0, safe: 0 };
           let turns = 0;
 
@@ -219,9 +182,9 @@ const ReportsPanel: React.FC = () => {
               const riskCategory = Number(msg.data.risk_category || 1);
               turns += 1;
 
-              if (category in stats && run >= 1 && run <= 3) {
-                const runKey = `run${run}` as 'run1' | 'run2' | 'run3';
-                const categoryStats = stats[category as keyof typeof stats];
+              if ((CATEGORY_KEYS as string[]).includes(category) && run >= 1 && run <= 3) {
+                const runKey = `run${run}` as RunKey;
+                const categoryStats = stats[category as CategoryKey];
                 
                 if (riskCategory === 4) {
                   categoryStats[runKey].critical += 1;
@@ -267,28 +230,7 @@ const ReportsPanel: React.FC = () => {
         
         // Reset stats when attack starts
         if (payload.type === "attack_started") {
-          setVulnerabilityStats({
-            crescendo: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            skeleton_key: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            obfuscation: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            },
-            standard: { 
-              run1: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run2: { critical: 0, high: 0, medium: 0, safe: 0 },
-              run3: { critical: 0, high: 0, medium: 0, safe: 0 }
-            }
-          });
+          setVulnerabilityStats(createEmptyVulnerabilityStats());
           setTotalRiskDistribution({ critical: 0, high: 0, medium: 0, safe: 0 });
           setTotalTurns(0);
           return;
@@ -304,12 +246,12 @@ const ReportsPanel: React.FC = () => {
           // Increment total turns
           setTotalTurns((prev) => prev + 1);
 
-          if (category in vulnerabilityStats && run >= 1 && run <= 3) {
+          if ((CATEGORY_KEYS as string[]).includes(category) && run >= 1 && run <= 3) {
             // Update run-specific risk level count
             setVulnerabilityStats((prev) => {
               const updated = { ...prev };
-              const categoryKey = category as keyof typeof vulnerabilityStats;
-              const runKey = `run${run}` as 'run1' | 'run2' | 'run3';
+              const categoryKey = category as CategoryKey;
+              const runKey = `run${run}` as RunKey;
               
               const runStats = { ...updated[categoryKey][runKey] };
               
@@ -374,9 +316,8 @@ const ReportsPanel: React.FC = () => {
   // Flatten chart data to show 3 bars per category (one for each run)
   // Maintain execution order: Standard, Crescendo, Skeleton Key, Obfuscation
   const chartData: any[] = [];
-  const categoryOrder = ['standard', 'crescendo', 'skeleton_key', 'obfuscation'];
   
-  categoryOrder.forEach((categoryKey) => {
+  CATEGORY_KEYS.forEach((categoryKey) => {
     const runs = vulnerabilityStats[categoryKey as keyof typeof vulnerabilityStats];
     const categoryName = categoryKey.replace('_', ' ').toUpperCase();
     

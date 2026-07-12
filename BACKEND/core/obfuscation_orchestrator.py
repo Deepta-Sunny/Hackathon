@@ -3,7 +3,7 @@ Obfuscation Attack Orchestrator
 
 Implements advanced obfuscation attack techniques with multi-layer evasion strategies,
 memory-based learning, adaptive technique selection, and INTRA-RUN ADAPTIVE RESPONSE
-handling across 3 runs × 20 turns.
+handling across 3 runs × 35 turns.
 """
 
 import asyncio

@@ -2,7 +2,7 @@
 Main entry point for the 3-Run Adaptive Crescendo Attack System.
 
 This script orchestrates a comprehensive security assessment of a chatbot
-using architecture-aware attack techniques across 3 runs with 25 turns each.
+using architecture-aware attack techniques across 3 runs with 35 turns each.
 """
 
 import asyncio
@@ -45,7 +45,7 @@ async def main():
         print("   - AZURE_OPENAI_DEPLOYMENT (default: gpt-5)")
         print("   - CHATBOT_WEBSOCKET_URL (default: ws://localhost:8000/chat)")
         print("   - TOTAL_RUNS (default: 3)")
-        print("   - TURNS_PER_RUN (default: 25)")
+        print("   - TURNS_PER_RUN (default: 35)")
         return 1
     
     print("\n" + "="*70)
@@ -61,13 +61,13 @@ async def main():
     print("\n🎯 Automated Multi-Category Attack Campaign")
     print("-" * 70)
     print("\n📋 Attack Categories (executed sequentially):")
-    print("   1. Standard Attack (3 runs × 25 turns)")
+    print("   1. Standard Attack (3 runs × 35 turns)")
     print("      → Traditional multi-phase attacks")
-    print("   2. Crescendo Attack (3 runs × 15 turns)")
+    print("   2. Crescendo Attack (3 runs × 35 turns)")
     print("      → Personality-based social engineering")
-    print("   3. Skeleton Key Attack (3 runs × 10 turns)")
+    print("   3. Skeleton Key Attack (3 runs × 35 turns)")
     print("      → Jailbreak & system probe techniques")
-    print("   4. Obfuscation Attack (3 runs × 20 turns)")
+    print("   4. Obfuscation Attack (3 runs × 35 turns)")
     print("      → Advanced evasion techniques")
     print("\n⚡ All categories will be executed automatically")
     print("   Total estimated time: ~35-45 minutes")

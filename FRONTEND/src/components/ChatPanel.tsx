@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/Store";
 import { clearMonitor, setMonitorOpen } from "../store/Slice";
 import { openAttackMonitor } from "../thunk/ApiThunk";
+import { replayAllResults } from "../services/ApiService";
 
 const useStyles = createUseStyles({
   container: {
@@ -150,8 +151,7 @@ const ChatPanel: React.FC = () => {
   useEffect(() => {
     const loadExistingResults = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/results/replay-all');
-        const data = await response.json();
+        const data = await replayAllResults();
         if (data.messages && data.messages.length > 0) {
           const loadedMessages: ChatMessage[] = [];
           for (const msg of data.messages) {

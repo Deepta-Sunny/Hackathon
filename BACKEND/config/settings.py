@@ -59,12 +59,12 @@ WEBSOCKET_MAX_RETRIES = int(os.getenv("WEBSOCKET_MAX_RETRIES", "2"))
 # ATTACK CAMPAIGN CONFIGURATION
 # =========================================================================
 TOTAL_RUNS = int(os.getenv("TOTAL_RUNS", "3"))
-TURNS_PER_RUN = int(os.getenv("TURNS_PER_RUN", "15"))  # Reduced to 15 for testing
+TURNS_PER_RUN = int(os.getenv("TURNS_PER_RUN", "35"))
 CONTEXT_WINDOW_SIZE = int(os.getenv("CONTEXT_WINDOW_SIZE", "6"))
 
 # Crescendo Attack Configuration
 CRESCENDO_RUNS = int(os.getenv("CRESCENDO_RUNS", "3"))
-CRESCENDO_TURNS_PER_RUN = int(os.getenv("CRESCENDO_TURNS_PER_RUN", "15"))
+CRESCENDO_TURNS_PER_RUN = int(os.getenv("CRESCENDO_TURNS_PER_RUN", "35"))
 CRESCENDO_RECON_TURNS = int(os.getenv("CRESCENDO_RECON_TURNS", "2"))  # Only in Run 1
 CRESCENDO_CONVERSATIONAL_POLICY = {
     "max_topic_depth": _env_int("CRESCENDO_MAX_TOPIC_DEPTH", "3"),
@@ -82,7 +82,7 @@ CRESCENDO_CONVERSATIONAL_POLICY = {
 
 # Skeleton Key Attack Configuration
 SKELETON_KEY_RUNS = int(os.getenv("SKELETON_KEY_RUNS", "3"))
-SKELETON_KEY_TURNS_PER_RUN = int(os.getenv("SKELETON_KEY_TURNS_PER_RUN", "15"))
+SKELETON_KEY_TURNS_PER_RUN = int(os.getenv("SKELETON_KEY_TURNS_PER_RUN", "35"))
 SKELETON_KEY_CONVERSATIONAL_POLICY = {
     "max_topic_depth": _env_int("SKELETON_KEY_MAX_TOPIC_DEPTH", "3"),
     "blocked_threshold": _env_int("SKELETON_KEY_BLOCKED_THRESHOLD", "2", "SKELETON_KEY_SWITCH_ON_BLOCKED_STREAK"),
@@ -99,7 +99,7 @@ SKELETON_KEY_CONVERSATIONAL_POLICY = {
 
 # Obfuscation Attack Configuration
 OBFUSCATION_RUNS = int(os.getenv("OBFUSCATION_RUNS", "3"))
-OBFUSCATION_TURNS_PER_RUN = int(os.getenv("OBFUSCATION_TURNS_PER_RUN", "15"))
+OBFUSCATION_TURNS_PER_RUN = int(os.getenv("OBFUSCATION_TURNS_PER_RUN", "35"))
 OBFUSCATION_CONVERSATIONAL_POLICY = {
     "max_topic_depth": _env_int("OBFUSCATION_MAX_TOPIC_DEPTH", "3"),
     "blocked_threshold": _env_int("OBFUSCATION_BLOCKED_THRESHOLD", "2", "OBFUSCATION_SWITCH_ON_BLOCKED_STREAK"),

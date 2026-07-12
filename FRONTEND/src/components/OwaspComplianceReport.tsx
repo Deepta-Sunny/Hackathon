@@ -9,8 +9,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { createUseStyles } from "react-jss";
-
-const API_BASE_URL = "http://localhost:8080";
+import { getOwaspReport } from "../services/ApiService";
 
 // OWASP Category interface
 interface OwaspCategory {
@@ -355,11 +354,7 @@ const OwaspComplianceReport: React.FC = () => {
 
   const fetchReport = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/owasp/report`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch OWASP report: ${response.statusText}`);
-      }
-      const data = await response.json();
+      const data = await getOwaspReport();
       setReport(data);
       setError(null);
     } catch (err) {

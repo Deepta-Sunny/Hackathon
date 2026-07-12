@@ -16,7 +16,7 @@ The red-team testing system requires **3 separate services** to be running:
 
 **Terminal 1 (PowerShell):**
 ```powershell
-cd BACKEND\target chatbot
+cd "Target Chatbot\backend"
 .\start_chat_agent.ps1
 ```
 
@@ -24,7 +24,7 @@ cd BACKEND\target chatbot
 ```powershell
 cd BACKEND
 .\venv\Scripts\Activate.ps1
-cd "target chatbot"
+cd "Target Chatbot/backend"
 python chat_agent.py --port 8001
 ```
 
@@ -104,7 +104,7 @@ Open browser: http://localhost:5173/
 ## 🎯 Running an Attack
 
 1. **Fill Profile Form** at http://localhost:5173/
-   - Use the template from `target chatbot/CHATBOT_PROFILE_TEMPLATE.md`
+   - Use the template from `Target Chatbot/backend/CHATBOT_PROFILE_TEMPLATE.md`
    - Ensure WebSocket URL is: `ws://localhost:8001/ws`
 
 2. **Navigate to Dashboard** (automatic after form submission)
@@ -221,7 +221,7 @@ Turn completed: 2/30
 
 | Service | Port | Command | Location |
 |---------|------|---------|----------|
-| Chat Agent | 8001 | `python chat_agent.py --port 8001` | `BACKEND/target chatbot/` |
+| Chat Agent | 8001 | `python chat_agent.py --port 8001` | `Target Chatbot/backend/` |
 | Backend API | 8080 | `python api_server.py` | `BACKEND/` |
 | Frontend | 5173 | `npm run dev` | `FRONTEND/testeragent/` |
 
@@ -232,8 +232,8 @@ Turn completed: 2/30
 **Terminal 1:**
 ```powershell
 PS C:\Hackathon\RedTeaming\BACKEND> .\venv\Scripts\Activate.ps1
-(venv) PS C:\Hackathon\RedTeaming\BACKEND> cd "target chatbot"
-(venv) PS C:\Hackathon\RedTeaming\BACKEND\target chatbot> python chat_agent.py
+(venv) PS C:\Hackathon\RedTeaming> cd "Target Chatbot\backend"
+(venv) PS C:\Hackathon\RedTeaming\Target Chatbot\backend> python chat_agent.py
 🤖 Azure OpenAI E-Commerce Agent initialized
 ✅ WebSocket server started on ws://localhost:8001
 ```
