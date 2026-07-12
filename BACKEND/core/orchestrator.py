@@ -246,7 +246,7 @@ class AttackPlanGenerator:
         }
         return descriptions.get(phase, "advance attack pressure while keeping prompts realistic")
 
-    def _get_pyrit_seed_context(self, run_number: int) -> str:
+    def _get_pyrit_seed_context_or_fallback(self, run_number: int) -> str:
         """Build phase-aware PyRIT seed references for orchestrator generation."""
         phase_to_category = {
             "reconnaissance": "sensitive",
@@ -292,7 +292,7 @@ class AttackPlanGenerator:
         """
         profile = self._get_profile_context()
         system_prompt = self.strategy_data["prompt_generation_system_prompt"]
-        pyrit_seed_context = self._get_pyrit_seed_context(run_number)
+        pyrit_seed_context = self._get_pyrit_seed_context_or_fallback(run_number)
         agent_type = self._safe_get_profile_attr("agent_type")
         communication_style = self._safe_get_profile_attr("communication_style")
         context_awareness = self._safe_get_profile_attr("context_awareness")
