@@ -3,7 +3,7 @@ PyRIT Seed Prompt Loader
 Loads and manages seed prompts from PyRIT datasets for red teaming attacks
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional, Callable
 import random
 from pyrit.datasets import (
     fetch_harmbench_dataset,
@@ -16,61 +16,63 @@ from pyrit.datasets import (
 
 class PyRITSeedLoader:
     """Loads and provides PyRIT seed prompts for attack generation"""
+
+    CATEGORY_MAPPING: Dict[str, List[str]] = {
+        'obfuscation': ['advbench', 'many_shot'],
+        'jailbreak': ['many_shot', 'harmbench'],
+        'harmful': ['harmbench', 'advbench'],
+        'sensitive': ['forbidden', 'tdc23'],
+        'adversarial': ['advbench', 'many_shot', 'harmbench'],
+        'skeleton_key': ['many_shot', 'harmbench', 'advbench'],
+        # Crescendo should stay in a jailbreak-style lane unless explicitly overridden.
+        'crescendo': ['many_shot', 'harmbench']
+    }
+
+    DATASET_FETCHERS: Dict[str, Callable] = {
+        'harmbench': fetch_harmbench_dataset,
+        'many_shot': fetch_many_shot_jailbreaking_dataset,
+        'forbidden': fetch_forbidden_questions_dataset,
+        'advbench': fetch_adv_bench_dataset,
+        'tdc23': fetch_tdc23_redteaming_dataset
+    }
     
     def __init__(self):
         self._datasets = {}
-        self._load_datasets()
+        self._loaded_dataset_names = set()
     
-    def _load_datasets(self):
-        """Load all PyRIT datasets"""
-        print("Loading PyRIT seed prompt datasets...")
-        
+    def _normalize_prompts(self, dataset_name: str, dataset_obj) -> List[str]:
+        """Normalize various PyRIT dataset formats into prompt string lists."""
+        if dataset_name == 'many_shot':
+            return [item['user'] for item in dataset_obj if isinstance(item, dict) and 'user' in item]
+        return [p.value for p in dataset_obj.prompts]
+
+    def _load_single_dataset(self, dataset_name: str) -> None:
+        """Load one PyRIT dataset into cache if not already loaded."""
+        if dataset_name in self._loaded_dataset_names:
+            return
+
+        fetcher = self.DATASET_FETCHERS.get(dataset_name)
+        if not fetcher:
+            self._datasets[dataset_name] = []
+            self._loaded_dataset_names.add(dataset_name)
+            return
+
         try:
-            # HarmBench - harmful behaviors
-            harmbench = fetch_harmbench_dataset()
-            self._datasets['harmbench'] = [p.value for p in harmbench.prompts]
-            print(f"  [OK] HarmBench: {len(self._datasets['harmbench'])} prompts")
+            dataset_obj = fetcher()
+            prompts = self._normalize_prompts(dataset_name, dataset_obj)
+            self._datasets[dataset_name] = prompts
+            print(f"  [OK] {dataset_name}: {len(prompts)} prompts")
         except Exception as e:
-            print(f"  [FAIL] HarmBench failed: {e}")
-            self._datasets['harmbench'] = []
-        
-        try:
-            # Many-Shot Jailbreaking - adversarial examples
-            many_shot = fetch_many_shot_jailbreaking_dataset()
-            self._datasets['many_shot'] = [item['user'] for item in many_shot if 'user' in item]
-            print(f"  [OK] Many-Shot Jailbreaking: {len(self._datasets['many_shot'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] Many-Shot Jailbreaking failed: {e}")
-            self._datasets['many_shot'] = []
-        
-        try:
-            # Forbidden Questions - sensitive queries
-            forbidden = fetch_forbidden_questions_dataset()
-            self._datasets['forbidden'] = [p.value for p in forbidden.prompts]
-            print(f"  [OK] Forbidden Questions: {len(self._datasets['forbidden'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] Forbidden Questions failed: {e}")
-            self._datasets['forbidden'] = []
-        
-        try:
-            # AdvBench - adversarial benchmark
-            advbench = fetch_adv_bench_dataset()
-            self._datasets['advbench'] = [p.value for p in advbench.prompts]
-            print(f"  [OK] AdvBench: {len(self._datasets['advbench'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] AdvBench failed: {e}")
-            self._datasets['advbench'] = []
-        
-        try:
-            # TDC23 RedTeaming - red teaming scenarios
-            tdc23 = fetch_tdc23_redteaming_dataset()
-            self._datasets['tdc23'] = [p.value for p in tdc23.prompts]
-            print(f"  [OK] TDC23 RedTeaming: {len(self._datasets['tdc23'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] TDC23 RedTeaming failed: {e}")
-            self._datasets['tdc23'] = []
-        
-        print(f"Total PyRIT prompts loaded: {self.get_total_count()}\n")
+            print(f"  [FAIL] {dataset_name} failed: {e}")
+            self._datasets[dataset_name] = []
+        finally:
+            self._loaded_dataset_names.add(dataset_name)
+
+    def _load_datasets(self, dataset_names: Optional[List[str]] = None):
+        """Load only requested PyRIT datasets (or all when omitted)."""
+        requested = dataset_names or list(self.DATASET_FETCHERS.keys())
+        for dataset_name in requested:
+            self._load_single_dataset(dataset_name)
     
     def get_prompts(self, dataset_name: str = None, count: int = 5) -> List[str]:
         """
@@ -84,10 +86,12 @@ class PyRITSeedLoader:
         Returns:
             List of seed prompt strings
         """
-        if dataset_name and dataset_name in self._datasets:
-            prompts = self._datasets[dataset_name]
+        if dataset_name:
+            self._load_datasets([dataset_name])
+            prompts = self._datasets.get(dataset_name, [])
         else:
             # Combine all datasets
+            self._load_datasets()
             prompts = []
             for dataset_prompts in self._datasets.values():
                 prompts.extend(dataset_prompts)
@@ -109,16 +113,11 @@ class PyRITSeedLoader:
         Returns:
             List of seed prompt strings
         """
-        category_mapping = {
-            'obfuscation': ['advbench', 'many_shot'],
-            'jailbreak': ['many_shot', 'harmbench'],
-            'harmful': ['harmbench', 'advbench'],
-            'sensitive': ['forbidden', 'tdc23'],
-            'adversarial': ['advbench', 'many_shot', 'harmbench'],
-            'skeleton_key': ['many_shot', 'harmbench', 'advbench']  # Skeleton key uses jailbreak-style prompts
-        }
-        
-        dataset_names = category_mapping.get(category, list(self._datasets.keys()))
+        dataset_names = self.CATEGORY_MAPPING.get(category)
+        if not dataset_names:
+            return []
+
+        self._load_datasets(dataset_names)
         prompts = []
         
         for dataset_name in dataset_names:
@@ -132,10 +131,12 @@ class PyRITSeedLoader:
     
     def get_all_datasets(self) -> Dict[str, List[str]]:
         """Get all loaded datasets"""
+        self._load_datasets()
         return self._datasets
     
     def get_total_count(self) -> int:
         """Get total number of seed prompts across all datasets"""
+        self._load_datasets()
         return sum(len(prompts) for prompts in self._datasets.values())
     
     def get_formatted_examples(self, dataset_name: str = None, count: int = 3) -> str:
