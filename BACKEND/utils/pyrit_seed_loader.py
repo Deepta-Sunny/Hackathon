@@ -1,163 +1,310 @@
 """
 PyRIT Seed Prompt Loader
-Loads and manages seed prompts from PyRIT datasets for red teaming attacks
+Loads and manages PyRIT datasets by active chatbot testing strategy.
 """
 
-from typing import List, Dict
+from typing import Dict, List, Optional, Iterable, Callable
 import random
-from pyrit.datasets import (
-    fetch_harmbench_dataset,
-    fetch_many_shot_jailbreaking_dataset,
-    fetch_forbidden_questions_dataset,
-    fetch_adv_bench_dataset,
-    fetch_tdc23_redteaming_dataset
-)
+
+try:
+    import pyrit.datasets as pyrit_datasets
+except Exception:
+    pyrit_datasets = None
+
+
+def _resolve_fetcher(*names: str) -> Optional[Callable]:
+    """Resolve the first available dataset fetcher by name."""
+    if pyrit_datasets is None:
+        return None
+    for name in names:
+        fetcher = getattr(pyrit_datasets, name, None)
+        if callable(fetcher):
+            return fetcher
+    return None
+
+
+def _extract_prompts(payload, objective_only: bool = False) -> List[str]:
+    """Extract prompt-like text from heterogeneous PyRIT dataset payloads."""
+
+    def _from_item(item) -> Optional[str]:
+        if item is None:
+            return None
+
+        if isinstance(item, str):
+            return item.strip() or None
+
+        if isinstance(item, dict):
+            keys = (
+                ["objective", "target_objective", "goal", "instruction"]
+                if objective_only
+                else [
+                    "value",
+                    "prompt",
+                    "text",
+                    "user",
+                    "question",
+                    "request",
+                    "objective",
+                    "target_objective",
+                    "goal",
+                ]
+            )
+            for key in keys:
+                value = item.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+            return None
+
+        keys = (
+            ["objective", "target_objective", "goal", "instruction"]
+            if objective_only
+            else [
+                "value",
+                "prompt",
+                "text",
+                "user",
+                "question",
+                "request",
+                "objective",
+                "target_objective",
+                "goal",
+            ]
+        )
+        for key in keys:
+            value = getattr(item, key, None)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+        return None
+
+    entries: Iterable = []
+    if payload is None:
+        entries = []
+    elif isinstance(payload, list):
+        entries = payload
+    elif hasattr(payload, "prompts"):
+        entries = getattr(payload, "prompts") or []
+    elif hasattr(payload, "items") and callable(getattr(payload, "items")):
+        try:
+            entries = list(payload.values())
+        except Exception:
+            entries = []
+    else:
+        entries = [payload]
+
+    extracted: List[str] = []
+    for item in entries:
+        text = _from_item(item)
+        if text:
+            extracted.append(text)
+
+    # Deduplicate while preserving order
+    return list(dict.fromkeys(extracted))
 
 
 class PyRITSeedLoader:
-    """Loads and provides PyRIT seed prompts for attack generation"""
-    
+    """Loads and serves PyRIT prompts for testing strategies with category-aware context."""
+
+    STRATEGY_DATASET_MAP = {
+        "standard": ["harmbench", "advbench", "forbidden", "tdc23"],
+        "crescendo": ["harmbench", "forbidden", "tdc23"],
+        "skeleton_key": ["harmbench_objectives", "forbidden_objectives", "tdc23_objectives"],
+        "obfuscation": ["harmbench", "advbench", "forbidden"],
+    }
+
+    LEGACY_CATEGORY_MAP = {
+        "obfuscation": ["harmbench", "advbench", "forbidden"],
+        "jailbreak": ["harmbench", "forbidden", "tdc23"],
+        "harmful": ["harmbench", "advbench"],
+        "sensitive": ["forbidden", "tdc23"],
+        "adversarial": ["harmbench", "advbench", "forbidden"],
+        "skeleton_key": ["harmbench_objectives", "forbidden_objectives", "tdc23_objectives"],
+        "standard": ["harmbench", "advbench", "forbidden", "tdc23"],
+        "crescendo": ["harmbench", "forbidden", "tdc23"],
+    }
+
+    CATEGORY_ALIASES = {
+        "skeleton": "skeleton_key",
+        "skeleton key": "skeleton_key",
+    }
+
     def __init__(self):
-        self._datasets = {}
+        self._datasets: Dict[str, List[str]] = {}
+        self._active_testing_category: Optional[str] = None
+        self._active_context: List[str] = []
         self._load_datasets()
-    
+
     def _load_datasets(self):
-        """Load all PyRIT datasets"""
+        """Load all supported PyRIT datasets."""
         print("Loading PyRIT seed prompt datasets...")
-        
-        try:
-            # HarmBench - harmful behaviors
-            harmbench = fetch_harmbench_dataset()
-            self._datasets['harmbench'] = [p.value for p in harmbench.prompts]
-            print(f"  [OK] HarmBench: {len(self._datasets['harmbench'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] HarmBench failed: {e}")
-            self._datasets['harmbench'] = []
-        
-        try:
-            # Many-Shot Jailbreaking - adversarial examples
-            many_shot = fetch_many_shot_jailbreaking_dataset()
-            self._datasets['many_shot'] = [item['user'] for item in many_shot if 'user' in item]
-            print(f"  [OK] Many-Shot Jailbreaking: {len(self._datasets['many_shot'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] Many-Shot Jailbreaking failed: {e}")
-            self._datasets['many_shot'] = []
-        
-        try:
-            # Forbidden Questions - sensitive queries
-            forbidden = fetch_forbidden_questions_dataset()
-            self._datasets['forbidden'] = [p.value for p in forbidden.prompts]
-            print(f"  [OK] Forbidden Questions: {len(self._datasets['forbidden'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] Forbidden Questions failed: {e}")
-            self._datasets['forbidden'] = []
-        
-        try:
-            # AdvBench - adversarial benchmark
-            advbench = fetch_adv_bench_dataset()
-            self._datasets['advbench'] = [p.value for p in advbench.prompts]
-            print(f"  [OK] AdvBench: {len(self._datasets['advbench'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] AdvBench failed: {e}")
-            self._datasets['advbench'] = []
-        
-        try:
-            # TDC23 RedTeaming - red teaming scenarios
-            tdc23 = fetch_tdc23_redteaming_dataset()
-            self._datasets['tdc23'] = [p.value for p in tdc23.prompts]
-            print(f"  [OK] TDC23 RedTeaming: {len(self._datasets['tdc23'])} prompts")
-        except Exception as e:
-            print(f"  [FAIL] TDC23 RedTeaming failed: {e}")
-            self._datasets['tdc23'] = []
-        
+
+        dataset_fetchers = {
+            "harmbench": _resolve_fetcher("fetch_harmbench_dataset"),
+            "forbidden": _resolve_fetcher("fetch_forbidden_questions_dataset"),
+            "advbench": _resolve_fetcher("fetch_adv_bench_dataset"),
+            "tdc23": _resolve_fetcher("fetch_tdc23_redteaming_dataset"),
+            "harmbench_objectives": _resolve_fetcher(
+                "fetch_harmbench_objectives_dataset",
+                "fetch_harmbench_objective_dataset",
+            ),
+            "forbidden_objectives": _resolve_fetcher(
+                "fetch_forbidden_questions_objectives_dataset",
+                "fetch_forbidden_questions_objective_dataset",
+            ),
+            "tdc23_objectives": _resolve_fetcher(
+                "fetch_tdc23_objectives_dataset",
+                "fetch_tdc23_redteaming_objectives_dataset",
+                "fetch_tdc23_objective_dataset",
+            ),
+        }
+
+        # Objective fallbacks when objective-specific fetchers are unavailable.
+        fallback_bases = {
+            "harmbench_objectives": "harmbench",
+            "forbidden_objectives": "forbidden",
+            "tdc23_objectives": "tdc23",
+        }
+
+        for dataset_name, fetcher in dataset_fetchers.items():
+            try:
+                if fetcher is None:
+                    base_name = fallback_bases.get(dataset_name)
+                    if base_name and base_name in self._datasets:
+                        self._datasets[dataset_name] = self._datasets[base_name].copy()
+                        print(
+                            f"  [OK] {dataset_name}: {len(self._datasets[dataset_name])} prompts "
+                            f"(fallback from {base_name})"
+                        )
+                    else:
+                        self._datasets[dataset_name] = []
+                        print(f"  [WARN] {dataset_name}: fetcher unavailable")
+                    continue
+
+                payload = fetcher()
+                prompts = _extract_prompts(payload, objective_only=dataset_name.endswith("_objectives"))
+                self._datasets[dataset_name] = prompts
+                print(f"  [OK] {dataset_name}: {len(prompts)} prompts")
+            except Exception as e:
+                print(f"  [FAIL] {dataset_name} failed: {e}")
+                self._datasets[dataset_name] = []
+
         print(f"Total PyRIT prompts loaded: {self.get_total_count()}\n")
-    
+
+    @classmethod
+    def _normalize_testing_category(cls, category: Optional[str]) -> Optional[str]:
+        if not category:
+            return None
+        normalized = category.strip().lower().replace("-", "_")
+        return cls.CATEGORY_ALIASES.get(normalized, normalized)
+
+    def _build_context_for_strategy(self, testing_category: str) -> List[str]:
+        datasets = self.STRATEGY_DATASET_MAP.get(testing_category, self.STRATEGY_DATASET_MAP["standard"])
+        prompts: List[str] = []
+        for dataset in datasets:
+            prompts.extend(self._datasets.get(dataset, []))
+        return list(dict.fromkeys(prompts))
+
+    def set_active_testing_category(self, testing_category: str, context_size: int = 60) -> List[str]:
+        """
+        Set current testing category and rebuild prompt context from mapped datasets.
+        Rebuild always happens when category changes or context is empty.
+        """
+        normalized = self._normalize_testing_category(testing_category) or "standard"
+        needs_rebuild = normalized != self._active_testing_category or not self._active_context
+
+        if needs_rebuild:
+            full_context = self._build_context_for_strategy(normalized)
+            if context_size > 0 and len(full_context) > context_size:
+                self._active_context = random.sample(full_context, context_size)
+            else:
+                self._active_context = full_context
+            self._active_testing_category = normalized
+            print(
+                f"[PyRIT] Rebuilt context for '{normalized}' "
+                f"with {len(self._active_context)} prompts"
+            )
+
+        return self._active_context.copy()
+
+    def get_active_testing_category(self) -> Optional[str]:
+        """Return the currently active testing category."""
+        return self._active_testing_category
+
     def get_prompts(self, dataset_name: str = None, count: int = 5) -> List[str]:
-        """
-        Get seed prompts from a specific dataset or all datasets
-        
-        Args:
-            dataset_name: Name of dataset ('harmbench', 'many_shot', 'forbidden', 'advbench', 'tdc23')
-                         If None, randomly samples from all datasets
-            count: Number of prompts to return
-            
-        Returns:
-            List of seed prompt strings
-        """
+        """Get seed prompts from a specific dataset or all datasets."""
         if dataset_name and dataset_name in self._datasets:
             prompts = self._datasets[dataset_name]
         else:
-            # Combine all datasets
             prompts = []
             for dataset_prompts in self._datasets.values():
                 prompts.extend(dataset_prompts)
-        
+
         if not prompts:
             return []
-        
-        # Return random sample
+
         return random.sample(prompts, min(count, len(prompts)))
-    
-    def get_prompts_by_category(self, category: str, count: int = 5) -> List[str]:
+
+    def get_prompts_by_category(
+        self,
+        category: str,
+        count: int = 5,
+        testing_category: Optional[str] = None,
+    ) -> List[str]:
         """
-        Get prompts suitable for a specific attack category
-        
-        Args:
-            category: Attack category ('obfuscation', 'jailbreak', 'harmful', 'sensitive', 'adversarial')
-            count: Number of prompts to return
-            
-        Returns:
-            List of seed prompt strings
+        Get prompts for a given category.
+
+        - If category is a testing strategy (standard/crescendo/skeleton_key/obfuscation),
+          category-specific context is used and rebuilt on switch.
+        - Legacy internal categories remain supported for compatibility.
+        - If testing_category is provided (multi-selection scenarios), it takes precedence.
         """
-        category_mapping = {
-            'obfuscation': ['advbench', 'many_shot'],
-            'jailbreak': ['many_shot', 'harmbench'],
-            'harmful': ['harmbench', 'advbench'],
-            'sensitive': ['forbidden', 'tdc23'],
-            'adversarial': ['advbench', 'many_shot', 'harmbench'],
-            'skeleton_key': ['many_shot', 'harmbench', 'advbench']  # Skeleton key uses jailbreak-style prompts
-        }
-        
-        dataset_names = category_mapping.get(category, list(self._datasets.keys()))
-        prompts = []
-        
-        for dataset_name in dataset_names:
-            if dataset_name in self._datasets:
-                prompts.extend(self._datasets[dataset_name])
-        
+        effective_category = self._normalize_testing_category(testing_category) or self._normalize_testing_category(category)
+
+        if effective_category in self.STRATEGY_DATASET_MAP:
+            context = self.set_active_testing_category(effective_category)
+            if not context:
+                return []
+            return random.sample(context, min(count, len(context)))
+
+        legacy_datasets = self.LEGACY_CATEGORY_MAP.get(self._normalize_testing_category(category) or "", [])
+        prompts: List[str] = []
+        for dataset_name in legacy_datasets:
+            prompts.extend(self._datasets.get(dataset_name, []))
+
         if not prompts:
             return []
-        
-        return random.sample(prompts, min(count, len(prompts)))
-    
+
+        deduped = list(dict.fromkeys(prompts))
+        return random.sample(deduped, min(count, len(deduped)))
+
+    def get_active_context(self, count: Optional[int] = None) -> List[str]:
+        """Get active strategy context prompts."""
+        if not self._active_context:
+            self.set_active_testing_category("standard")
+        if count is None or count <= 0:
+            return self._active_context.copy()
+        return random.sample(self._active_context, min(count, len(self._active_context)))
+
     def get_all_datasets(self) -> Dict[str, List[str]]:
-        """Get all loaded datasets"""
+        """Get all loaded datasets."""
         return self._datasets
-    
+
     def get_total_count(self) -> int:
-        """Get total number of seed prompts across all datasets"""
+        """Get total number of loaded seed prompts across all datasets."""
         return sum(len(prompts) for prompts in self._datasets.values())
-    
-    def get_formatted_examples(self, dataset_name: str = None, count: int = 3) -> str:
-        """
-        Get formatted examples for inclusion in LLM prompts
-        
-        Args:
-            dataset_name: Name of dataset or None for all
-            count: Number of examples
-            
-        Returns:
-            Formatted string of examples
-        """
-        prompts = self.get_prompts(dataset_name, count)
-        
+
+    def get_formatted_examples(self, category: str = None, count: int = 3) -> str:
+        """Get formatted examples for inclusion in LLM prompts."""
+        selected_category = category or self._active_testing_category or "standard"
+        prompts = self.get_prompts_by_category(selected_category, count=count)
+
         if not prompts:
             return ""
-        
+
         formatted = "\n**EXAMPLE ATTACK PROMPTS FROM PYRIT:**\n"
         for i, prompt in enumerate(prompts, 1):
             formatted += f"{i}. {prompt}\n"
-        
+
         return formatted
 
 
@@ -166,79 +313,58 @@ _pyrit_loader = None
 
 
 def get_pyrit_seed_loader() -> PyRITSeedLoader:
-    """Get or create the global PyRIT seed loader instance"""
+    """Get or create the global PyRIT seed loader instance."""
     global _pyrit_loader
     if _pyrit_loader is None:
         _pyrit_loader = PyRITSeedLoader()
     return _pyrit_loader
 
 
+def set_active_testing_category(testing_category: str, context_size: int = 60) -> List[str]:
+    """Set active testing category and rebuild a fresh context for it."""
+    loader = get_pyrit_seed_loader()
+    return loader.set_active_testing_category(testing_category, context_size=context_size)
+
+
 def get_pyrit_examples(dataset_name: str = None, count: int = 5) -> List[str]:
-    """
-    Quick access function to get PyRIT seed prompts
-    
-    Args:
-        dataset_name: Dataset name or None for all
-        count: Number of prompts
-        
-    Returns:
-        List of seed prompts
-    """
+    """Quick access function to get PyRIT prompts."""
     loader = get_pyrit_seed_loader()
     return loader.get_prompts(dataset_name, count)
 
 
-def get_pyrit_examples_by_category(category: str, count: int = 5) -> List[str]:
-    """
-    Get PyRIT prompts by attack category
-    
-    Args:
-        category: Attack category
-        count: Number of prompts
-        
-    Returns:
-        List of seed prompts
-    """
+def get_pyrit_examples_by_category(
+    category: str,
+    count: int = 5,
+    testing_category: Optional[str] = None,
+) -> List[str]:
+    """Get PyRIT prompts by category/testing strategy."""
     loader = get_pyrit_seed_loader()
-    return loader.get_prompts_by_category(category, count)
+    return loader.get_prompts_by_category(category, count, testing_category=testing_category)
 
 
 def get_skeleton_key_prompts(count: int = 20) -> List[str]:
-    """
-    Get diverse skeleton key jailbreak prompts from PyRIT datasets.
-    These are prompts designed to bypass safety mechanisms.
-    
-    Args:
-        count: Number of prompts to return
-        
-    Returns:
-        List of skeleton key seed prompts
-    """
+    """Get skeleton key prompts from skeleton-key objective-mapped strategy datasets."""
     loader = get_pyrit_seed_loader()
-    return loader.get_prompts_by_category('skeleton_key', count)
+    return loader.get_prompts_by_category("skeleton_key", count)
 
 
 def get_formatted_pyrit_examples(category: str, count: int = 5) -> str:
-    """
-    Get formatted PyRIT examples as a numbered string for LLM context.
-    
-    Args:
-        category: Attack category
-        count: Number of examples
-        
-    Returns:
-        Formatted string with numbered examples
-    """
+    """Get formatted PyRIT examples as a numbered string for LLM context."""
     loader = get_pyrit_seed_loader()
     prompts = loader.get_prompts_by_category(category, count)
-    
+
     if not prompts:
         return ""
-    
+
     lines = []
     for i, prompt in enumerate(prompts, 1):
-        # Truncate long prompts for context
         truncated = prompt[:200] + "..." if len(prompt) > 200 else prompt
         lines.append(f"{i}. {truncated}")
-    
+
     return "\n".join(lines)
+
+
+def get_active_pyrit_context(count: Optional[int] = None) -> List[str]:
+    """Return currently active strategy context prompts."""
+    loader = get_pyrit_seed_loader()
+    return loader.get_active_context(count=count)

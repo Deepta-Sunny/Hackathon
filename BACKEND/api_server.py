@@ -28,6 +28,7 @@ from core.skeleton_key_orchestrator import SkeletonKeyAttackOrchestrator
 from core.obfuscation_orchestrator import ObfuscationAttackOrchestrator
 from models.chatbot_profile import ChatbotProfile
 from utils.report_generator import save_final_report
+from utils.pyrit_seed_loader import set_active_testing_category
 
 # Risk severity weights for vulnerability scoring
 RISK_WEIGHTS = {
@@ -1481,6 +1482,7 @@ async def execute_attack_campaign(
     
     try:
         for idx, attack_mode in enumerate(attack_modes, 1):
+            set_active_testing_category(attack_mode)
             attack_state["current_category"] = attack_mode
             attack_state["category_progress"] = f"{idx}/{len(attack_modes)}"
             
