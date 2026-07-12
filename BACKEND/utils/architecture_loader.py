@@ -1,8 +1,7 @@
 """
-MD File Parser for Architecture Context Extraction
+MD File Parser for Architecture Context Extraction.
 
-Reads chatbot architecture documentation from MD files and extracts
-relevant context for domain detection and prompt molding.
+Reads chatbot architecture documentation from MD files for orchestrator prompt generation.
 """
 
 import os
@@ -64,25 +63,6 @@ class ArchitectureLoader:
             )
         except Exception as e:
             raise Exception(f"Error loading architecture file: {e}")
-    
-    async def load_and_detect_domain(self, molding_engine) -> tuple[str, str]:
-        """
-        Load architecture and detect domain using molding engine.
-        
-        Args:
-            molding_engine: PromptMoldingEngine instance for domain detection
-            
-        Returns:
-            Tuple of (architecture_content, detected_domain)
-        """
-        # Load architecture content
-        architecture = self.load_architecture()
-        
-        # Detect domain from architecture
-        print(f"[+] Detecting domain from architecture documentation...")
-        detected_domain = await molding_engine.detect_domain(architecture)
-        
-        return architecture, detected_domain
     
     def get_summary(self, max_chars: int = 2000) -> str:
         """
