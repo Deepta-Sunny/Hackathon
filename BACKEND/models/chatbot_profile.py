@@ -121,29 +121,23 @@ class ChatbotProfile(BaseModel):
     @root_validator(pre=True)
     def sync_business_and_security_fields(cls, values):
         """Keep onboarding aliases synchronized with legacy field names."""
-        primary_objective = values.get("primary_objective")
-        business_purpose = values.get("business_purpose")
-        boundaries = values.get("boundaries")
-        security_constraints = values.get("security_compliance_constraints")
+        def _sync_pair(primary_key: str, alias_key: str):
+            primary_value = values.get(primary_key)
+            alias_value = values.get(alias_key)
 
-        if primary_objective and business_purpose and primary_objective != business_purpose:
-            raise ValueError(
-                "primary_objective and business_purpose must match when both are provided"
-            )
-        if boundaries and security_constraints and boundaries != security_constraints:
-            raise ValueError(
-                "boundaries and security_compliance_constraints must match when both are provided"
-            )
+            if primary_value and alias_value and primary_value != alias_value:
+                raise ValueError(
+                    f"{primary_key} ({primary_value!r}) and {alias_key} ({alias_value!r}) "
+                    "must match when both are provided"
+                )
 
-        if not primary_objective and business_purpose:
-            values["primary_objective"] = business_purpose
-        if not business_purpose and primary_objective:
-            values["business_purpose"] = primary_objective
+            if not primary_value and alias_value:
+                values[primary_key] = alias_value
+            if not alias_value and primary_value:
+                values[alias_key] = primary_value
 
-        if not boundaries and security_constraints:
-            values["boundaries"] = security_constraints
-        if not security_constraints and boundaries:
-            values["security_compliance_constraints"] = boundaries
+        _sync_pair("primary_objective", "business_purpose")
+        _sync_pair("boundaries", "security_compliance_constraints")
 
         return values
     

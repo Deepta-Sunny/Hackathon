@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from pydantic import ValidationError
 
 
 def _load_profile_class():
@@ -75,5 +76,8 @@ def test_profile_rejects_conflicting_alias_values():
             attack_strategies=["standard"],
         )
         raise AssertionError("Expected conflicting alias values to raise a validation error")
-    except Exception as exc:
-        assert "primary_objective and business_purpose must match" in str(exc)
+    except ValidationError as exc:
+        message = str(exc)
+        assert "primary_objective" in message
+        assert "business_purpose" in message
+        assert "must match when both are provided" in message
