@@ -65,7 +65,7 @@ def _extract_prompts(payload, objective_only: bool = False) -> List[str]:
 
         return None
 
-    entries: Iterable[Any] = []
+    entries: List[Any] = []
     if payload is None:
         entries = []
     elif isinstance(payload, list):
