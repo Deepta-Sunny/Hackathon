@@ -267,7 +267,17 @@ class AttackPlanGenerator:
         architecture_context: str,
         previous_findings: Optional[VulnerableResponseMemory]
     ) -> List[AttackPrompt]:
-        """Generate attack plan using one orchestrator prompt with PyRIT-style references."""
+        """
+        Generate attack prompts in one orchestrator call using UI metadata and PyRIT style references.
+
+        Args:
+            run_number: Current run number used to select phase mix and PyRIT references.
+            architecture_context: Architecture/profile context describing target behavior and boundaries.
+            previous_findings: Findings from earlier runs to guide adaptive prompt generation.
+
+        Returns:
+            List[AttackPrompt]: Parsed prompts ready for execution, or an empty list if generation fails.
+        """
         profile = self._get_profile_context()
         system_prompt = self.strategy_data["prompt_generation_system_prompt"]
         pyrit_seed_context = self._get_pyrit_seed_context(run_number)
