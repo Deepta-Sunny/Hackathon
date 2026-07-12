@@ -147,11 +147,11 @@ class ChatbotProfile(BaseModel):
 
     def get_business_purpose(self) -> str:
         """Return normalized business purpose value."""
-        return str(self.business_purpose or self.primary_objective)
+        return self.business_purpose or self.primary_objective
 
     def get_security_constraints(self) -> str:
         """Return normalized security/compliance constraints value."""
-        return str(self.security_compliance_constraints or self.boundaries)
+        return self.security_compliance_constraints or self.boundaries
     
     def to_context_string(self) -> str:
         """

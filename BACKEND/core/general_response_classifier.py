@@ -104,11 +104,13 @@ Rules:
         else:
             business_purpose = (
                 getattr(chatbot_profile, "business_purpose", None)
-                or getattr(chatbot_profile, "primary_objective", "unknown")
+                or getattr(chatbot_profile, "primary_objective", None)
+                or "unknown"
             )
             security_constraints = (
                 getattr(chatbot_profile, "security_compliance_constraints", None)
-                or getattr(chatbot_profile, "boundaries", "unknown")
+                or getattr(chatbot_profile, "boundaries", None)
+                or "unknown"
             )
         return (
             "Target profile:\n"
