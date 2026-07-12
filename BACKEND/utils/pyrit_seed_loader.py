@@ -17,17 +17,6 @@ from pyrit.datasets import (
 class PyRITSeedLoader:
     """Loads and provides PyRIT seed prompts for attack generation"""
 
-    CATEGORY_MAPPING: Dict[str, List[str]] = {
-        'obfuscation': ['advbench', 'many_shot'],
-        'jailbreak': ['many_shot', 'harmbench'],
-        'harmful': ['harmbench', 'advbench'],
-        'sensitive': ['forbidden', 'tdc23'],
-        'adversarial': ['advbench', 'many_shot', 'harmbench'],
-        'skeleton_key': ['many_shot', 'harmbench', 'advbench'],
-        # Crescendo should stay in a jailbreak-style lane unless explicitly overridden.
-        'crescendo': ['many_shot', 'harmbench']
-    }
-
     DATASET_FETCHERS: Dict[str, Callable[[], Any]] = {
         'harmbench': fetch_harmbench_dataset,
         'many_shot': fetch_many_shot_jailbreaking_dataset,
@@ -81,6 +70,27 @@ class PyRITSeedLoader:
         requested = dataset_names or list(self.DATASET_FETCHERS.keys())
         for dataset_name in requested:
             self._load_single_dataset(dataset_name)
+
+    @staticmethod
+    def _datasets_for_testing_category(category: str) -> List[str]:
+        """Hardcoded dataset routing for each testing category."""
+        normalized = (category or "").strip().lower()
+        if normalized == "obfuscation":
+            return ["advbench", "many_shot"]
+        if normalized == "jailbreak":
+            return ["many_shot", "harmbench"]
+        if normalized == "harmful":
+            return ["harmbench", "advbench"]
+        if normalized == "sensitive":
+            return ["forbidden", "tdc23"]
+        if normalized == "adversarial":
+            return ["advbench", "many_shot", "harmbench"]
+        if normalized == "skeleton_key":
+            return ["many_shot", "harmbench", "advbench"]
+        if normalized == "crescendo":
+            # Crescendo should stay in a jailbreak-style lane unless explicitly overridden.
+            return ["many_shot", "harmbench"]
+        return []
     
     def get_prompts(self, dataset_name: str = None, count: int = 5) -> List[str]:
         """
@@ -121,7 +131,7 @@ class PyRITSeedLoader:
         Returns:
             List of seed prompt strings
         """
-        dataset_names = self.CATEGORY_MAPPING.get(category)
+        dataset_names = self._datasets_for_testing_category(category)
         if not dataset_names:
             return []
 
