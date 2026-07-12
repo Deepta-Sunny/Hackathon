@@ -802,6 +802,39 @@ class SkeletonKeyAttackOrchestrator:
             self.adaptive_handler.should_adapt(chatbot_response)
             or risk_category >= int(self.conversation_policy.get("dig_deeper_risk_threshold", 2))
         )
+
+    def _create_single_turn_decision(
+        self,
+        turn: int,
+        current_prompt: AttackPrompt,
+        risk_category: int,
+    ) -> SimpleNamespace:
+        """Create a normalized decision object for single-turn mode."""
+        return SimpleNamespace(
+            topic=current_prompt.attack_technique,
+            action="single_turn",
+            reason="Skeleton Key single-turn role-based mode",
+            topic_depth=1,
+            blocked_streak=0,
+            low_risk_streak=0,
+            successful_probing_streak=0,
+            risk_category=risk_category,
+            should_switch_topic=False,
+            response_evaluation="single_turn",
+            current_objective=current_prompt.expected_outcome,
+            conversation_depth=turn,
+            decision_timestamp=datetime.now().isoformat(),
+        )
+
+    def _get_conversation_metrics(self, total_observed_turns: int) -> Dict[str, Any]:
+        """Return conversation metrics aligned with current Skeleton Key mode."""
+        if self.single_turn_mode:
+            return {
+                "mode": "single_turn_role_based",
+                "multi_turn_disabled": True,
+                "total_observed_turns": total_observed_turns,
+            }
+        return self.conversation_controller.get_metrics()
     
     async def _execute_skeleton_key_run(
         self,
@@ -960,20 +993,10 @@ class SkeletonKeyAttackOrchestrator:
             print(f"    Risk: {risk_display} | OWASP: {owasp_category}")
 
             if self.single_turn_mode:
-                conversation_decision = SimpleNamespace(
-                    topic=current_prompt.attack_technique,
-                    action="single_turn",
-                    reason="Skeleton Key single-turn role-based mode",
-                    topic_depth=1,
-                    blocked_streak=0,
-                    low_risk_streak=0,
-                    successful_probing_streak=0,
+                conversation_decision = self._create_single_turn_decision(
+                    turn=turn,
+                    current_prompt=current_prompt,
                     risk_category=risk_category,
-                    should_switch_topic=False,
-                    response_evaluation="single_turn",
-                    current_objective=current_prompt.expected_outcome,
-                    conversation_depth=turn,
-                    decision_timestamp=datetime.now().isoformat(),
                 )
                 state_snapshot = {"single_turn_mode": True}
                 run_data["conversation_timeline"] = []
@@ -1131,15 +1154,7 @@ class SkeletonKeyAttackOrchestrator:
             
             await asyncio.sleep(0.3)
         
-        run_conversation_metrics = (
-            {
-                "mode": "single_turn_role_based",
-                "multi_turn_disabled": True,
-                "total_observed_turns": len(run_data["turns"]),
-            }
-            if self.single_turn_mode
-            else self.conversation_controller.get_metrics()
-        )
+        run_conversation_metrics = self._get_conversation_metrics(total_observed_turns=len(run_data["turns"]))
 
         # Complete run data
         run_data.update({
@@ -1424,14 +1439,8 @@ Return ONLY valid JSON in this format:
         
         # Calculate summary
         total_vulnerabilities = sum(stat.vulnerabilities_found for stat in self.run_stats)
-        conversation_metrics = (
-            {
-                "mode": "single_turn_role_based",
-                "multi_turn_disabled": True,
-                "total_observed_turns": self.total_runs * self.turns_per_run,
-            }
-            if self.single_turn_mode
-            else self.conversation_controller.get_metrics()
+        conversation_metrics = self._get_conversation_metrics(
+            total_observed_turns=self.total_runs * self.turns_per_run
         )
         
         # Print summary
