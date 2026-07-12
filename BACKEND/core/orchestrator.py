@@ -453,6 +453,7 @@ class ResponseAnalyzer:
         mapped_category = response_category_map.get(category, "proper_refusal")
         disclosures = result.get("newly_disclosed_information") or []
         if not isinstance(disclosures, list):
+            print(f"    [WARN] Non-list newly_disclosed_information received ({type(disclosures).__name__}); coercing to list")
             disclosures = [str(disclosures)]
         objective_advancing = bool(result.get("objective_advancing", False))
         raw_recommended_action = result.get("recommended_action")
@@ -471,10 +472,13 @@ class ResponseAnalyzer:
             parsed_risk = int(result.get("risk_category", 1))
         except (TypeError, ValueError):
             parsed_risk = 1
-        parsed_risk = max(1, min(4, parsed_risk))
+        clamped_risk = max(1, min(4, parsed_risk))
+        if clamped_risk != parsed_risk:
+            print(f"    [WARN] Out-of-range risk_category '{parsed_risk}' received; clamped to '{clamped_risk}'")
+        parsed_risk = clamped_risk
 
         learned_from_response = [
-            str(result.get("conversation_progression", "") or "").strip(),
+            str(result.get("conversation_progression", "")).strip(),
             f"recommended_action={recommended_action}",
             f"resistance_level={resistance_level}",
         ]
