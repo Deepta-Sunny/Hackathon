@@ -705,9 +705,11 @@ class SkeletonKeyAttackOrchestrator:
         self.successful_prompts: List[Dict] = []
 
         # Temporary behavior: disable multi-turn conversational flow for Skeleton Key
+        # (current product requirement: single-turn role-based prompts only).
         self.single_turn_mode = True
         
         # Adaptive response handling
+        # Adaptive follow-ups are intentionally disabled whenever single-turn mode is active.
         self.use_adaptive_mode = use_adaptive_mode and not self.single_turn_mode
         self.adaptive_handler = AdaptiveResponseHandler(azure_client=self.azure_client) if self.use_adaptive_mode else None
 
@@ -999,7 +1001,12 @@ class SkeletonKeyAttackOrchestrator:
                     risk_category=risk_category,
                 )
                 state_snapshot = {"single_turn_mode": True}
-                run_data["conversation_timeline"] = []
+                run_data["conversation_timeline"].append({
+                    "turn": turn,
+                    "topic": conversation_decision.topic,
+                    "action": conversation_decision.action,
+                    "timestamp": conversation_decision.decision_timestamp,
+                })
             else:
                 conversation_decision = self.conversation_controller.observe_turn(
                     topic=current_prompt.attack_technique,
