@@ -146,6 +146,12 @@ class AttackPlanGenerator:
             "capabilities": ", ".join(self.chatbot_profile.capabilities),
             "boundaries": self.chatbot_profile.boundaries
         }
+
+    def _safe_get_profile_attr(self, attr_name: str, default=None):
+        """Safely read optional chatbot_profile metadata."""
+        if not self.chatbot_profile:
+            return default
+        return getattr(self.chatbot_profile, attr_name, default)
     
     async def generate_attack_plan(
         self,
@@ -257,9 +263,9 @@ class AttackPlanGenerator:
         profile = self._get_profile_context()
         system_prompt = self.strategy_data["prompt_generation_system_prompt"]
         pyrit_seed_context = self._get_pyrit_seed_context(run_number)
-        agent_type = getattr(self.chatbot_profile, "agent_type", None) if self.chatbot_profile else None
-        communication_style = getattr(self.chatbot_profile, "communication_style", None) if self.chatbot_profile else None
-        context_awareness = getattr(self.chatbot_profile, "context_awareness", None) if self.chatbot_profile else None
+        agent_type = self._safe_get_profile_attr("agent_type")
+        communication_style = self._safe_get_profile_attr("communication_style")
+        context_awareness = self._safe_get_profile_attr("context_awareness")
 
         findings_context = ""
         if previous_findings and previous_findings.has_findings_context():
