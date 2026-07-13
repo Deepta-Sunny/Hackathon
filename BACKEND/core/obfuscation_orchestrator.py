@@ -442,7 +442,7 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
                 translated = intent.get("translated_intent", "").strip()
                 if translated:
                     intent_line = f" [intent-ref: {translated}]"
-            prompt = f"{template['prompt']}{intent_line}"
+            prompt = f"{template['prompt']}"
             attack_prompts.append(
                 AttackPrompt(
                     turn=i + 1,
