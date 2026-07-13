@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/Store";
 import { clearMonitor, setMonitorOpen } from "../store/Slice";
 import { openAttackMonitor } from "../thunk/ApiThunk";
+import { replayAllResults } from "../services/ApiService";
 
 const useStyles = createUseStyles({
   container: {
@@ -112,6 +113,16 @@ type ChatMessage = {
   timestamp?: string;
 };
 
+type ExportRow = {
+  request: string;
+  response: string;
+  risk_category: string;
+  category: string;
+  run: number;
+  turn: number;
+  timestamp: string | undefined;
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
   standard: "Standard",
   crescendo: "Crescendo",
@@ -150,8 +161,7 @@ const ChatPanel: React.FC = () => {
   useEffect(() => {
     const loadExistingResults = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/results/replay-all');
-        const data = await response.json();
+        const data = await replayAllResults();
         if (data.messages && data.messages.length > 0) {
           const loadedMessages: ChatMessage[] = [];
           for (const msg of data.messages) {
@@ -380,7 +390,7 @@ const ChatPanel: React.FC = () => {
 
   // Function to export chat data as JSON
   const exportChatData = () => {
-    const chatData: any[] = [];
+    const chatData: ExportRow[] = [];
     const messageMap = new Map<string, { agent?: ChatMessage; ai?: ChatMessage }>();
 
     // Group messages by category-run-turn

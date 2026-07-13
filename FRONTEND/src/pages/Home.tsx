@@ -8,6 +8,7 @@ import ChatPanel from "../components/ChatPanel";
 import ReportsPanel from "../components/ReportsPanel";
 import type { AppDispatch } from "../store/Store";
 import { initiateAttack, openAttackMonitor, haltAttack } from "../thunk/ApiThunk";
+import { loadDashboardState, saveDashboardState } from "../services/ApiService";
 import Button from "@mui/joy/Button";
 import EditIcon from "@mui/icons-material/Edit";
 
@@ -204,10 +205,9 @@ function Home() {
 
   useEffect(() => {
     // Try to load saved dashboard state first
-    const loadDashboardState = async () => {
+    const loadState = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/dashboard/load');
-        const data = await response.json();
+        const data = await loadDashboardState();
         
         if (data.found && data.state) {
           // Use saved state
@@ -216,7 +216,7 @@ function Home() {
           sessionStorage.setItem("chatbotProfile", JSON.stringify(normalizedProfile));
           return;
         }
-      } catch (error) {
+      } catch {
         console.log("No saved dashboard state found, checking sessionStorage");
       }
       
@@ -230,7 +230,7 @@ function Home() {
       }
     };
     
-    loadDashboardState();
+    loadState();
   }, [navigate]);
 
   // Open WebSocket monitor when component mounts
@@ -246,11 +246,7 @@ function Home() {
         setProfile(profileWithStrategies);
         try {
           // Save dashboard state before starting
-          await fetch('http://localhost:8080/api/dashboard/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profileWithStrategies)
-          });
+          await saveDashboardState(profileWithStrategies);
         } catch (error) {
           console.error("Failed to save dashboard state:", error);
         }
