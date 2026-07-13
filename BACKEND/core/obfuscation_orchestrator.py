@@ -256,8 +256,11 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
             
             patterns_text = []
             for p in obfuscation_prompts[-5:]:  # Last 5
+                description = str(getattr(p, "description", ""))[:180]
+                groups = getattr(p, "groups", []) or []
+                intent_hint = ", ".join(groups[:2]) if groups else "unknown_intent"
                 patterns_text.append(
-                    f"- Technique: {p.value}\n  Success: {p.description}"
+                    f"- Intent Pattern: {intent_hint}\n  Success Signal: {description}"
                 )
             
             result = "\nHISTORICAL OBFUSCATION PATTERNS (Self-Learning):\n" + "\n".join(patterns_text)

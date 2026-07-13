@@ -439,8 +439,9 @@ Generate EXACTLY {turns} evolved prompts. Return ONLY the JSON array."""
             generalized = []
             for p in seed_prompts:
                 if hasattr(p, 'dataset_name') and 'skeleton_key' in str(p.dataset_name).lower():
+                    template = p.value if hasattr(p, 'value') else str(p)
                     generalized.append({
-                        'template': p.value if hasattr(p, 'value') else str(p),
+                        'intent': self._infer_prompt_intent(template),
                         'technique': p.description if hasattr(p, 'description') else 'unknown',
                         'source_domain': 'previous_session'
                     })
@@ -464,16 +465,19 @@ Generate EXACTLY {turns} evolved prompts. Return ONLY the JSON array."""
         return "\n".join(lines)
     
     def _format_historical_patterns(self, patterns: List[Dict]) -> str:
-        """Format historical patterns for LLM context."""
+        """Format historical patterns for LLM context without raw seed text."""
         if not patterns:
             return ""
         
         lines = []
         for i, p in enumerate(patterns, 1):
-            template = p.get('template', '')[:200]
+            intent = p.get('intent', 'default')
             technique = p.get('technique', 'unknown')
             source = p.get('source_domain', 'unknown')
-            lines.append(f"{i}. [From {source}] Technique: {technique}\n   Template: \"{template}...\"")
+            lines.append(
+                f"{i}. [From {source}] Intent={intent}\n"
+                f"   Technique Signal: {technique}"
+            )
         
         return "\n".join(lines)
     
@@ -588,8 +592,11 @@ Generate EXACTLY {turns} evolved prompts. Return ONLY the JSON array."""
             
             patterns_text = []
             for p in skeleton_prompts[-5:]:  # Last 5
+                prompt_value = p.value if hasattr(p, 'value') else str(p)
+                intent = self._infer_prompt_intent(prompt_value)
+                description = str(getattr(p, "description", ""))[:180]
                 patterns_text.append(
-                    f"- Technique: {p.value}\n  Success: {p.description}"
+                    f"- Intent Pattern: {intent}\n  Success Signal: {description}"
                 )
             
             result = "\nHISTORICAL SKELETON KEY PATTERNS (Self-Learning):\n" + "\n".join(patterns_text)
