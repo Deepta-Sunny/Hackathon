@@ -293,7 +293,8 @@ REQUIREMENTS:
         persona_name = personality.get("name", "Analyst")
         backstory_raw = (personality.get("backstory", "") or "").strip()
         if backstory_raw:
-            first_line = backstory_raw.splitlines()[0]
+            lines = backstory_raw.splitlines()
+            first_line = lines[0] if lines else backstory_raw
             backstory = (
                 first_line[:MAX_BACKSTORY_SNIPPET_LEN] + TRUNCATION_SUFFIX
                 if len(first_line) > MAX_BACKSTORY_SNIPPET_LEN

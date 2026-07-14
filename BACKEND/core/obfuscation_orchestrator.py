@@ -396,6 +396,7 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         if not has_emoji:
             if encoding_replaced and len(attack_prompts) == 1:
                 # Single-turn edge case: combine both techniques so required coverage still exists.
+                # This intentionally yields a chained_obfuscation sample instead of separate techniques.
                 attack_prompts[0] = AttackPrompt(
                     turn=attack_prompts[0].turn,
                     prompt=(
