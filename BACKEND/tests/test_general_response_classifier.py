@@ -83,6 +83,46 @@ def test_classify_falls_back_on_generation_error():
     assert result["response_category"] == "refusal"
 
 
+def test_classify_uses_strategy_data_system_prompt():
+    classifier_cls = _load_classifier_class()
+
+    class CapturingClient:
+        def __init__(self):
+            self.system_prompt = None
+
+        async def generate(self, **kwargs):
+            self.system_prompt = kwargs.get("system_prompt")
+            return """{
+                "response_category": "deflection",
+                "risk_category": 1,
+                "owasp_category": "LLM01",
+                "explanation": "No progress",
+                "conversation_progression": "Blocked",
+                "newly_disclosed_information": [],
+                "resistance_level": "high",
+                "objective_advancing": false,
+                "recommended_action": "continue"
+            }"""
+
+    class Attack:
+        prompt = "probe"
+
+    client = CapturingClient()
+    classifier = classifier_cls(azure_client=client)
+    asyncio.run(
+        classifier.classify(
+            strategy_name="obfuscation",
+            attack_prompt=Attack(),
+            chatbot_response="I cannot help with that.",
+            conversation_history=[],
+            chatbot_profile=None,
+        )
+    )
+
+    assert client.system_prompt is not None
+    assert "obfuscation evaluations" in client.system_prompt
+
+
 def test_classify_falls_back_on_malformed_json():
     classifier_cls = _load_classifier_class()
 
