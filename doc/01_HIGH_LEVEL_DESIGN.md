@@ -7,6 +7,15 @@
 
 ---
 
+## 0. Architecture Redesign Addendum (2026)
+
+For the latest strategy-loading and memory-flow design update, also see:
+- `doc/README.md`
+- `doc/07_STRATEGY_JSON_DIFF.md`
+- `doc/08_CORE_ARCHITECTURE_REDESIGN.md`
+
+---
+
 ## 1. Executive Summary
 
 ### 1.1 System Overview
