@@ -37,6 +37,7 @@ FINDINGS_CONTEXT_MAX_CHARS = 1200
 PYRIT_FALLBACK_BUFFER_SIZE = 4
 PYRIT_FALLBACK_MIN_PROMPTS = 16
 MAX_BACKSTORY_SNIPPET_LEN = 140
+TRUNCATION_SUFFIX = "..."
 
 
 class CrescendoPersonality:
@@ -294,7 +295,7 @@ REQUIREMENTS:
         if backstory_raw:
             first_line = backstory_raw.splitlines()[0]
             backstory = (
-                first_line[:MAX_BACKSTORY_SNIPPET_LEN] + "..."
+                first_line[:MAX_BACKSTORY_SNIPPET_LEN] + TRUNCATION_SUFFIX
                 if len(first_line) > MAX_BACKSTORY_SNIPPET_LEN
                 else first_line
             )
