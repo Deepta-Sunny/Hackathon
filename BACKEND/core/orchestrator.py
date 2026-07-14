@@ -444,7 +444,10 @@ class ResponseAnalyzer:
         self.azure_client = azure_client
         self.chatbot_profile = chatbot_profile
         self.strategy_data = StrategyDataLoader.load("standard")
-        self.response_classifier = GeneralResponseClassifier(self.azure_client)
+        self.response_classifier = GeneralResponseClassifier(
+            self.azure_client,
+            default_strategy_name="standard",
+        )
     
     async def analyze_response(
         self,
