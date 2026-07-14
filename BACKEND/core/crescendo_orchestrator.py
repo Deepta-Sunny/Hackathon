@@ -36,6 +36,7 @@ from attack_strategies.strategy_data_loader import StrategyDataLoader
 FINDINGS_CONTEXT_MAX_CHARS = 1200
 PYRIT_FALLBACK_BUFFER_SIZE = 4
 PYRIT_FALLBACK_MIN_PROMPTS = 16
+MAX_BACKSTORY_SNIPPET_LEN = 140
 
 
 class CrescendoPersonality:
@@ -290,7 +291,11 @@ REQUIREMENTS:
     def _build_crescendo_reference_prompt(personality: Dict, translated_intent: str) -> str:
         persona_name = personality.get("name", "Analyst")
         backstory_raw = (personality.get("backstory", "") or "").strip()
-        backstory = backstory_raw.splitlines()[0][:140] if backstory_raw else "I am conducting a controlled security assessment."
+        backstory = (
+            backstory_raw.splitlines()[0][:MAX_BACKSTORY_SNIPPET_LEN]
+            if backstory_raw
+            else "I am conducting a controlled security assessment."
+        )
         target_behaviors = ", ".join(personality.get("target_behaviors", [])[:2]) or "boundary adherence"
         return (
             f"I'm {persona_name}; {backstory}. "

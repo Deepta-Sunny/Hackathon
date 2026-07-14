@@ -112,4 +112,5 @@ def test_switching_strategy_category_rebuilds_context_without_override():
     obfuscation_prompts = loader.get_prompts_by_category("obfuscation", count=5)
 
     assert obfuscation_prompts
+    assert loader.get_active_testing_category() == "obfuscation"
     assert all("base64" in prompt.lower() for prompt in obfuscation_prompts)
