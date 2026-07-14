@@ -699,7 +699,10 @@ class SkeletonKeyAttackOrchestrator:
         self.conversation_history: List[Dict] = []
         self.conversation_policy = SKELETON_KEY_CONVERSATIONAL_POLICY.copy()
         self.conversation_controller = ConversationalFlowController("skeleton_key", self.conversation_policy)
-        self.response_classifier = GeneralResponseClassifier(self.azure_client)
+        self.response_classifier = GeneralResponseClassifier(
+            self.azure_client,
+            default_strategy_name="skeleton_key",
+        )
         
         # Tracks successful prompts across runs for evolution
         self.successful_prompts: List[Dict] = []

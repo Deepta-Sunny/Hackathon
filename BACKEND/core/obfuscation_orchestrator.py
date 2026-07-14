@@ -399,7 +399,10 @@ class ObfuscationAttackOrchestrator:
         self.techniques_used: List[str] = []
         self.conversation_policy = OBFUSCATION_CONVERSATIONAL_POLICY.copy()
         self.conversation_controller = ConversationalFlowController("obfuscation", self.conversation_policy)
-        self.response_classifier = GeneralResponseClassifier(self.azure_client)
+        self.response_classifier = GeneralResponseClassifier(
+            self.azure_client,
+            default_strategy_name="obfuscation",
+        )
         
         # Initialize adaptive handler if enabled
         if self.use_adaptive_mode:
