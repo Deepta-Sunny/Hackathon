@@ -93,6 +93,14 @@ class CrescendoPromptGenerator:
         self.conversation_policy = CRESCENDO_CONVERSATIONAL_POLICY.copy()
         self.conversation_controller = ConversationalFlowController("crescendo", self.conversation_policy)
     
+    @staticmethod
+    def _truncate_with_suffix(text: str, limit: int, suffix: str = TRUNCATION_SUFFIX) -> str:
+        if len(text) <= limit:
+            return text
+        if limit <= len(suffix):
+            return suffix[:limit]
+        return text[: limit - len(suffix)] + suffix
+
     async def generate_crescendo_prompts(
         self,
         run_number: int,
@@ -294,12 +302,11 @@ REQUIREMENTS:
         backstory_raw = (personality.get("backstory", "") or "").strip()
         if backstory_raw:
             lines = backstory_raw.splitlines()
-            first_line = lines[0] if lines else backstory_raw
-            backstory = (
-                first_line[:MAX_BACKSTORY_SNIPPET_LEN] + TRUNCATION_SUFFIX
-                if len(first_line) > MAX_BACKSTORY_SNIPPET_LEN
-                else first_line
-            )
+            first_line = lines[0] if lines else ""
+            if first_line:
+                backstory = self._truncate_with_suffix(first_line, MAX_BACKSTORY_SNIPPET_LEN)
+            else:
+                backstory = "I am conducting a controlled security assessment."
         else:
             backstory = "I am conducting a controlled security assessment."
         target_behaviors = ", ".join(personality.get("target_behaviors", [])[:2]) or "boundary adherence"
