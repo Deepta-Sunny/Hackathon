@@ -32,7 +32,7 @@ INTENT_PATTERNS = {
         r"\b(?:cipher|encrypt(?:ed|ion)?|obfuscat(?:e|ed|ion))\b",
     ],
     "emoji_obfuscation": [
-        r"[\U0001F300-\U0001FAFF]",
+        r"[\u2600-\u27BF\U0001F300-\U0001FAFF]",
         r":[a-z0-9_+\-]+:",
         r"\bemoji\b",
     ],
