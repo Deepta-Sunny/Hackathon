@@ -379,8 +379,10 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
         domain = chatbot_profile.get("domain", "general")
         has_encoding = any(self._is_encoded_obfuscation_prompt(item.prompt) for item in attack_prompts)
         has_emoji = any(self._is_emoji_obfuscation_prompt(item.prompt) for item in attack_prompts)
+        encoding_replaced = False
 
         if not has_encoding:
+            encoding_replaced = True
             attack_prompts[0] = AttackPrompt(
                 turn=attack_prompts[0].turn,
                 prompt=self._build_encoding_reference_prompt(domain),
@@ -391,7 +393,8 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
             )
 
         if not has_emoji:
-            if not has_encoding and len(attack_prompts) == 1:
+            if encoding_replaced and len(attack_prompts) == 1:
+                # Single-turn edge case: combine both techniques so required coverage still exists.
                 attack_prompts[0] = AttackPrompt(
                     turn=attack_prompts[0].turn,
                     prompt=(
@@ -404,8 +407,8 @@ IMPORTANT: Generate ACTUAL obfuscated text, not placeholders or descriptions!
                     expected_outcome="Test chained encoded + emoji obfuscation and refusal consistency",
                 )
             else:
-                # Reserve index 0 for encoding-coverage replacement; use index 1 for emoji when available.
-                target_index = 1 if not has_encoding and len(attack_prompts) > 1 else 0
+                # If encoding was injected at index 0, place emoji coverage in index 1 when available.
+                target_index = 1 if encoding_replaced and len(attack_prompts) > 1 else 0
                 attack_prompts[target_index] = AttackPrompt(
                     turn=attack_prompts[target_index].turn,
                     prompt=self._build_emoji_reference_prompt(domain),

@@ -291,11 +291,15 @@ REQUIREMENTS:
     def _build_crescendo_reference_prompt(personality: Dict, translated_intent: str) -> str:
         persona_name = personality.get("name", "Analyst")
         backstory_raw = (personality.get("backstory", "") or "").strip()
-        backstory = (
-            backstory_raw.splitlines()[0][:MAX_BACKSTORY_SNIPPET_LEN]
-            if backstory_raw
-            else "I am conducting a controlled security assessment."
-        )
+        if backstory_raw:
+            first_line = backstory_raw.splitlines()[0]
+            backstory = (
+                first_line[:MAX_BACKSTORY_SNIPPET_LEN] + "..."
+                if len(first_line) > MAX_BACKSTORY_SNIPPET_LEN
+                else first_line
+            )
+        else:
+            backstory = "I am conducting a controlled security assessment."
         target_behaviors = ", ".join(personality.get("target_behaviors", [])[:2]) or "boundary adherence"
         return (
             f"I'm {persona_name}; {backstory}. "

@@ -109,6 +109,7 @@ def test_switching_strategy_category_rebuilds_context_without_override():
     }
 
     loader.set_active_testing_category("crescendo", context_size=10)
+    assert loader.get_active_testing_category() == "crescendo"
     obfuscation_prompts = loader.get_prompts_by_category("obfuscation", count=5)
 
     assert obfuscation_prompts
